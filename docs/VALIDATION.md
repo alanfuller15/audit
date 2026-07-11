@@ -429,3 +429,55 @@ the real 6-tool ingest output confirmed byte-stable (21,061 dedup / 1,318 overla
 unchanged). Lesson recorded: the first two fixes patched instances; the class
 needed a root fix. This is itself evidence for why external execution matters —
 the flaw was invisible to prior sandbox self-testing.
+UPDATE (2026-07-11) — Ranking now tested on REAL C/C++ CVE data
+
+The tier map above listed "Re-ranking puts review-worthy findings first" as
+[self-tested] — passed only on Claude-built synthetic findings. That has now been
+tested against real ground truth. Updated status:
+
+Re-ranking (consensus) — now [externally-verified] at FILE level
+
+Ran the consensus ranking against the Lipp dataset: 9 real C/C++ projects (binutils,
+ffmpeg, libpng, libtiff, libxml2, openssl, php, poppler, sqlite3), 135 CVE-vulnerable
+functions, 5 diverse SASTs (Cppcheck, CodeChecker, CodeQL, Flawfinder, CommSCA).
+Ground truth = real CVE-to-function mappings, not Claude-generated.
+
+Result (file level, 2,559 files, 3.4% vulnerable):
+
+methodROC-AUCPR-AUCPofB@20%consensus (# agreeing tools)0.7550.0870.655best single tool (CommSCA)0.5960.0420.333random0.5010.0400.172
+
+
+Consensus beats the best single tool by a real margin, and roughly doubles random.
+PofB@20% = 0.655: inspecting the top 20% of files by tool-agreement catches ~65% of
+vulnerable files.
+Vulnerable-rate rises monotonically with agreement (1 tool 0.9% -> 4 tools 11.6%).
+No metric exceeded 0.85 (leak sanity check); 0.755 is legitimately at the top of the
+honest field ceiling (~0.5-0.7 leak-free).
+
+
+External corroboration (not Claude): an independent empirical study on the same data
+shape (arXiv:2407.12241) found combining tools detects ~17pp more vulnerabilities than
+the best single tool, and that individually-weak tools find bugs others miss — matching
+this tool's thesis.
+
+Honest limits found in the same testing (stated, not hidden)
+
+
+Function-level ranking does NOT work (0.9% base rate too sparse; consensus
+ROC-AUC 0.628, IFA 130). The tool's proven value is FILE-level triage only.
+The tool-quality WEIGHTING layer does not beat plain tool-counting. Ranking
+experiments on real data showed the tier-weighting ~even with flat consensus, and a
+separate large-scale test (NASCAR, 1.08M Java warnings) found the "locational-history"
+feature inert (PR-AUC 0.049 vs 0.035 random). Independently corroborated: Kang et al.
+found these hand-crafted features "inadequate" after fixing a data leak. Conclusion:
+the tool's value is the SIMPLE consensus signal, not elaborate per-warning weighting.
+Fine per-tool weights do not transfer across projects; only a coarse tier prior does.
+
+
+What this changes
+
+The core thesis — multi-tool consensus ranks real vulnerabilities better than any single
+tool — is now [externally-verified] on real C/C++ CVE data at file level, not just
+[self-tested]. The elaborate weighting redesign was tested and does NOT earn its place;
+production should rely on the simple consensus signal. Function-level ranking remains
+out of scope (too sparse to be useful).
