@@ -318,7 +318,61 @@ check(not diff.get("path_warnings"),
 check(not audit.ingest_sarif([FF, CC]).get("path_warnings"),
       "real cppcheck+flawfinder fixtures stay silent")
 
-# ── 13. Determinism and order-independence ──────────────────────────────────
+# ── 13. POINT-IN-RANGE containment (Direction B) ────────────────────────────
+def res_range(rid, uri, start, end, msg=""):
+    r = res(rid, uri, start, msg)
+    r["locations"][0]["physicalLocation"]["region"]["endLine"] = end
+    return r
+
+# THE COMMON CASE, tested first so the asymmetry is not mistaken for design:
+# when NEITHER tool emits endLine there is no range, so containment adds
+# NOTHING. On OWASP, SpotBugs emitted a range on 0 of 3,268 class-resolved
+# findings — every gain came from semgrep's ranges. This is the default.
+noranges = ingest(sarif("ToolA", [res("CWE-89", "src/A.java", 10, "sqli CWE-89")]),
+                  sarif("ToolB", [res("CWE-89", "src/A.java", 14, "sqli CWE-89")]))
+check(max(f["n_tools"] for f in noranges["ranked"]) == 1,
+      "NEITHER tool emits endLine -> containment adds nothing (the common case)")
+
+# One side declares a range that contains the other's point -> merge.
+contained = ingest(sarif("ToolA", [res_range("CWE-89", "src/A.java", 10, 20, "sqli CWE-89")]),
+                   sarif("ToolB", [res("CWE-89", "src/A.java", 14, "sqli CWE-89")]))
+check(max(f["n_tools"] for f in contained["ranked"]) == 2,
+      "point inside a declared range merges")
+check("range-containment" in contained.get("merges_by_rule", {}),
+      "the merge is REPORTED as range-containment, not exact-line",
+      str(contained.get("merges_by_rule")))
+
+# Exact-line merges must still be labelled as such, so the two populations
+# stay separable for future measurement.
+ex = ingest(sarif("ToolA", [res("CWE-89", "src/A.java", 10, "sqli CWE-89")]),
+            sarif("ToolB", [res("CWE-89", "src/A.java", 10, "sqli CWE-89")]))
+check(ex.get("merges_by_rule", {}).get("exact-line") == 1
+      and "range-containment" not in ex.get("merges_by_rule", {}),
+      "exact-line merges are labelled separately", str(ex.get("merges_by_rule")))
+
+# SPAN CAP: a range wider than the cap is a tolerance window with extra steps.
+wide = ingest(sarif("ToolA", [res_range("CWE-89", "src/A.java", 10, 400, "sqli CWE-89")]),
+              sarif("ToolB", [res("CWE-89", "src/A.java", 300, "sqli CWE-89")]))
+check(max(f["n_tools"] for f in wide["ranked"]) == 1,
+      f"a range wider than the cap ({audit._RANGE_SPAN_CAP}) does NOT merge")
+edge = ingest(sarif("ToolA", [res_range("CWE-89", "src/A.java", 10,
+                                        10 + audit._RANGE_SPAN_CAP, "sqli CWE-89")]),
+              sarif("ToolB", [res("CWE-89", "src/A.java", 15, "sqli CWE-89")]))
+check(max(f["n_tools"] for f in edge["ranked"]) == 2, "a range AT the cap still merges")
+
+# CONTAINMENT RELAXES LOCATION ONLY — the class test is untouched.
+diffcls = ingest(sarif("ToolA", [res_range("CWE-89", "src/A.java", 10, 20, "sqli CWE-89")]),
+                 sarif("ToolB", [res("CWE-79", "src/A.java", 14, "xss CWE-79")]))
+check(max(f["n_tools"] for f in diffcls["ranked"]) == 1,
+      "containment does NOT relax the same-class requirement")
+
+# Same engine must still not self-merge via a range.
+sameeng = ingest(sarif("SpotBugs", [res_range("CWE-89", "src/A.java", 10, 20, "sqli CWE-89")]),
+                 sarif("FindBugs", [res("CWE-89", "src/A.java", 14, "sqli CWE-89")]))
+check(max(f["n_tools"] for f in sameeng["ranked"]) == 1,
+      "containment does NOT bypass the engine-lineage guard")
+
+# ── 14. Determinism and order-independence ──────────────────────────────────
 a1 = audit.ingest_sarif([FF, CC])
 a2 = audit.ingest_sarif([CC, FF])
 strip = lambda a: [(r["score"], r["uri"], r["line"], r["ruleId"], r["n_tools"])

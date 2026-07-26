@@ -23,6 +23,7 @@ Usage:
   --run-tests = ALSO execute the project's test command (runs author-chosen code; opt-in).
 """
 import sys, os, re, json, subprocess, posixpath, urllib.parse
+from collections import Counter
 
 # Tool-quality weighting for the ingest consensus term (restricted-2b).
 # Graceful degradation (charter F-EXT8): if the module is absent, fall back to
@@ -880,6 +881,20 @@ def _path_root_mismatch(tool_paths):
                 f"(e.g. `src/main/java`), or post-process one tool's SARIF.")
     return out
 
+
+# Maximum range span (endLine - startLine) that may participate in point-in-range
+# containment. DERIVED FROM THE MEASURED DISTRIBUTION, not chosen round:
+#   OWASP  442 ranged findings — producing spans max 16, available-range p99 16
+#   Struts   3 ranged findings — the one VERIFIED true match spans 21; the other
+#            two are SpotBugs ranges of 463 and 524 lines, i.e. whole methods
+# 21 is the largest span observed to produce a VERIFIED same-bug match. Coverage
+# cost of the cap: OWASP 442/442 available ranges kept (0 lost, all 427 matches
+# retained); Struts 1/3 kept — the 2 excluded are the 463/524-line ranges, which
+# are exactly the "wide method swallows an unrelated finding" failure mode.
+# Revisit when a corpus exists where BOTH tools emit ranges; this value rests on
+# a single verified observation at its upper end.
+_RANGE_SPAN_CAP = 21
+
 def _fingerprint_value(res):
     """The tool's own stable identity for a result, or None."""
     for field in ("partialFingerprints", "fingerprints"):
@@ -1077,7 +1092,9 @@ def ingest_sarif(paths):
                 key = (tool, _result_key(res, tool, degenerate_fps))
                 loc = (((res.get("locations") or [{}])[0].get("physicalLocation") or {}))
                 uri = _norm_uri((loc.get("artifactLocation") or {}).get("uri", ""))
-                line = (loc.get("region") or {}).get("startLine", 1)
+                _reg = loc.get("region") or {}
+                line = _reg.get("startLine", 1)
+                end_line = _reg.get("endLine") or line
                 rid = res.get("ruleId", "?")
                 lvl = (res.get("level") or "warning").lower()
                 msg = ((res.get("message") or {}).get("text") or "")
@@ -1086,8 +1103,11 @@ def ingest_sarif(paths):
                     rec = {"key": key, "ruleId": rid, "uri": uri, "line": line,
                            "message": msg, "level": lvl, "tools": set(),
                            "levels": set(), "rulemeta": "", "all_rule_ids": set(),
-                           "all_msgs": {}, "taxa_cwes": []}
+                           "all_msgs": {}, "taxa_cwes": [],
+                           "end_line": end_line, "merge_rules": set()}
                     findings[key] = rec
+                if isinstance(end_line, int) and isinstance(rec.get("end_line"), int):
+                    rec["end_line"] = max(rec["end_line"], end_line)
                 rec["tools"].add(tool)
                 rec["levels"].add(lvl)
                 rec["all_rule_ids"].add(rid)
@@ -1131,7 +1151,7 @@ def ingest_sarif(paths):
 
     by_key = {}
     for i, rec in enumerate(recs):
-        for ck in _cross_keys(rec):
+        for ck in _cross_keys(rec):      # also resolves rec["cwe_class"]
             by_key.setdefault(ck, []).append(i)
     for ck in sorted(by_key):
         idxs = by_key[ck]
@@ -1152,7 +1172,50 @@ def ingest_sarif(paths):
             if suppressed and any(frozenset((x, y)) in suppressed
                                   for x in la for y in lb):
                 continue
+            recs[a]["merge_rules"].add("exact-line")
+            recs[b]["merge_rules"].add("exact-line")
             _union(a, b)
+
+    # ── PHASE 2b — POINT-IN-RANGE containment (Direction B) ─────────────────
+    # When one tool reports a RANGE (startLine..endLine) and another reports a
+    # POINT inside it, treat as co-located. Principled where a fixed tolerance
+    # window is not: the boundary is one the TOOL declared, not one we invented.
+    # Evaluated against a pre-registered rule before adoption (VALIDATION.md
+    # "DIRECTION B RESULT"): +427 matches on OWASP (36.9%), 100% same-bug by the
+    # answer key, median producing span 2 lines, order-independent.
+    #
+    # RELAXES THE LOCATION TEST ONLY. Same CWE class is still required, and so
+    # is different engine lineage — containment is not a licence to merge
+    # different kinds of finding that happen to sit near each other.
+    for i, a_rec in enumerate(recs):
+        a_end = a_rec.get("end_line")
+        a_start = a_rec.get("line")
+        if not (isinstance(a_end, int) and isinstance(a_start, int)):
+            continue
+        span = a_end - a_start
+        # A range wider than the cap is a tolerance window with extra steps.
+        if span <= 0 or span > _RANGE_SPAN_CAP:
+            continue
+        a_cls = a_rec.get("cwe_class")
+        if not a_cls:
+            continue
+        for j, b_rec in enumerate(recs):
+            if i == j:
+                continue
+            b_start = b_rec.get("line")
+            if not isinstance(b_start, int) or not (a_start <= b_start <= a_end):
+                continue
+            if b_rec.get("uri") != a_rec.get("uri") or b_rec.get("cwe_class") != a_cls:
+                continue
+            la, lb = _lineages(a_rec), _lineages(b_rec)
+            if la & lb:
+                continue
+            if suppressed and any(frozenset((x, y)) in suppressed
+                                  for x in la for y in lb):
+                continue
+            a_rec["merge_rules"].add("range-containment")
+            b_rec["merge_rules"].add("range-containment")
+            _union(i, j)
 
     groups = {}
     for i in range(len(recs)):
@@ -1172,6 +1235,7 @@ def ingest_sarif(paths):
                 base["rulemeta"] = m["rulemeta"]
             if m.get("taxa_cwes") and not base.get("taxa_cwes"):
                 base["taxa_cwes"] = m["taxa_cwes"]
+            base["merge_rules"] |= m.get("merge_rules") or set()
         merged[base["key"]] = base
     findings = merged
 
@@ -1267,6 +1331,9 @@ def ingest_sarif(paths):
         # the work: same-tool (fingerprint) vs cross-tool (location + CWE class).
         "same_tool_deduplicated_count": same_tool_count,
         "cross_tool_merges": same_tool_count - len(findings),
+        "merges_by_rule": dict(sorted(Counter(
+            rule for r in findings.values() if r["n_tools"] > 1
+            for rule in (r.get("merge_rules") or ["?"])).items())),
         "deduplicated_count": len(findings),
         "ranking_basis": "review-worthiness (location + diversity-aware consensus + "
                          "severity + kind). NOT exploitability — no external threat feeds.",
@@ -1278,6 +1345,11 @@ def ingest_sarif(paths):
                     # the CWE class actually used for cross-tool matching —
                     # exposed so audits read what ingest used, not a recompute
                     "cwe_class": r.get("cwe_class"),
+                    # WHICH RULE produced this merge. A range-containment merge
+                    # is WEAKER evidence than an exact-line one; keeping them
+                    # distinguishable lets the two populations be measured
+                    # separately rather than inherited pooled.
+                    "merge_rules": sorted(r.get("merge_rules") or ()),
                     "message": r["message"]} for i, r in enumerate(ranked)],
     }
 

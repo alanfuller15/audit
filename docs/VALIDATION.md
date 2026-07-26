@@ -2311,3 +2311,60 @@ acquisition freeze with it.**
   rate claim.
 - SpotBugs contributing zero ranges means this is really a measurement of ONE
   tool's range emission. A different pair could behave entirely differently.
+
+## DIRECTION B IMPLEMENTED (2026-07-26) — phase 2b, point-in-range containment
+
+Adopted after the pre-registered evaluation passed all four criteria. Relaxes
+the LOCATION test only.
+
+### What changed
+- Phase 2b runs after the exact-key unions: where one record declares a RANGE
+  (`endLine > startLine`) and another's `startLine` falls inside it, they union.
+- **Same CWE class is still required**; so is different engine lineage, and the
+  0a suppression still applies. Containment is not a licence to merge different
+  kinds of finding that sit near each other.
+- **`_RANGE_SPAN_CAP = 21`**, derived from the measured distribution rather than
+  chosen round: OWASP's 442 ranged findings have producing spans maxing at 16
+  and an available-range p99 of 16; Struts' one VERIFIED true match spans 21,
+  while its other two ranges are SpotBugs method-wide spans of **463 and 524
+  lines** — the exact "wide method swallows an unrelated finding" failure mode.
+  21 is the largest span observed to produce a verified same-bug match.
+  **Coverage cost of the cap:** OWASP loses 0 of 442 ranges and retains all 427
+  matches; Struts keeps 1 of 3, the 2 excluded being the 463/524-line ranges.
+- Output gains `merge_rules` per finding and `merges_by_rule` per run, so
+  range-derived merges stay distinguishable from exact-line ones.
+
+### Effect
+```
+OWASP    1,156 -> 1,584 merges   by rule: exact-line 1,156 · range-containment 351
+Struts       0 ->     2 merges   by rule: range-containment (the recovered near-miss)
+zlib         2 ->     2 merges   by rule: exact-line only — NO regression
+```
+
+### TWO BOUNDS, both load-bearing
+
+**1. The yield figure measures ONE TOOL'S RANGE EMISSION, not point-in-range
+matching in general.** SpotBugs contributed **zero** ranges among class-resolved
+findings on OWASP (0 of 3,268). Every gain came from semgrep's ranges containing
+SpotBugs' points. A different pair could yield nothing, or behave differently
+again. The 36.9% is not a property of the technique; it is a property of semgrep
+emitting `endLine` and SpotBugs not.
+
+**2. THE 100% SAME-BUG RATE CANNOT DETECT THE FAILURE MODE THIS CHANGE
+INTRODUCES.** It was computed against an answer key that labels ONE bug per
+file, so "new match's class == planted category" cannot distinguish a correct
+pairing from **two genuine, different, same-class findings in one file being
+merged**. On generated single-vulnerability files that is unlikely. On real code
+— multiple real issues per file, deeper methods — it is plausible, and it is
+**exactly the false-merge mode point-in-range containment creates**: a declared
+range now legitimately contains points that exact matching kept apart.
+
+>>> CHECK THIS FIRST on the first real-code corpus where BOTH tools emit ranges.
+>>> Until then the false-merge rate of phase 2b on real code is UNMEASURED, and
+>>> the 100% figure must not be quoted as if it covered it.
+
+### What this does NOT change
+Phase 2b recovers line-jitter (median producing span 2 lines) and, in one
+observed case, a short source-to-sink gap. It does NOT address cross-function
+source/sink separation, because neither tool emits a range spanning functions.
+**HANDOFF §6.2 stands, and the acquisition freeze with it.**
