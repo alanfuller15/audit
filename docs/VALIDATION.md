@@ -910,3 +910,109 @@ adding scanners is the wrong lever to pull first.
 Tier: `[self-tested]` analysis over `[externally-grounded]` data — three real
 scanners on real zlib. One library, and CodeQL untested. Not generalizable as
 a rate.
+
+## CORRECTION to the three-tool conclusion — the cascade reverses it (2026-07-26)
+
+The previous section concluded "class resolution, not tool selection, is the
+dominant term," from cppcheck's 521/543 unresolved. **That was the denominator
+error this project has now made twice**: it counted `_CWE_DENY` rejections as a
+coverage gap, i.e. charged the filter working correctly as a defect. Applying
+the D0/D1/D2 cascade:
+
+```
+cppcheck        D0=543   D1(analysis-valid)=337   [206 diagnostics excluded]
+  DENIED (filter working correctly)   288   85.5% of D1   CWE-398 x235, 563 x41
+  U2 CWE present but UNMAPPED          23    6.8%
+  RESOLVED (mapped)                    22    6.5%
+  U1 no CWE emitted                     4    1.2%
+
+semgrep         D0=D1=33
+  U2 UNMAPPED                          31   93.9%   ALL CWE-676
+  RESOLVED                              2    6.1%
+
+flawfinder      D0=D1=588
+  RESOLVED                            502   85.4%
+  U2 UNMAPPED                          86   14.6%   CWE-362 x130, CWE-20 x40
+```
+
+**The denied bucket dominates cppcheck (85.5% of D1).** cppcheck on zlib emits
+overwhelmingly style/quality findings — CWE-398 "poor code quality" 235 times —
+which we reject correctly. Among genuinely triage-relevant cppcheck findings
+(D1 minus denied = 49), 22 resolve, 23 are U2, 4 are U1. That is a real but
+SMALL gap: 23 findings, not 521.
+
+**So class resolution is NOT the binding constraint, and item 3's promotion on
+that basis was wrong.** The original conclusion stands: the two tools have
+genuinely anti-correlated coverage. cppcheck's 22 resolved findings are
+null 14 / uninit 5 / int 2 / leak 1; flawfinder's 502 are fmt / buf / int. The
+classes barely intersect because the tools look for different things.
+
+### semgrep's U2 is NOT an argument for map extension
+All 31 are **CWE-676, "use of a potentially dangerous function"** — semgrep's
+rules for `strcpy`, `scanf`, `strcat`, `system`. flawfinder flags those same
+call sites as CWE-120 (buf) and CWE-134 (fmt). Mapping 676 to any single class
+would merge buffer, format-string and command-injection findings together —
+manufacturing exactly the false merges the asymmetric-error-cost rule forbids.
+**CWE-676 is a deny-list candidate, not a map candidate.** Same reasoning as
+664/758.
+
+Likewise flawfinder's CWE-362 (race, 130) and CWE-20 (improper input
+validation, 40) are broad parents; neither is a safe map candidate without
+frequency evidence that two tools use them compatibly.
+
+Net: on this evidence, the conservative map is close to correct as-is, and map
+extension is NOT the high-value lever it appeared to be an hour ago.
+
+## Where the 2 merges actually landed — and a heuristic gap
+Both merges are in `zlib-1.3.1/contrib/testzlib/testzlib.c`, a benchmark/test
+harness. Checked against the tool's own noise heuristics:
+
+```
+zlib-1.3.1/contrib/testzlib/testzlib.c   FIXTURE=False  TEST=False  packaging=False
+```
+
+`TEST_DIR` requires a path segment matching exactly `tests?`; `testzlib` does
+not match. So the tool does NOT down-weight these, and the 0.18% rate is not
+secretly zero by the tool's own accounting.
+
+But by human reading it is test code, and there were **zero merges anywhere in
+zlib's actual library sources**. Two consequences:
+1. The starker statement is true: 0 cross-tool merges in library code on zlib.
+2. `TEST_DIR` misses `testzlib`-style sibling names (`testfoo/`, `benchmark/`,
+   `contrib/test*/`). Minor, separate from consensus, worth a look.
+
+## contextHash data loss vs ROC-AUC 0.755 — the check, and its bound
+Question: does the flawfinder `contextHash/v1` collision (and its fix) affect
+the 0.755 result?
+
+**ARTIFACT NOT AVAILABLE.** The reconstructed Lipp SARIF is not on this machine
+(searched). This was NOT settled by opening it — stating that plainly rather
+than asserting a check that did not happen (Rule 10.2).
+
+What IS verifiable in-session, and is decisive for the degeneracy fix:
+- `_fingerprint_value` returns None for a fingerprint-free result;
+  `_degenerate_fingerprints` returns the empty set for a fingerprint-free
+  corpus; `_result_key` then returns the identical `rk:` key with or without the
+  degeneracy argument. **On fingerprint-free input the degeneracy fix cannot
+  change any key.** Demonstrated.
+- The Lipp envelope was necessarily fingerprint-free on merged findings: under
+  the OLD code a cross-tool merge required BOTH sides to take the `rk:` branch,
+  which only happens absent fingerprints. 1,318 cross-tool overlaps were
+  recovered, so those findings carried no fingerprints.
+
+Conclusion: **the contextHash defect and its fix do not touch ROC-AUC 0.755.**
+Tier: deductive from the code plus the recorded 1,318 figure — NOT an inspection
+of the artifact.
+
+### SEPARATE AND MORE SERIOUS — the rest of the item-2 fix MAY move 1,318
+The degeneracy fix is a no-op there, but the OTHER item-2 changes are not:
+cross-tool keying on location+CWE-class, real `_norm_uri` normalization, and the
++8 map entries can only ADD merges. Re-running the Lipp ingest under the new
+code may therefore no longer reproduce **1,318** — and that exact-match
+cross-check is one of this project's load-bearing validation anchors.
+
+This is not a defect; it is expected, since the point of the fix was to enable
+merges that could not previously happen. But the anchor must be RE-ESTABLISHED
+rather than assumed to still hold. Until the Lipp data is re-obtained and
+re-ingested, treat "dedup 22,403→21,061, overlaps 1,318 exact" as a result of
+the PRE-FIX code, not a current property. Added to HANDOFF pending work.

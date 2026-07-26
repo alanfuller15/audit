@@ -274,20 +274,58 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    silently inflates n_tools, the signal the whole tool rests on.
    Check types are not finding frequency; weight by observed findings.
 
-3. [Mac, small — NOW THE HIGHEST-VALUE ITEM] RE-MEASURE. TWO distinct questions,
-   both in docs/SPEC_item4_groupability_measurement.md. Item 2 is DONE.
-   PROMOTED by the 2026-07-26 three-tool test: class RESOLUTION, not tool
-   selection, is the dominant term. On zlib, 96% of cppcheck findings and 94% of
-   semgrep findings resolve to NO class, so most co-locations can never be
-   evaluated for agreement at all. cppcheck vs flawfinder: 43 co-located, 11
-   class-resolved on both sides, 0 matching. Adding a third tool yielded 2
-   merges in 1,131 findings (0.18%) — and both were flawfinder+semgrep agreeing
-   a printf is a printf, i.e. two pattern-matchers, the CORRELATED case that
-   carries least signal. Splitting the unresolved bulk into U1 (no CWE emitted —
-   not fixable by us) vs U2 (CWE present but unmapped — fixable) vs correctly
-   denied is now the single most valuable measurement in the project.
+3. [Mac, small] RE-MEASURE. TWO distinct questions, both in
+   docs/SPEC_item4_groupability_measurement.md. Item 2 is DONE.
+   NOT PROMOTED — an earlier promotion of this item was WITHDRAWN. It rested on
+   "96% of cppcheck findings resolve to no class," which counted _CWE_DENY
+   rejections as a coverage gap: the same denominator error corrected twice
+   before. Cascade on zlib: cppcheck D0=543 -> D1=337 (206 diagnostics), of
+   which DENIED 288 (85.5%), U2 23 (6.8%), RESOLVED 22, U1 4. The denied bucket
+   DOMINATES. The real map gap is 23 findings, not 521, and map extension is NOT
+   the high-value lever it briefly appeared to be.
+   Also settled: semgrep's 31 U2 are ALL CWE-676 ("potentially dangerous
+   function") covering strcpy/scanf/strcat/system — mapping it to one class
+   would merge buf+fmt+cmdi and manufacture false merges. CWE-676 is a
+   DENY candidate, not a map candidate; same for flawfinder's CWE-362/CWE-20.
+   The conservative map is close to correct as-is.
+   Standing conclusion: the tools have genuinely ANTI-CORRELATED coverage
+   (cppcheck resolved = null/uninit/int/leak; flawfinder = fmt/buf/int).
    CodeQL remains UNTESTED: codeql 2.26.0 ships an osx64 tracer only, this Mac
    is arm64, Rosetta absent. Needs `softwareupdate --install-rosetta`.
+
+3b. [Mac, small — INDEPENDENT OF CONSENSUS, affects EVERY user] flawfinder
+   contextHash/v1 data loss. FIXED 2026-07-26, but recorded as its own item
+   because it is not a consensus issue: it silently destroyed findings on every
+   real flawfinder run this tool has ever processed. contextHash hashes
+   surrounding source, so identical C idioms at different locations collide —
+   on zlib 588 raw collapsed to 484 where 582 is correct, ~17% destroyed with
+   no warning. Single-tool users who never cared about the headline signal were
+   affected. Companion defect: semgrep OSS unauthenticated emits the constant
+   "matchBasedId/v1":"requires login" on every result (33 -> 1 on zlib).
+   Fix: degeneracy detected from the data (one (tool,fingerprint) at >1 distinct
+   location is not an identity -> fall back to location key). Regression-tested.
+   CHECKED vs ROC-AUC 0.755: does NOT affect it. Demonstrated that on
+   fingerprint-free input _degenerate_fingerprints returns empty and the key is
+   byte-identical; and the Lipp envelope was necessarily fingerprint-free on
+   merged findings, since under the OLD code a cross-tool merge required both
+   sides to take the rk: branch. BOUND: deductive, NOT an inspection — the Lipp
+   artifact is not on this machine.
+   REMAINING TASK: audit any newly-supported tool for BOTH fingerprint failure
+   modes (constant placeholder; context-collision). Two of three real scanners
+   tested violate the "fingerprint is an identity" assumption.
+
+3c. [Mac, small] RE-ESTABLISH the 1,318 anchor. The item-2 cross-tool key,
+   _norm_uri normalization and +8 map entries can only ADD merges, so re-running
+   the Lipp ingest under current code may no longer reproduce
+   "22,403 -> 21,061 dedup, 1,318 overlaps exact". That exact-match cross-check
+   is a load-bearing validation anchor. Expected, not a defect — but until the
+   Lipp data is re-obtained and re-ingested, treat those figures as a property
+   of the PRE-FIX code, not a current one.
+
+3d. [trivial] TEST_DIR misses sibling names. `contrib/testzlib/testzlib.c` is
+   benchmark code but TEST_DIR requires a segment matching exactly `tests?`, so
+   it is not down-weighted. Consider `test*`/`benchmark`. Both zlib merges
+   landed there; there were ZERO merges in zlib's actual library sources.
    (a) GROUPABILITY (§1-6, pre-registered): denominator cascade D0/D1/D2,
        decision rule, project set — i.e. how often the badge fires, given a
        settled map.
