@@ -1016,3 +1016,50 @@ merges that could not previously happen. But the anchor must be RE-ESTABLISHED
 rather than assumed to still hold. Until the Lipp data is re-obtained and
 re-ingested, treat "dedup 22,403→21,061, overlaps 1,318 exact" as a result of
 the PRE-FIX code, not a current property. Added to HANDOFF pending work.
+
+## ROC-AUC 0.755 IS UNANCHORED TO ANY SHIPPED CONFIGURATION (2026-07-26)
+
+Larger consequence of the item-2 fix than the 1,318 dedup cross-check, and not
+previously recorded.
+
+### The chain
+0.755 was produced by ranking the Lipp envelope with PRE-FIX code. The fix
+changes `n_tools`; `n_tools` feeds the score directly
+(`consensus = 1.6 * n_tools`, `score = consensus + severity + kind - noise`);
+and the 0.755 measurement WAS a ranking by agreeing-tool count at file level.
+So the fix changes the very quantity the number measured, over that same input.
+
+**0.755 is a property of retired code.** It described a path that could not
+merge. It does not describe the one that can.
+
+### What must NOT be said
+The obvious reading is that it should be BETTER post-fix — more genuine merges
+ought to sharpen the consensus term. That is plausible and it is exactly the
+kind of unmeasured assertion this project does not make. It is not recorded as
+a expectation, a prior, or a likelihood. It is unmeasured.
+
+### The tension with the sequencing argument — both are true
+VALIDATION.md's sequencing argument (2026-07-26) says the fix moves the shipped
+configuration TOWARD the validated one. BOUND 2 then warned that direction is
+not a transfer guarantee. Neither anticipated this:
+
+> The fix moves shipped toward validated in MECHANISM, and away from it in
+> OUTPUT. The change justified by a measurement invalidates that measurement.
+
+Both statements hold simultaneously. The mechanism argument is about the shipped
+path becoming able to merge, as the validated path could. The output problem is
+that the validated NUMBER was computed under the old mechanism, so it no longer
+describes either path. A later session will meet these together and must not
+resolve the tension by discarding one — the resolution is to re-measure, not to
+pick whichever framing is convenient.
+
+### Practical consequence — this is now a prerequisite, not a nice-to-have
+Re-earning 0.755 on the Lipp data under CURRENT code is a precondition for
+quoting the number at all. Until then it may not be cited as a property of the
+shipped tool, in the README or anywhere else.
+
+That makes **re-obtaining the Lipp artifact the gating dependency for the README
+decision** (HANDOFF §7 item 1), which has now been held three times: first
+pending the fix, then pending the three-tool result, now pending re-measurement.
+The decision must not be re-opened without the artifact — every prior attempt to
+settle it has been overturned by evidence that arrived afterwards.

@@ -213,9 +213,23 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    where independent tools agree"), quickstart step 2's name ("re-rank by
    consensus"), and the named flawfinder+cppcheck pair together promise an
    experience the default cannot deliver.
-   RECOMMENDATION: do NOT edit the README now. Fix _result_key (item 2) and the
-   claims become true as written. Editing first documents a limitation about to
-   be removed. Revisit only if the fix is deferred.
+   BLOCKED ON ITEM 3c — DO NOT RE-OPEN WITHOUT THE LIPP ARTIFACT.
+   This decision has now been held THREE times, and each prior attempt to settle
+   it was overturned by evidence arriving afterwards:
+     1. "Don't edit, the fix makes the claims true" — overturned: the fix
+        produced ZERO merges on real zlib.
+     2. "Maybe add a tool to the quickstart" — overturned: a third tool yielded
+        2 merges in 1,131 findings, both between the two most similar tools, in
+        test code, and none in library sources.
+     3. Current state — the README quotes ROC-AUC 0.755, and that number is now
+        UNANCHORED (item 3c(b)): it was measured under pre-fix code whose
+        n_tools behaviour the fix changed. It may not be quoted as a property of
+        the shipped tool until re-earned.
+   So what the README owes CANNOT be settled by argument. It needs the
+   re-measurement. Re-obtaining the Lipp artifact is the gating dependency.
+   [superseded] An earlier recommendation here read "do NOT edit the README now;
+   fix _result_key and the claims become true as written." That did not survive
+   the zlib evidence and is retained only to stop it being re-derived.
    WITHDRAWN: an earlier entry here claimed README L6 redirects cppcheck's SARIF
    from the wrong stream, "PUBLIC and LIVE." The stream observation is true and
    the line exists in the STALE LOCAL copy; the PUBLIC README uses the correct
@@ -314,13 +328,27 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    modes (constant placeholder; context-collision). Two of three real scanners
    tested violate the "fingerprint is an identity" assumption.
 
-3c. [Mac, small] RE-ESTABLISH the 1,318 anchor. The item-2 cross-tool key,
-   _norm_uri normalization and +8 map entries can only ADD merges, so re-running
-   the Lipp ingest under current code may no longer reproduce
-   "22,403 -> 21,061 dedup, 1,318 overlaps exact". That exact-match cross-check
-   is a load-bearing validation anchor. Expected, not a defect — but until the
-   Lipp data is re-obtained and re-ingested, treat those figures as a property
-   of the PRE-FIX code, not a current one.
+3c. [Mac — GATING DEPENDENCY, blocks item 1] RE-EARN the Lipp numbers under
+   current code. Requires re-obtaining the Lipp artifact (Zenodo DOI
+   10.5281/zenodo.6515687; not on this machine — searched 2026-07-26).
+   (a) The 1,318 dedup cross-check. The item-2 cross-tool key, _norm_uri
+       normalization and +8 map entries can only ADD merges, so
+       "22,403 -> 21,061 dedup, 1,318 overlaps exact" may no longer reproduce.
+   (b) THE LARGER ONE — ROC-AUC 0.755 IS UNANCHORED. It was produced by ranking
+       the Lipp envelope with PRE-FIX code. The fix changes n_tools; n_tools
+       feeds the score (consensus = 1.6 * n_tools); and 0.755 WAS a ranking by
+       agreeing-tool count. The fix therefore changes the quantity the number
+       measured, over that same input. 0.755 is a property of RETIRED code — it
+       described a path that could not merge, not the one that can.
+       DO NOT assert it is "probably better" post-fix. That is plausible and
+       unmeasured, and this project does not make unmeasured assertions.
+       Until re-earned, 0.755 MUST NOT be quoted as a property of the shipped
+       tool — not in the README, not anywhere.
+   TENSION TO EXPECT, both true at once: the fix moves shipped toward validated
+   in MECHANISM and away from it in OUTPUT. The change justified by a
+   measurement invalidated that measurement. VALIDATION.md BOUND 2 anticipated
+   the transfer question but not this self-invalidation. Resolve by
+   re-measuring, NOT by discarding whichever framing is inconvenient.
 
 3d. [trivial] TEST_DIR misses sibling names. `contrib/testzlib/testzlib.c` is
    benchmark code but TEST_DIR requires a segment matching exactly `tests?`, so
