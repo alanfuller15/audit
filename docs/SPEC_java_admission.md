@@ -347,6 +347,59 @@ there; treat the noisy categories with suspicion.
 
 ---
 
+## 6a. OWASP Benchmark v1.2 — GOOD for 7a, NOT VALID for A4 (recorded 2026-07-26)
+
+Fetched and inventoried: 2,740 test cases, 2,766 `.java` files, 283,895 LOC,
+1,415 real vulns / 1,325 planted false positives, 11 categories, GPL-2.0.
+Answer key `expectedresults-1.2.csv` is keyed by test name and maps **1:1 to
+files** (verified: 2,740 = 2,740, zero orphans either direction).
+
+### GOOD for 7a — the false-merge audit
+9 of its 11 CWEs hit the classes added 2026-07-26, covering **2,547 of 2,740
+cases (93%)**:
+
+```
+22 pathtraver 268 -> path     78 cmdi  251 -> cmdi     79 xss  455 -> xss
+89 sqli       504 -> sqli     90 ldapi  59 -> ldapi    327 crypto 246 -> crypto
+328 hash      236 -> hash    330 weakrand 493 -> random  643 xpathi 35 -> xpathi
+501 trustbound 126 -> unmapped        614 securecookie 67 -> unmapped
+```
+
+This is the opposite of the zlib situation, where only 1 of 23 added CWEs
+appeared and the check was therefore inert. Here the classes are genuinely
+exercised, AND the per-file labels let a suspected false merge be checked
+against ground truth rather than argued about. **This is the right corpus for
+7a.**
+
+Incidental support for a design choice: `crypto` (246) and `hash` (236) appear
+as SEPARATE labelled categories, which is direct evidence for having kept those
+classes apart rather than merging them.
+
+### NOT VALID for A4 — the corpus is synthetic
+A4 asks for a MEASURED merge rate that says something about real Java. OWASP
+Benchmark cannot answer that:
+
+- It is **synthetic**, and this project has already REJECTED synthetic corpora
+  for exactly this purpose — HANDOFF records Juliet being studied and rejected
+  because "forcing a result there validates nothing."
+- It **deliberately plants plausible fakes** in the scary categories to defeat
+  shortcut learning (VALIDATION.md 2026-07-08, `[fetched]`). Its own scoring
+  averages per-category on purpose.
+- Its 2,740 cases are **structurally uniform** — one vulnerability per file, in
+  a generated shape. Tool agreement on uniform generated code is not evidence
+  about agreement on real code, where the earlier finding was that scanners
+  disagree because they look for genuinely different things.
+
+RULES for any A4-shaped number produced here:
+1. Record it as **corpus-specific**. It is a property of OWASP Benchmark, not of
+   Java.
+2. **Do NOT compare it to zlib's 2-in-1,164.** Different language, different
+   code, different corpus TYPE — synthetic vs real. The two are not
+   commensurable and setting them side by side would invite exactly the false
+   inference this rule exists to prevent.
+3. A real-Java A4 needs a **real Java project**. This corpus does not substitute
+   for one, however convenient its labels are.
+
 ## 7. What would move Java from unproven to validated, and at what tier
 
 Ordered; each depends on the previous.

@@ -1427,3 +1427,65 @@ BOUND: the reconstruction gave 0.745 vs 0.755 and PofB 0.495 vs 0.655, so the
 exact universe/labelling differs from the original. Consensus AUC ranged
 0.735-0.815 across nine plausible universe definitions and 0.755 sits inside,
 but this is a close reproduction, not an exact one.
+
+## Java class-resolution pass — semgrep on OWASP Benchmark v1.2 (2026-07-26)
+
+First real Java scanner output this project has ingested. Single tool, so this
+is a RESOLUTION test, not a merge test. `semgrep 1.171.0 --config=p/java` over
+2,766 files / 283,895 LOC -> 1,909 findings from 60 rules.
+
+### The 15 Java classes DO fire, and resolution is near-total
+```
+resolved to a class : 1,848 / 1,909  (97%)
+  via RESULT TEXT   :     0
+  via RULE METADATA : 1,848
+unresolved          :    61   (all one rule: tainted-session-from-http-request)
+```
+
+**The rule-metadata fix accounts for 100% of Java resolution.** Without it this
+corpus would have resolved 0 of 1,909. That fix was written and verified against
+semgrep's C rules; this is an independent confirmation on a completely different
+rule set, where it turns out to be not merely helpful but load-bearing.
+
+### Class distribution, and which classes are silent
+```
+xss 456 · sqli 388 · crypto 301 · path 288 · cmdi 221 · hash 113 · ldapi 54 · xpathi 27
+
+fire   (8/15): cmdi, crypto, hash, ldapi, path, sqli, xpathi, xss
+silent (7/15): creds, csrf, deser, random, redirect, ssrf, xxe
+```
+
+`random` is silent despite **493 planted weakrand cases** — because semgrep
+`p/java` produced ZERO findings in that category (and zero in securecookie).
+The class is not wrong; the ruleset has no rule for it. The other six silent
+classes have no corresponding category in this benchmark at all.
+
+### The class assignments match ground truth exactly
+```
+labelled cases with >=1 resolved class : 1,511
+  planted class present in resolved set: 1,511
+  planted class ABSENT                 :     0
+```
+
+Zero mismatches. Where semgrep resolves a class on a labelled case, our map
+never disagreed with the planted CWE. That is real evidence the Java class
+assignments are drawn correctly — on ground truth, not by argument.
+
+### Multi-class cases — the false-merge risk sites, identified not resolved
+56 labelled files resolved to MORE than one class: `sqli + xss` (29) and
+`xpathi + xss` (27). These are file-level co-occurrences, not necessarily
+same-line, and are plausible for this benchmark (a test that both queries and
+echoes input has genuinely two sinks). **They are the places a cross-tool merge
+could go wrong, and a single tool cannot settle whether it would.** Carried into
+7a as the sites to check first once a second Java engine is available.
+
+### Scanner coverage is partial
+1,511 of 2,740 cases (55%) produced any semgrep finding. Two categories produced
+none at all: weakrand (0/493) and securecookie (0/67).
+
+### Tier and scope
+`[self-tested]` analysis over `[externally-grounded]` inputs — real semgrep on a
+real published benchmark with human labels. It establishes that the Java classes
+resolve and agree with ground truth. It does NOT establish a merge rate, a false
+merge rate, or anything about real (non-synthetic) Java. See §6a of
+SPEC_java_admission.md for why this corpus cannot serve A4.
