@@ -114,8 +114,8 @@ suffix-matching half of 0c is genuinely still open.
 
 ## AMENDMENTS ON REVIEW (inventor, 2026-07-26) — these define the APPLIED text
 
-The draft above was accepted with three changes. Both were corrections to the
-draft, and all three are recorded because they generalize.
+The draft above was accepted with three changes, all corrections to the
+draft, recorded because they generalize.
 
 ### Amendment 1 — carry the uncertainty as an INTERVAL, not a p-range
 
