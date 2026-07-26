@@ -133,6 +133,54 @@ Validated (see VALIDATION.md for full provenance + cross-checks):
   (1) no --help handler; (2) empty SARIF raised a false parse alarm;
   (3) --run-tests (same class) — root-caused: PROJECT_DIR now resolved as first
   non-flag arg. All verified across 5 invocation shapes; real ingest byte-stable.
+- Consensus RE-RANKING at FILE level: [externally-verified] (2026-07-11). Real
+  Lipp C/C++ CVE data, 9 projects, 2,559 files, 5 diverse SASTs, real
+  CVE-to-function ground truth. ROC-AUC 0.755 vs 0.596 best single tool vs 0.501
+  random; PofB@20% = 0.655; vulnerable-rate monotonic in agreement (1 tool 0.9%
+  -> 4 tools 11.6%). Corroborated by an independent study on the same data shape
+  (arXiv:2407.12241, ~17pp lift from tool combination). Leak sanity check passed
+  (no metric >0.85). Supersedes the older "[self-tested] ranking" row.
+
+Tested and REJECTED (do not re-attempt as pending work):
+- Tool-quality WEIGHTING layer. Tested on real data and it does NOT beat plain
+  tool-counting: tier-weighting ~even with flat consensus, and a separate
+  large-scale test (NASCAR, 1.08M Java warnings) found the locational-history
+  feature inert (PR-AUC 0.049 vs 0.035 random). Independently corroborated by
+  Kang et al. (hand-crafted features "inadequate" after a data-leak fix). Fine
+  per-tool weights do not transfer across projects; only a coarse tier prior
+  does. CONCLUSION: the tool's value is the SIMPLE consensus signal. This was
+  formerly PENDING item 2(b); it is closed by evidence, not deferred.
+- FUNCTION-level ranking. Out of scope: 0.9% base rate too sparse (consensus
+  ROC-AUC 0.628, IFA 130). The proven value is FILE-level triage only.
+
+## 6.1 STRUCTURAL DEFECT FOUND 2026-07-26 — the headline signal is inert in the
+##     shipped product. [self-tested], deductive from the code, verified on real
+##     scanner output. Full scoping: docs/SCOPE_shipped_consensus_defect.md
+
+The shipped action runs exactly flawfinder + cppcheck. That pair CANNOT produce
+n_tools>1 on ANY input:
+- real flawfinder emits `fingerprints: {"contextHash/v1": <sha256>}` on 6/6
+  results, so `_result_key` returns `fp:…` for every flawfinder finding;
+- cppcheck (both documented paths) emits none, so it returns `rk:…`;
+- an `fp:` key can never equal an `rk:` key. Not a sample property — a property
+  of the key construction.
+Independently sufficient second blocker: disjoint ruleId namespaces
+(flawfinder `FF1013` vs cppcheck `CWE-415` or a check name).
+Measured: `n_tools distribution: {1: 15}`, `ANY cross-tool merge: False`.
+
+WHAT THIS DOES AND DOES NOT MEAN:
+- It does NOT refute ROC-AUC 0.755. That number stands on its own data.
+- It IS a transfer gap: 0.755 was measured on reconstructed envelopes that DID
+  merge; the shipped config does not reproduce those conditions.
+- Root cause: `_result_key` uses DefectDojo's SAME-tool dedup algorithm as a
+  CROSS-tool consensus key. DefectDojo uses two algorithms to avoid exactly this.
+- The URI-mismatch blocker claimed earlier in this session was a harness
+  artifact and is WITHDRAWN — both tools emit the same relative path.
+
+Mitigating and worth knowing: the signal gate correctly reports
+`informative here = ['severity']` in this state — the tool discloses that
+consensus is not firing rather than silently pretending. The honesty machinery
+works; the configuration is what is wrong.
 
 Untestable with existing public data (do not waste effort re-attempting):
 - Per-finding PRECISION competence-rho of the confidence signal. The source
@@ -141,27 +189,91 @@ Untestable with existing public data (do not waste effort re-attempting):
   access limit. Reopen ONLY with self-run tools + manual per-finding labeling.
 
 ────────────────────────────────────────────────────────────────────────
-## 7. PENDING WORK (by leverage; highest first)
+## 7. PENDING WORK (REORDERED 2026-07-26 by a structural finding — read §6.1)
 
-1. [Mac, medium] Corrected LIVE-scanner pipeline on REAL code (NOT synthetic
-   Juliet — studied + rejected: Juliet is macro-guarded synthetic code the
-   source paper warns is non-representative; forcing a result there validates
-   nothing). Correct invocation, per fetched cppcheck docs:
-       cppcheck --enable=all --xml --output-file=report.xml <realcode>
-   then convert XML→SARIF (canonical pattern: Flast/cppcheck-sarif). Point at a
-   small REAL library. This closes the raw live-SARIF-parse path (the one part
-   of ingest still resting on a reconstructed envelope). Then re-ingest for a
-   real two-distinct-tool consensus instance.
-2. [sandbox] Two data-surfaced UPGRADES, specified in VALIDATION.md, not yet
-   coded: (a) cost-weighting consensus (report marginal-detection per marginal-
-   flag; diversity costs +12pp functions flagged for +15pp detection);
-   (b) tool-quality weighting (weight each tool's consensus contribution by its
-   standalone reliability — CommSCA alone beats 3-tool OSS combos; "good vs bad
-   diversity"). Both must be STUDIED (search ensemble/weighting literature)
-   before IMPLEMENT.
-3. [standing] Other specified-not-coded paths: scope+offset dedup hashing;
+THE FINDING THAT REORDERED THIS: the shipped flawfinder+cppcheck pair CANNOT
+produce n_tools>1 on any input. flawfinder emits `fingerprints` on every result
+so `_result_key` returns `fp:…`; cppcheck emits none so it returns `rk:…`; the
+two can never collide. The headline consensus signal is structurally inert in
+the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
+
+1. [decision — DEMOTED, and coupled to item 2] README honesty. Scoped
+   claim-by-claim against the PUBLIC README in
+   docs/SCOPE_shipped_consensus_defect.md §5.
+   FIRST: THE LOCAL CHECKOUT IS BEHIND. Local HEAD 729e893; origin/main c5f75d6
+   ("Update README.md"). The published README is a 59-line rewrite; the local
+   one is the stale 162-line version. src/ and action.yml are BYTE-IDENTICAL
+   between them, so all code findings hold — but ANY claim about "the README"
+   must specify which, and `git fetch` first. Not fast-forwarded; inventor's call.
+   The defect is "the shipped DEFAULT cannot demonstrate the headline signal" —
+   NOT "the tool does not work" (audit.py's merge works when inputs permit; CLI
+   users with other tool pairs are a genuinely unmeasured conditional case).
+   Against the PUBLIC README the finding is sharper but less urgent: no false
+   statement about what the code does, but the headline ("rank findings higher
+   where independent tools agree"), quickstart step 2's name ("re-rank by
+   consensus"), and the named flawfinder+cppcheck pair together promise an
+   experience the default cannot deliver.
+   RECOMMENDATION: do NOT edit the README now. Fix _result_key (item 2) and the
+   claims become true as written. Editing first documents a limitation about to
+   be removed. Revisit only if the fix is deferred.
+   WITHDRAWN: an earlier entry here claimed README L6 redirects cppcheck's SARIF
+   from the wrong stream, "PUBLIC and LIVE." The stream observation is true and
+   the line exists in the STALE LOCAL copy; the PUBLIC README uses the correct
+   `2>` + XML-converter path. Provenance failure recorded in SCOPE §4a.
+
+2. [Mac, medium] THE REAL WORK: `_result_key` two-algorithm fix. Fingerprint for
+   SAME-tool dedup; location+class for CROSS-tool. audit.py currently uses the
+   same-tool algorithm for both, which is a category error — it cites the
+   DefectDojo model, which uses two algorithms precisely to avoid this.
+   CRITICAL FRAMING (do not lose it): this fix does NOT risk ROC-AUC 0.755. That
+   result was measured on reconstructed envelopes that DID merge (1,318 overlaps
+   recovered, hand-count exact). The shipped path cannot merge. So the fix moves
+   the SHIPPED config TOWARD the VALIDATED one. See VALIDATION.md 2026-07-26.
+
+3. [Mac, small] RE-MEASURE — TWO distinct questions, both in
+   docs/SPEC_item4_groupability_measurement.md. RUN AFTER item 2.
+   (a) GROUPABILITY (§1-6, pre-registered): denominator cascade D0/D1/D2,
+       U1-vs-U2 split, decision rule, project set. Watch U2: 35 unmapped CWEs
+       cover 116 cppcheck checks vs 14 mapped covering 31 — extending the
+       28-entry _CWE_CLASS map may beat the badge for far less work.
+   (b) TRANSFER (§7): does the FIXED shipped path reproduce the conditions
+       0.755 was measured under? DIFFERENT QUESTION from (a). The "fix moves
+       shipped toward validated" argument is about DIRECTION and is a
+       PRECONDITION argument, NOT a transfer guarantee — the reconstructed
+       envelope had a particular merge topology and a location+class key may
+       not reproduce it. Coarse check: post-fix merge rate and n_tools
+       distribution on a real library vs the envelope's (~5.9% of raw findings
+       were multi-tool; reached n_tools=3). If they differ materially, 0.755
+       must be RE-EARNED on real scanner output, not inherited. See
+       VALIDATION.md BOUND 2 — do not let a later session treat the direction
+       argument as discharging this.
+
+4. [Mac, small — DEMOTED] Shipped-path cross-tool display dedup + badge.
+   docs/SPEC_dedup_shipped_path.md. Decision RESOLVED: badge in place, do NOT
+   collapse rows. Priority rose when the pass looked like the ONLY cross-tool
+   mechanism, then fell again once the _result_key fix was identified — post-fix
+   the co-located same-class case merges at scoring and the display pass covers
+   genuinely residual cases only. Do not size the badge before item 3.
+   NOTE: examples/fixtures/*.sarif are UNREPRESENTATIVE (hand-authored; wrong
+   flawfinder ruleId namespace, no fingerprints, CWE authored into a cppcheck
+   message). Rebuild from captured real output before trusting them.
+
+5. [Mac, medium] Corrected LIVE-scanner pipeline on REAL code (NOT synthetic
+   Juliet — studied + rejected: macro-guarded synthetic code the source paper
+   warns is non-representative). Largely SUBSUMED by items 2-3, which run real
+   scanners on real libraries; keep only for the raw live-SARIF-parse path.
+
+6. [sandbox] Cost-weighting consensus (was 2(a)): report marginal-detection per
+   marginal-flag rather than treating "more tools agreeing" as costless
+   (diversity costs +12pp functions flagged for +15pp detection). Must be
+   STUDIED (ensemble/weighting literature) before IMPLEMENT.
+   [Former 2(b), tool-quality weighting, is CLOSED — tested and rejected, §6.]
+
+7. [standing] Other specified-not-coded paths: scope+offset dedup hashing;
    Good-Turing missing-mass coverage-confidence; mutual-information/permutation
    signal gating; learned (LETOR) ranking weights vs fixed.
+   [LETOR: note §6's rejection of hand-crafted per-warning weighting is evidence
+   AGAINST this path, not neutral. Study that result before spending on it.]
 
 ────────────────────────────────────────────────────────────────────────
 ## 8. STANDING BEHAVIORAL RULES (the user established these by correction)
@@ -177,6 +289,39 @@ Untestable with existing public data (do not waste effort re-attempting):
    the request implies rather than offering to do it next turn.
 7. The user should never have to prompt you to search or to study first. That
    prompt means the gate already failed.
+
+8. A CLAIM FROM THE INVENTOR'S CHAT SESSION IS AN ASSERTION, NOT EVIDENCE
+   (established 2026-07-26 by a live instance, both directions).
+   It is verified against the tree like any other claim, and carries no more
+   authority than the tier its evidence supports. This is NOT distrust — it is
+   the same rule already applied to Claude's own claims (III.7: a sandbox PASS
+   is Claude grading Claude) and to sources (III.6: appearing in a result list
+   is not verification). Symmetry is the point.
+   THE INSTANCE: the inventor asserted `--output-format` appeared nowhere in the
+   repo and that line 6 was blank, instructing that the finding be corrected in
+   two artifacts. Verified against the committed blob: the string was present at
+   lines 6/61/64 of 729e893, worktree sha matched the commit, no `2>` anywhere.
+   The amendment was REFUSED and that refusal was correct — amending on
+   assertion would have replaced a verified finding with an unverified
+   retraction. But the inventor was ALSO right: their grep covered an uploaded
+   zip = the PUBLISHED README (origin/main c5f75d6), which the local repo, one
+   commit behind, did not have. Both parties were right about different
+   documents.
+   THE OPERATIONAL LESSON: the failure was neither party's conclusion, it was
+   UNSTATED PROVENANCE on both sides. So —
+     - Before any claim about "the repo" or "the public X": `git fetch` and say
+       WHICH ref/commit/working-copy the claim is about.
+     - Chat-session artifacts (uploaded zips, pasted output) are a DIFFERENT
+       world-state than the tree. Never merge the two silently.
+     - Do not cite a line number for a command you composed rather than ran
+       verbatim (SCOPE §4a: this session did exactly that).
+     - When the inventor's claim and the tree disagree, the resolution is
+       usually a provenance difference, not an error by either party. Locate the
+       other document before concluding anyone was wrong.
+   RULE 10.1-10.3 INTERACTION: refusing to amend on assertion is REQUIRED, and
+   is not contradicted by the inventor turning out to be right. Holding was
+   correct on the evidence available; the missing piece was found by SEARCHING
+   for the other artifact, not by capitulating to the assertion.
 
 ────────────────────────────────────────────────────────────────────────
 ## 9. PROVENANCE OF THIS DOCUMENT

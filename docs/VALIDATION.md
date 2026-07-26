@@ -481,3 +481,168 @@ tool — is now [externally-verified] on real C/C++ CVE data at file level, not 
 [self-tested]. The elaborate weighting redesign was tested and does NOT earn its place;
 production should rely on the simple consensus signal. Function-level ranking remains
 out of scope (too sparse to be useful).
+
+## Narrowed bound on the cross-tool display-dedup gap (2026-07-26)
+
+Recorded BEFORE implementing docs/SPEC_dedup_shipped_path.md, because that
+spec's original framing overstated the gap and the overstatement would have
+propagated into a shipped claim.
+
+### The claim that was wrong
+The spec asserted that the HTML report "renders cross-tool agreement as
+unrelated single-tool findings." False in general. Corrected in the spec.
+
+### What is actually true (verified by execution this session)
+`cppcheck_xml_to_sarif.py:17` puts cppcheck's `cwe` attribute into the ruleId
+(`"CWE-%s"`). `_result_key` (audit.py:521) falls back to
+`rk:{ruleId}|{uri}|{startLine}` absent fingerprints. So SAME-ruleId,
+same-location cross-tool agreement merges at the SCORING layer with `n_tools=2`
+and ALREADY renders today — `audit_html_report.py:51-52` emits a chip per tool
+plus an `N tools` consensus badge. Confirmed end-to-end; the rendered cell is
+`<span class="chip">Cppcheck</span><span class="chip">flawfinder</span><span
+class="consensus">2 tools</span>`.
+
+The shipped gap is therefore NARROWER than stated: it is the same-location /
+DIFFERENT-ruleId / same-CWE-class case, plus three merge-blockers where
+same-ruleId agreement still fails to merge (tool emits fingerprints → `fp:`
+branch is tool-specific; uri form mismatch → `_norm_uri` only handles
+backslashes and a leading `/`; line offset → scoring needs an exact match).
+The display pass rescues all three (verified: 1 group each), because it
+compares basename + CWE-class + `TOL=3`.
+
+### The binding constraint, and a second cause not previously anticipated
+The display pass cannot group anything whose CWE-class is unresolvable on
+either side. Real cppcheck 2.21.0 on `examples/sample_c/demo.c`, through the
+real converter and `_cwe_class`: **1 of 9 findings groupable (11%)**. Two
+distinct suppressors, roughly equal here:
+1. no `cwe` attribute → check-name ruleId, and **0 of 10 raw errors carried a
+   CWE number in the message text** — so the fallback is genuinely ungroupable;
+2. `cwe` attribute present but the CWE is in `_CWE_DENY` — 4 of the 5 findings
+   that HAD a cwe attribute were denied (398, 563, 561).
+
+Cause (2) was not anticipated in the original concern and is as large as (1)
+on this sample. Any real measurement must separate the two.
+
+### FOLLOW-UP, same session — the correction above was itself too strong
+
+The narrowing above is correct as a statement about `audit.py`'s CODE. It is
+misleading as a statement about the SHIPPED ACTION. Both were checked; the
+second check reverses the practical conclusion.
+
+`action.yml` runs exactly two scanners: `flawfinder --sarif` and `cppcheck`
+(XML→SARIF). Against real output from both, on the same relative path:
+
+```
+uri forms match: True          (my earlier mismatch was a harness artifact, not real)
+n_tools distribution: {1: 15}
+ANY cross-tool merge: False
+```
+
+**No flawfinder finding can EVER merge with a cppcheck finding.** This is
+deductive from `_result_key`, not a property of the sample:
+
+- Real flawfinder emits `fingerprints: {"contextHash/v1": "<sha256>"}` on
+  **6 of 6** results. `_result_key` therefore returns `fp:contextHash/v1=...`
+  for every flawfinder finding.
+- `cppcheck_xml_to_sarif.py` emits no fingerprints, so every cppcheck finding
+  gets `rk:{ruleId}|{uri}|{line}`.
+- An `fp:`-prefixed key can never equal an `rk:`-prefixed key. The merge is
+  impossible on any input, for this tool pair.
+
+A second, independently sufficient blocker: the two tools' ruleId namespaces
+are disjoint by construction — flawfinder emits `FF1013`, `FF1001`; cppcheck
+emits `CWE-415` or a check name. They never match even without fingerprints.
+
+### Consequence — the validated headline signal is inert in the shipped product
+
+`n_tools` (diversity-aware consensus) is this tool's headline signal, the one
+carried to `[externally-verified]` at file level (ROC-AUC 0.755). **In the
+shipped two-scanner action it can never exceed 1.** The Lipp validation ran on
+a RECONSTRUCTED SARIF envelope — already flagged in this file as the honest
+bound of that result — and that envelope evidently carried no fingerprints and
+consistent ruleIds, conditions the real scanner pair does not satisfy.
+
+This is a transfer gap between the validated configuration and the shipped one.
+It is NOT a refutation of the ROC-AUC 0.755 result, which stands on its own
+data. It means the shipped action does not currently produce the input that
+result was measured on.
+
+Implications, in order of importance:
+1. `_result_key` preferring a tool's own fingerprint is a category error for a
+   CROSS-tool consensus key. The DefectDojo model this cites uses TWO
+   algorithms — fingerprint for SAME-tool dedup, location+class for cross-tool.
+   audit.py uses the same-tool algorithm for both. Candidate real fix; it is in
+   `audit.py`, which SPEC_dedup_shipped_path.md places out of scope.
+2. `audit_dedup_display.py` is therefore not a narrow add-on for a
+   different-ruleId corner case. It is the ONLY mechanism by which cross-tool
+   agreement can surface at all in the shipped action. Its priority goes UP.
+3. Item 4's measurement must target realized display groups on the real tool
+   pair, not per-tool CWE-class resolution in isolation.
+
+### Why the `_result_key` fix STRENGTHENS ROC-AUC 0.755 rather than risking it
+
+Recorded BEFORE touching code, because it inverts the standard objection that
+changing ranking behaviour invalidates a published metric. That objection does
+not apply here, and the reason is worth stating plainly.
+
+ROC-AUC 0.755 was measured on RECONSTRUCTED Lipp SARIF envelopes — envelopes in
+which cross-tool merging **did** occur. This file records 1,318 multi-tool
+overlaps recovered from that data, matching a hand-computed count exactly. So
+the VALIDATED configuration is one where cross-tool merge works.
+
+The SHIPPED configuration cannot merge at all (above). Therefore:
+
+> The two-algorithm fix moves the shipped configuration TOWARD the validated
+> one, not away from it.
+
+The current shipped state is what fails to reproduce the conditions 0.755 was
+measured under. Fixing `_result_key` does not put the number at risk — it is
+the precondition for the number applying to the shipped product at all.
+
+BOUND 1 — the artifact was not re-opened. This rests on this file's recorded
+1,318-overlap match. The reconstructed envelope was not re-examined in the
+session that made this argument. If that envelope merged for some other reason
+the argument weakens, though the direction of the fix does not.
+
+BOUND 2 — **DIRECTION IS NOT TRANSFER. Read this before leaning on the
+argument above.** "The fix moves shipped TOWARD validated" is a claim about
+DIRECTION, not a transfer guarantee. It does NOT establish that a fixed shipped
+path reproduces the conditions 0.755 was measured under.
+
+The reconstructed envelope had some PARTICULAR merge topology — a specific
+distribution of how many findings merged, at what rate, across which tool
+combinations, with whatever co-location characteristics the reconstruction
+happened to produce. A location+class cross-tool key on real scanner output may
+or may not reproduce that topology. Plausible ways it diverges: a different
+merge rate; merges concentrated in different CWE classes; two real tools whose
+co-location behaviour differs from the reconstruction's; a coarser or finer key
+than the reconstruction effectively used.
+
+So the honest statement is:
+
+> Fixing `_result_key` is a PRECONDITION for 0.755 applying to the shipped
+> product. It is not SUFFICIENT for it. Whether the number transfers is an
+> open empirical question that the fix does not settle.
+
+If post-fix merge behaviour on real scanner output turns out to differ
+materially from the reconstructed envelope's, **0.755 must be re-earned on real
+scanner output rather than inherited.** Do not let a later session cite the
+direction argument as though it discharged that obligation. The measurement
+that would settle it is specified in
+`docs/SPEC_item4_groupability_measurement.md` §7.
+
+Full claim-by-claim scoping of what is and is not false, including a second and
+independent README defect (the quickstart redirects cppcheck's SARIF from the
+wrong stream, silently degrading the two-scanner quickstart to a single-tool
+run): `docs/SCOPE_shipped_consensus_defect.md`.
+
+### Tier
+`[self-tested]` — this is Claude's harness on Claude-built probe inputs plus one
+real cppcheck run on a 25-line toy file (n=9, 3 of which are
+`missingIncludeSystem` include-resolution noise). The merge-vs-no-merge
+behaviour is a direct observation of the shipped code and is solid. The 11%
+groupability number is a DIRECTIONAL SIGNAL ONLY, not a frequency estimate —
+it does not survive contact with a real library and must not be quoted as a
+rate. Measuring it properly (HANDOFF §7 item 4) is a prerequisite for deciding
+how prominent the badge should be; the render must not be designed around an
+assumed frequency.

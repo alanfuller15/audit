@@ -2,6 +2,10 @@ __pycache__/
 *.pyc
 *.sarif
 *.xml
+# Test fixtures are intentional inputs, not scanner output. See
+# docs/SPEC_dedup_shipped_path.md — these are UNREPRESENTATIVE of real
+# scanner output and are due to be rebuilt from captured real runs.
+!examples/fixtures/*.sarif
 audit_result.json
 audit_report.html
 .DS_Store
