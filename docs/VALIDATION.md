@@ -1665,3 +1665,85 @@ Standing consequences:
    fingerprints are trusted, and absence is a third outcome to expect.
 3. Location+class is the primary identity in practice; fingerprints are an
    optimisation that frequently is not available. Design accordingly.
+
+## Cross-tool merges + 7a false-merge audit (2026-07-26)
+### SpotBugs+FindSecBugs x semgrep on OWASP Benchmark v1.2
+
+FIRST — TWO DEFECTS THAT WOULD HAVE PRODUCED A FALSE ZERO.
+
+**(1) Path forms are structurally incompatible between Java tools.** SpotBugs
+derives paths from bytecode and emits PACKAGE-relative
+(`org/owasp/benchmark/...`); semgrep emits SCAN-ROOT-relative. One is a SUFFIX
+of the other, so `_norm_uri` cannot reconcile them and the merge count is zero.
+Fixed here by re-running semgrep from `src/main/java`. **This is a REAL
+production issue, not only a harness artifact** — a user running both tools the
+obvious way gets zero merges and no diagnostic.
+
+**(2) `ingest_sarif` read the wrong rule-metadata fields.** It built `rulemeta`
+from `id + name + shortDescription + tags`, omitting BOTH:
+  - `fullDescription` — where FindSecBugs puts its CWE in prose, and
+  - `relationships` — the STRUCTURED SARIF CWE taxa.
+So ingest resolved ZERO classes for SpotBugs and produced ZERO merges, while the
+analysis harness (which read `fullDescription`) reported 3,155 resolved. The
+earlier per-tool resolution figures described what ingest COULD resolve, not
+what it did.
+
+### Fix: structured taxa first, prose as fallback
+SARIF `relationships` name the rule's CWE exactly, with no prose noise:
+```
+WEAK_MESSAGE_DIGEST_MD5   taxa=328 -> hash   (correct AND specific)
+INFORMATION_EXPOSURE_...  taxa=209 -> None   (correct; 22/89 were prose noise)
+SQL_INJECTION_JDBC        taxa=89  -> sqli
+```
+**This supersedes prose-scraping for tools that emit taxa (55 of SpotBugs' 77
+rules), and it RECOVERS the 113 `hash` findings** the multi-class guard had
+silenced. The guard remains for the prose fallback path.
+
+### Merge result
+```
+raw 23,074 -> same-tool dedup 23,064 -> cross-tool merges 1,156 -> final 21,908
+merge rate 5.01%     n_tools {1: 20,752, 2: 1,156}
+classes: xss 302 · path 221 · crypto 171 · cmdi 146 · sqli 126 · hash 113 · ldapi 50 · xpathi 27
+```
+
+### Against the answer key — merges concentrate on real vulnerabilities
+```
+merges on files labelled REAL VULNERABILITY : 814
+merges on files labelled PLANTED FALSE POS  : 342
+precision of merges vs labels               : 70.4%
+benchmark base rate                         : 51.6%
+```
+Agreement is enriched for true vulnerabilities, +18.8pp over base rate.
+
+### 7a FALSE-MERGE AUDIT — result: ZERO false merges found
+```
+merged class MATCHES the file's planted category : 1,129
+merged class DIFFERS                             :    27
+```
+All 27 investigated, not assumed. Every one is an `xpathi`-planted file where
+both tools independently flagged `response.getWriter().println(value.getTextContent()...)`
+as XSS — SpotBugs `XSS_SERVLET`, semgrep `no-direct-response-writer`, SAME LINE,
+SAME BUG. A genuine SECOND vulnerability, correctly merged. Not false.
+
+Predicted false-merge sites were also checked: 452 files had >1 class resolved
+(`random+xss` 218, `crypto+path` 97, `hash+path` 74, `xpathi+xss` 34,
+`sqli+xss` 29), and 278 merges landed on them. **Every one merged on the
+CORRECT class** — crypto files merged as `crypto`, hash files as `hash` — no
+cross-contamination, because the key requires same line AND same class.
+
+**7a is SATISFIED for this tool pair on this corpus: 0 false merges in 1,156.**
+
+### BOUNDS — both directions, and they matter more than the numbers
+1. **A4 is NOT satisfied.** This corpus is SYNTHETIC, structurally uniform, and
+   deliberately plants fakes — the same objection recorded against Juliet. The
+   5.01% rate is CORPUS-SPECIFIC.
+2. **Do NOT compare 5.01% to zlib's 2-in-1,164.** Different language, code, and
+   corpus TYPE. Not commensurable.
+3. **The INVERSE artifact applies too:** one planted vulnerability per file in a
+   generated shape may make agreement EASIER than real code. A HIGH merge rate
+   here is as uninformative about real Java as a low one would be. 5.01% is not
+   evidence that Java consensus works in production.
+4. 7a's zero-false-merges is bounded by the same synthetic shape, and by the
+   corpus labelling ONE bug per file — it cannot adjudicate merges on unlabelled
+   second bugs beyond manual inspection, which is what was done for the 27.
+5. A real-Java A4 needs a REAL Java project.

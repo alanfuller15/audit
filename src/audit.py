@@ -646,6 +646,18 @@ _CWE_DENY = {
 
 _CWE_RE = re.compile(r"cwe[-_/:=\"'\s]{0,4}(\d+)", re.I)
 
+def _class_from_cwes(cwes):
+    """Resolve a class from an explicit list of CWE numbers (SARIF taxa).
+    Same conservative rule as the text path: >1 distinct class -> None."""
+    found = []
+    for n in cwes:
+        if n in _CWE_DENY:
+            continue
+        c = _CWE_CLASS.get(n)
+        if c and c not in found:
+            found.append(c)
+    return found[0] if len(found) == 1 else None
+
 def _cwe_class_of(rule_id, message, uri=""):
     """Resolve a coarse vulnerability class from CWE numbers appearing in the
     ruleId / message / uri (or rule metadata, when the caller passes it).
@@ -901,7 +913,9 @@ def _cross_keys(rec):
     # 0 of 33 semgrep findings on real code — a false negative produced by our
     # parser, not by the tools disagreeing. ingest_sarif already collects this
     # as rec["rulemeta"]; it just was not being consulted.
-    cls = _cwe_class_of(rec["ruleId"], rec["message"], uri) \
+    # Structured CWE taxa first (authoritative); prose only as fallback.
+    cls = _class_from_cwes(rec.get("taxa_cwes") or []) \
+        or _cwe_class_of(rec["ruleId"], rec["message"], uri) \
         or _cwe_class_of(rec["ruleId"], rec.get("rulemeta") or "", "")
     if cls:
         keys.append(f"cls|{uri}|{line}|{cls}")
@@ -967,15 +981,40 @@ def ingest_sarif(paths):
             tool = driver.get("name", "unknown-tool")
             tools_seen.add(tool)
             # rule metadata for kind inference
-            rulemeta = {}
+            # Rule metadata, used for CWE-class resolution. TWO sources, in
+            # priority order:
+            #   1. relationships -> CWE taxa. The STRUCTURED, canonical SARIF
+            #      mechanism: target.id is the CWE number and toolComponent.name
+            #      is "CWE". Authoritative and free of prose noise.
+            #   2. free text (id/name/descriptions/tags), scanned only when no
+            #      taxon is declared.
+            # Why taxa first, measured on real SpotBugs+FindSecBugs output:
+            # prose listed CWE-327 AND CWE-328 for WEAK_MESSAGE_DIGEST_MD5, so
+            # scraping had to give up (ambiguous), while the taxon says exactly
+            # 328 -> `hash`, the correct and more specific answer. Likewise
+            # INFORMATION_EXPOSURE prose mentions 22/89 incidentally while its
+            # taxon is 209 -> correctly unmapped. Structured beats scraped.
+            rulemeta, ruletaxa = {}, {}
             for r in (driver.get("rules") or []):
                 rid = r.get("id")
-                if rid:
-                    txt = " ".join(str(x) for x in [
-                        rid, (r.get("name") or ""),
-                        ((r.get("shortDescription") or {}).get("text") or ""),
-                        " ".join(str(t) for t in (((r.get("properties") or {}).get("tags")) or []))]).lower()
-                    rulemeta[rid] = txt
+                if not rid:
+                    continue
+                cwes = []
+                for rel in (r.get("relationships") or []):
+                    tgt = rel.get("target") or {}
+                    comp = (tgt.get("toolComponent") or {}).get("name") or ""
+                    if comp.upper() == "CWE":
+                        tid = str(tgt.get("id") or "").strip()
+                        m = re.search(r"(\d+)", tid)
+                        if m:
+                            cwes.append(int(m.group(1)))
+                if cwes:
+                    ruletaxa[rid] = cwes
+                rulemeta[rid] = " ".join(str(x) for x in [
+                    rid, (r.get("name") or ""),
+                    ((r.get("shortDescription") or {}).get("text") or ""),
+                    ((r.get("fullDescription") or {}).get("text") or ""),
+                    " ".join(str(t) for t in (((r.get("properties") or {}).get("tags")) or []))]).lower()
             for res in (run.get("results") or []):
                 # PHASE 1 — SAME-TOOL dedup. Scoped by tool so one tool's
                 # fingerprint can never collide with another tool's key.
@@ -991,7 +1030,7 @@ def ingest_sarif(paths):
                     rec = {"key": key, "ruleId": rid, "uri": uri, "line": line,
                            "message": msg, "level": lvl, "tools": set(),
                            "levels": set(), "rulemeta": "", "all_rule_ids": set(),
-                           "all_msgs": {}}
+                           "all_msgs": {}, "taxa_cwes": []}
                     findings[key] = rec
                 rec["tools"].add(tool)
                 rec["levels"].add(lvl)
@@ -1001,6 +1040,8 @@ def ingest_sarif(paths):
                     rec["level"] = lvl  # keep the most severe claim across tools
                 if rid in rulemeta and not rec["rulemeta"]:
                     rec["rulemeta"] = rulemeta[rid]
+                if rid in ruletaxa and not rec.get("taxa_cwes"):
+                    rec["taxa_cwes"] = ruletaxa[rid]
 
     # ── PHASE 2 — CROSS-TOOL consensus merge ────────────────────────────────
     # Union same-tool-deduped records that DIFFERENT tools agree on, keyed by
@@ -1073,6 +1114,8 @@ def ingest_sarif(paths):
                 base["level"] = m["level"]      # most severe claim across tools
             if m["rulemeta"] and not base["rulemeta"]:
                 base["rulemeta"] = m["rulemeta"]
+            if m.get("taxa_cwes") and not base.get("taxa_cwes"):
+                base["taxa_cwes"] = m["taxa_cwes"]
         merged[base["key"]] = base
     findings = merged
 
@@ -1172,6 +1215,9 @@ def ingest_sarif(paths):
                     "uri": r["uri"], "line": r["line"], "level": r["level"],
                     "tools": sorted(r["tools"]), "n_tools": r["n_tools"],
                     "kind": r["kind"], "noisy_loc": r["noisy_loc"],
+                    # the CWE class actually used for cross-tool matching —
+                    # exposed so audits read what ingest used, not a recompute
+                    "cwe_class": r.get("cwe_class"),
                     "message": r["message"]} for i, r in enumerate(ranked)],
     }
 

@@ -471,6 +471,12 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    DISTINCT labelled categories, both recorded as perfect discriminators. So the
    fix silences a class we have specific reason to think is real. Do NOT
    describe this as "costs 4% of resolution".
+   LARGELY SUPERSEDED 2026-07-26: SARIF `relationships` CWE taxa give the rule's
+   EXACT CWE with no prose noise (WEAK_MESSAGE_DIGEST_MD5 -> 328 -> `hash`;
+   INFORMATION_EXPOSURE -> 209 -> correctly None), and ingest now reads them
+   taxa-first. That recovered all 113 `hash` findings. 3e is still WANTED for
+   tools that emit NO taxa (22 of SpotBugs' 77 rules, and semgrep) where prose
+   scraping is the only source — but it is no longer the primary route.
    THE REFINEMENT: use MITRE's DAG to distinguish the two cases —
      ancestor-related -> take the MOST SPECIFIC (327+328 -> `hash`)
      unrelated        -> None (22 under CWE-664, 89 under CWE-707 -> None)
@@ -535,8 +541,15 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
 6b. [PROMOTED TO ITEM 0 — see top of this list] Engine-lineage guard. Kept as a
    pointer so the number is not reused. It affects C/C++ as much as Java.
 
-7a. [BLOCKED on a Java corpus — OUTSTANDING, do NOT treat as done] Java
-   false-merge audit. The map WAS extended 2026-07-26 with 15 effect classes
+7a. [SATISFIED 2026-07-26 for SpotBugs+FindSecBugs x semgrep on OWASP Benchmark]
+   Java false-merge audit: **0 false merges in 1,156**. All 27 merges whose
+   class differed from the planted category were INVESTIGATED, not assumed —
+   every one is a genuine second XSS both tools independently found at
+   response.getWriter(). The 278 merges landing on multi-class files all merged
+   on the CORRECT class. BOUND: synthetic corpus; the result does not transfer
+   to real Java, and the corpus labels one bug per file so it cannot adjudicate
+   unlabelled second bugs except by inspection. Record: VALIDATION.md.
+   [historical] Java false-merge audit. The map WAS extended 2026-07-26 with 15 effect classes
    (sqli/cmdi/xss/path/deser/xxe/ssrf/ldapi/xpathi/csrf/redirect/crypto/hash/
    creds/random). The required false-merge audit has NOT been performed.
    DO NOT read the zlib non-regression result as clearance. That check is
