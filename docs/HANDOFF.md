@@ -454,6 +454,35 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    comparator on any future corpus BEFORE claiming consensus adds value there.
    The comparator is cheap: scratchpad/single_vs_consensus.py.
 
+0j. [!! URGENT — THE README'S LAST NUMBER IS SUSPECT !!] The 1.5x claim.
+   README says multi-tool functions are ~1.5x more likely to contain a real CVE
+   than SIZE-MATCHED single-tool functions, p<0.0001. That rests on DECILE
+   matching. The 0i logistic model, controlling with CONTINUOUS log(LOC) — the
+   finer and Kronmal-recommended control — puts the n_tools coefficient at
+   b=+0.057, p=0.582, i.e. NOT SIGNIFICANT, attenuated 89% from +0.525 when
+   log(LOC) is absent. VIF is 1.10, so this is not a collinearity artifact.
+   THE TWO DISAGREE. Likely cause: decile matching leaves large residual size
+   variation within strata on a heavily skewed distribution.
+   IN FLIGHT WHEN THE SESSION ENDED, DO THIS FIRST: re-run the matched test at
+   10 / 50 / 200 strata. If the effect DECAYS as strata refine, the 1.5x does not
+   survive and the README needs a fourth correction — remove or restate it.
+   If it HOLDS at 200 strata, the logistic's linear-in-n_tools specification is
+   the suspect instead (n_tools 1..6 may not act linearly; try it as a factor).
+   Until settled, DO NOT cite the 1.5x. It is the only performance-adjacent
+   number left in the README, and it went in on the weaker of two controls.
+
+0i. [CLOSED 2026-07-26 — D HOLDS, terminal answer. Do NOT reattempt.]
+   Size-controlled formulation. All four candidates run as pre-registered.
+   A (logistic with log(LOC)) COLLAPSES ONTO the size-only floor — identical
+   PofB 0.185, IFA 2, PMI 0.022 — because its n_tools coefficient is ~0.
+   B (size-residualized) and raw consensus do not beat size-matched random
+   (p=0.468, p=0.443). C (density per LOC) is the WORST performer and reproduces
+   ManualUp almost exactly (PMI 0.571 vs 0.602, IFA 1,334 vs 1,746) — the
+   pre-registered prediction, CONFIRMED.
+   FINDING: the signal is real but NOT ORDERABLE under an effort budget. No
+   formulation adds ranking information beyond size on this corpus.
+   Full record: VALIDATION.md "0i RESULT".
+
 0g. [HIGHEST-VALUE OPEN QUESTION — supersedes the granularity work]
    EFFORT-AWARE EVALUATION CHANGES THE ANSWERS. Measured 2026-07-26 on the Lipp
    artifact with the review budget in LINES OF CODE rather than units:

@@ -3192,3 +3192,69 @@ ManualUp, not merely ManualDown. Three claims have already died in the gap
 between "beats a named baseline" and "beats a size-matched control".
 
 ### Not implemented. No computation performed in this pass.
+
+## 0i RESULT (2026-07-26) — D HOLDS. Terminal answer for this direction.
+
+Pre-registered evaluation run as filed. Function level, 14,656 units, 135 vulnerable.
+
+### Regression diagnostics — the coefficient does not survive size adjustment
+```
+n_tools alone            b=+0.5249  z=+5.66  p=1.56e-08  ***
+log(LOC) alone [FLOOR]   b=+1.0546  z=+13.37 p<1e-15     ***
+n_tools + log(LOC)
+    n_tools              b=+0.0573  z=+0.55  p=0.582      NOT SIGNIFICANT
+    log(LOC)             b=+1.0388  z=+12.36 p<1e-15     ***
++ quadratic
+    n_tools              b=+0.0598  z=+0.58  p=0.563      NOT SIGNIFICANT
+    log(LOC)^2           b=-0.0950  z=-1.74  p=0.083      marginal (Hatton U-curve)
+
+Pearson(n_tools, log(LOC)) = +0.305   VIF = 1.10  -> TOLERABLE
+```
+**The n_tools coefficient attenuates 89% (+0.525 -> +0.057) and loses all
+significance when log(LOC) enters.** VIF 1.10 rules out collinearity instability:
+this is genuine confounding, not an unstable fit. It reproduces Zhou et al.
+(2014) — "after controlling for size, none of the metrics were associated with
+fault-proneness anymore" — on our data.
+
+### Ranking evaluation vs SIZE-MATCHED random (400 draws)
+```
+ranker                        PofB@20   IFA   PMI@20   vs size-matched random
+A logistic n_tools+log(LOC)     0.185     2    0.022   BEATS (0.098, p=0.000)
+SIZE-ONLY [FLOOR]               0.185     2    0.022   BEATS (0.096, p=0.000)
+B size-residualized             0.185   142    0.161   does NOT beat (p=0.468)
+C density n_tools/LOC           0.170  1334    0.571   does NOT beat (p=0.603)
+raw consensus                   0.185   142    0.161   does NOT beat (p=0.443)
+```
+**A IS the size-only model.** Its n_tools coefficient is ~0, so the fitted
+ranker is driven entirely by log(LOC) — identical PofB, IFA and PMI to the
+floor. A does not CLEAR the floor; it collapses onto it.
+
+### C — the pre-registered prediction is CONFIRMED
+Predicted before computing: "a per-LOC density ranker will favour SMALL units,
+i.e. reproduce ManualUp." Measured: C has PMI@20 = 0.571 and IFA = 1,334, against
+ManualUp's 0.602 and 1,746. Near-identical behaviour, and the worst PofB of any
+candidate. **Density is ManualUp with extra steps, exactly as Kronmal predicts.**
+
+### VERDICT: D — THE NULL — HOLDS. 0i IS CLOSED.
+No formulation adds ranking information beyond size on this corpus. A collapses
+to the floor; B, C and raw consensus all fail to beat size-matched random.
+
+**"The signal is real but not orderable under an effort budget" is the finding.**
+It closes this direction honestly rather than leaving it to be reattempted.
+
+### !! UNRESOLVED — THIS RUN PUTS THE README'S 1.5x CLAIM IN DOUBT !!
+The README currently states multi-tool functions are ~1.5x more likely to
+contain a real CVE than SIZE-MATCHED single-tool functions (p<0.0001). That was
+measured by DECILE matching. This run's logistic model, using CONTINUOUS
+log(LOC) — the finer and Kronmal-recommended control — puts n_tools at p=0.582.
+
+The two disagree, and the likely reason is that decile matching leaves large
+residual size variation inside each stratum on a heavily skewed distribution.
+**If that is right, the README's last remaining number is not adequately
+size-controlled and must be corrected or removed.**
+
+NOT RESOLVED. The check was in flight when this session ended: re-run the
+matched test at 10 / 50 / 200 strata and see whether the effect decays as strata
+are refined. If it decays toward the logistic result, the 1.5x does not survive
+and the README needs a fourth correction. **Treat the 1.5x as SUSPECT until
+this is settled.**
