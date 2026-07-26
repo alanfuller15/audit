@@ -2234,3 +2234,80 @@ The inventor's prior: coverage is low enough (SpotBugs emits `endLine` on
 matches and cannot address the structural source-vs-sink mismatch. This
 evaluation is designed to be capable of refuting that, and a negative is
 recorded as a result rather than as a reason to keep the option open.
+
+## DIRECTION B RESULT (2026-07-26) — PASSES the pre-registered rule. Prior REFUTED.
+
+### Measured
+```
+OWASP Benchmark
+  semgrep  class-resolved 1,848 — 442 (24%) carry a real range
+  SpotBugs class-resolved 3,268 —   0 (0%)  carry a range
+  exact-line matches (current)      1,156
+  NEW point-in-range matches          427   = 36.9% of existing
+  producing-range spans   median 2 · mean 2.8 · max 16 · >100 lines: 0 (0%)
+  same-bug by answer key  427 match planted category, 0 differ  -> 100%
+
+Apache Struts
+  exact-line matches (current)          0
+  NEW point-in-range matches            2   (both enumerated and inspected)
+    ServletRedirectResult.java 244 vs 247, span 21, class=redirect
+    ServletRedirectResult.java 244 vs 250, span 21, class=redirect
+  -> the near-miss recovered; both are the same unvalidated-redirect bug
+```
+
+### Against the pre-registered criteria
+```
+(a) material yield      427 = 36.9% of merges (threshold >=10% on OWASP)  PASS
+(b) same-bug rate       100% (threshold >=80%)                            PASS
+(c) false-merge risk    median producing span 2 lines; 0% exceed 100      PASS
+                        (thresholds <=25 median, <10% over 100)
+(d) determinism         order-independent: shuffled input -> identical
+                        grouping. Max component size 4; >2-member
+                        components are same-line multi-findings, NOT range
+                        chaining.                                          PASS
+```
+**All four pass. The pre-registered decision is IMPLEMENT.**
+
+### The prior was refuted — and it is worth recording exactly HOW
+The prior held that coverage was too low to matter (SpotBugs `endLine` on
+11-30%, semgrep spans ~0.7 lines). Both input figures were CORRECT; the
+inference from them was not:
+- The 11-30% SpotBugs figure is over ALL findings. Among CLASS-RESOLVED ones it
+  is **0%** — worse than the prior assumed, and irrelevant, because SpotBugs
+  contributes no ranges at all here.
+- semgrep's 0.7-line MEAN is dominated by zero-span findings. Among the 442
+  that carry a real range, the median span is 2 and the mechanism fires 427
+  times.
+So the whole effect runs one way: **semgrep's range containing SpotBugs' point.**
+An average computed over the wrong population hid a real effect.
+
+### BUT IT DOES NOT ADDRESS THE STRUCTURAL MISMATCH — the prior was RIGHT there
+This is the part that must not be lost in a PASS verdict. The 427 OWASP
+recoveries have a median span of **2 lines**. They are LINE-JITTER recoveries on
+generated code — the same bug, reported one or two lines apart. They are not
+source-to-sink recoveries.
+
+The one genuine source-vs-sink case in the entire evaluation is the Struts
+near-miss (span 21), and it is **n=1**.
+
+So Direction B is:
+- a real, well-behaved mechanical improvement that recovers ~37% more agreement
+  on the synthetic corpus and the single real agreement available;
+- **NOT** a resolution of HANDOFF §6.2. It cannot recover agreement when the
+  source and sink are in different functions, because neither tool emits a range
+  spanning them — which is precisely the open cross-function problem.
+
+Adopting it would improve the mechanism without changing the central finding
+that methodologically diverse tools do not co-locate. **§6.2 stands, and the
+acquisition freeze with it.**
+
+### Honest bounds on this result
+- The 100% same-bug rate is on a corpus where the answer key labels ONE bug per
+  file, so "class matches planted category" is a weak same-bug test — it cannot
+  catch a new match that pairs two genuine but DIFFERENT findings of the same
+  class in one file. On generated single-vulnerability files that is unlikely;
+  on real code it is not, and it is unmeasured.
+- Struts contributes n=2 matches from n=1 underlying bug. It cannot support any
+  rate claim.
+- SpotBugs contributing zero ranges means this is really a measurement of ONE
+  tool's range emission. A different pair could behave entirely differently.
