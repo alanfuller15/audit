@@ -2922,3 +2922,81 @@ evidence supports.
   skewed data, and this corpus is highly skewed (0.92% at function level).
 - IFA is a single-run order statistic, not bootstrapped; it is stable here only
   because the gap (5 vs 614) is enormous.
+
+## SIZE CONFOUND CHECK (2026-07-26) — the re-headlining candidate DOES NOT SURVIVE
+
+Run before drafting any README language. It is as well it was run first.
+
+### Literature verified against arXiv:2504.19181 `[fetched]`
+- Shihab et al.: "LOC does not appear to be a reliable predictor of module
+  analysis effort … complexity measures correlate with effort better than LOC …
+  effort-aware models should not assume that LOC is a good measure of effort."
+- Lavazza et al.: "the measure used as the module effort driver crucially
+  influences the results."
+- Mende & Koschke: "some SDP models may have a performance that appears to be
+  reasonably good according to traditional metrics, while it is in fact worse
+  than the performance obtained by picking the modules to analyze at random."
+
+### CHECK 1 — the size confound is REAL and large
+```
+corpus          n=2,678   mean LOC   433   median   168
+consensus@20%   n=  165   mean LOC 1,379   median 1,018   = 3.18x mean, 6.04x median
+Spearman(n_tools, LOC) = +0.629     <- MORE TOOLS FLAG BIGGER FILES
+```
+Against a SIZE-MATCHED random baseline (same size distribution as consensus's
+own within-budget selection, drawn randomly within size deciles, 500 draws):
+```
+              consensus   size-matched random   P(random >= consensus)
+PofB@20         0.228        0.196 +/- 0.030          0.184   NOT significant
+IFA             5            21.8 +/- 12.4            (~1.3 SD, not significant)
+```
+
+**Once size is controlled, consensus has NO statistically significant advantage
+on any metric measured.** The headline 6.2%-vs-70.6% inspection figure is
+largely mechanical: consensus selects large files, so a LOC budget is exhausted
+on few of them. Fewer files for the same code is a real ergonomic benefit, but
+it follows from SIZE SELECTION, not from agreement carrying information.
+
+### The precise, more interesting finding
+```
+ManualDown (pure descending size)  PofB@20 = 0.081   <- picking the BIGGEST is BAD
+consensus                                   = 0.228
+size-matched random                         = 0.196   <- most of the gap
+```
+Consensus is NOT "review the biggest files" — that scores 0.081. It selects a
+FAVOURABLE SIZE DISTRIBUTION (large but not extreme), and **within that
+distribution it adds little that random selection does not.** The value is in
+the size profile it picks, not in which specific files it picks within it.
+
+### CHECK 2 — function level at-or-below random, CONFIRMED
+500 random draws, identical budget, identical tie-breaking, identical unit set:
+```
+FUNCTION  consensus 0.185   random 0.199 +/- 0.034   P(random >= consensus) = 0.696
+FILE      consensus 0.228   random 0.201 +/- 0.036   P(random >= consensus) = 0.256
+```
+Function level is below the random MEAN and random beats it ~70% of the time.
+This is Mende & Koschke's documented phenomenon, cited above — **expected, not
+anomalous, and not a harness artifact.** File level is above random but NOT
+significantly.
+
+### VERDICT: DO NOT RE-HEADLINE ON THIS CLAIM
+The drafted claim — "same yield, 6.2% of files instead of 70.6%, 5 false alarms
+instead of 614" — is arithmetically true against ManualUp but **substantially
+attributable to size selection**, and it does not survive a size-matched
+control. Publishing it would repeat the exact error 0g identified in 0.755:
+leading with a number that a trivial size-correlated baseline matches.
+
+The framing hope — that PMI and IFA escape the LOC-as-effort critique because
+they count modules rather than lines — is correct in principle and **defeated in
+practice here**, because PMI is itself driven by the size of the modules chosen.
+The critique is dodged; the confound is not.
+
+### What is left that is defensible
+Only this, and it is thin: consensus reaches its first true positive after 5
+false alarms where the effort-aware baseline needs 614, and it beats pure
+size-ranking (ManualDown) decisively on yield (0.228 vs 0.081). Both are true.
+Neither is significant against a size-matched control, and both must carry that
+qualification.
+
+**No README language drafted. On this evidence there is no claim worth
+promoting to a headline.**
