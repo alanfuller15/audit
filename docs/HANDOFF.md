@@ -440,12 +440,16 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    about real code, in the same way and to the same degree that the positive
    enrichment was. The negative generalizes no further than the positive did.
    Stated as a hypothesis because it is not tested.
-   WHY THIS MATTERS BEYOND THE NUMBER: the README says 0.755 "beats a coin flip
-   and the best single tool". That phrasing is sourced from LIPP's C/C++ result
-   (0.755 vs 0.596), which is real and is not challenged here. But this is the
-   first time the SHIPPED IMPLEMENTATION has been measured against a single-tool
-   comparator on any corpus, and it did not clear that bar. One synthetic corpus,
-   one tool pair — NOT grounds to amend the README, which quotes a C/C++ result.
+   WHY THIS MATTERED AT THE TIME: the README then said 0.755 "beats a coin flip
+   and the best single tool", phrasing sourced from LIPP's C/C++ result
+   (0.755 vs 0.596). This was the first time the SHIPPED IMPLEMENTATION had been
+   measured against a single-tool comparator on any corpus, and it did not clear
+   that bar — though on one synthetic corpus with one tool pair, which was NOT
+   then grounds to amend the README.
+   [STATUS 2026-07-26: OVERTAKEN. The README no longer quotes 0.755 or any
+   ranking performance figure — see 0g and the README's "What's established, and
+   what isn't". This item is retained as the record of when the single-tool
+   comparator was first run, not as a live description of the README.]
    IT IS grounds to (a) not generalize the Java enrichment, and (b) run the same
    comparator on any future corpus BEFORE claiming consensus adds value there.
    The comparator is cheap: scratchpad/single_vs_consensus.py.
