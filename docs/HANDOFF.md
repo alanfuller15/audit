@@ -287,6 +287,28 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    Regression test to add: two drivers of one lineage must NOT produce
    n_tools>1; two drivers of different lineage must still merge as today.
 
+0e. [FINDING — exact-line matching cost 100% of real-code agreement, ONE case]
+   On Apache Struts the SpotBugs+semgrep pair produced ZERO merges. Not a path
+   artifact (0c clean) and not disagreement — the two tools agreed EXACTLY ONCE
+   and the key missed it by THREE LINES:
+     ServletRedirectResult.java
+       semgrep  line 244  class=redirect  (anchors at the taint SOURCE/method sig)
+       SpotBugs line 247  class=redirect  (anchors at the SINK instruction)
+   Same file, same class, same bug. Scoring requires an EXACT line match; the
+   display layer's TOL=3 would have caught it.
+   THE DESIGN QUESTION THIS RAISES: exact-line was chosen deliberately, because
+   a tolerance window makes merging order-dependent and a false merge inflates
+   n_tools. That reasoning stands. But the measured cost on real code is now
+   known and it is total — on generated code both tools point at the same line;
+   on real code they anchor at different points of the same dataflow.
+   DO NOT simply widen the scoring key to TOL=3 on this evidence: n=1 agreement
+   is not a basis for changing the signal every published number rests on, and
+   the order-dependence objection is unaddressed. What IS warranted: treat this
+   as the motivating case for a proper evaluation of tolerant matching —
+   deterministic (e.g. union-find over a tolerance graph, as the display pass
+   already does), measured for false-merge rate on a labelled corpus BEFORE
+   adoption. File as its own experiment, not a patch.
+
 0d. [FINDING — UNDERPOWERED TEST, NOT A MEASURED ABSENCE OF EFFECT]
    Consensus vs best single tool on OWASP Benchmark: the comparison DID NOT
    RESOLVE. Do NOT cite 0d as evidence consensus fails to beat the best tool —

@@ -1964,3 +1964,89 @@ reported as such BEFORE it is quoted.
    quoted.
 4. If the 7-module Struts build fails or runs long, switch to Apache Shiro and
    record why rather than sinking time into the build.
+
+## A4 ON REAL JAVA — Apache Struts (2026-07-26). Result: ZERO merges, and WHY
+
+Run against the pre-registration committed before Struts was fetched.
+
+### Build and alignment
+```
+build      38s, 19/20 modules, 1,220 classes (core 952). plugins/tiles failed
+           on a missing Velocity dependency — partial, core intact, usable.
+alignment  package-path collisions across modules: 0 of 1,484 -> prefix-strip safe
+           (verified, not assumed; this is the uniqueness guard 0c option (a) demands)
+0c check   NO path warnings. The zero below is REAL, not a path artifact.
+```
+
+### The measurement, against the pre-registered baseline
+```
+                        OWASP (synthetic)     STRUTS (real)
+raw findings                     23,074              1,549
+same-tool dedup                  23,064              1,495
+CROSS-TOOL MERGES                 1,156                  0
+merge rate / finding              5.01%             0.000%
+distinct files                    2,755                432
+findings per file           mean   7.95               3.46   (median 7 / 2, max 26 / 41)
+merge rate / file                38.62%             0.000%
+n_tools distribution        {1:21908, 2:1156}      {1:1495}
+merged class distribution   xss/path/crypto/...       n/a
+```
+
+### THE DENSITY CONFOUND RUNS THE OPPOSITE WAY
+The pre-registered worry was that Struts' large real files would INFLATE the
+merge rate through coincidental co-location. Measured: Struts is **less** dense
+(3.46 findings/file vs OWASP's 7.95). The confound does not apply, and no
+concentration analysis is needed because there are no merges to concentrate.
+
+### CAUSE 1 — semgrep is near-silent on real Java
+```
+semgrep p/java   OWASP: 1,909 findings / 2,740 files   = 0.70 per file
+                 STRUTS:     1 finding  / 1,484 files  = 0.0007 per file
+```
+A ~1000x collapse in finding density. Verified NOT a scan failure: semgrep
+reported "Ran 60 rules on 776 files", ~100% parsed, zero skipped. semgrep CE's
+rules are tuned to the direct source->sink shapes OWASP GENERATES; real framework
+code routes through interfaces, configuration and reflection, which an
+intraprocedural engine does not follow. SpotBugs was unaffected (1,494 findings,
+265 class-resolved).
+
+### CAUSE 2 — the ONE genuine agreement was missed BY THREE LINES
+The single semgrep finding and a SpotBugs finding are **the same bug**:
+```
+org/apache/struts2/result/ServletRedirectResult.java
+  semgrep   line 244  class=redirect  unvalidated-redirect      <- method signature
+  SpotBugs  line 247  class=redirect  UNVALIDATED_REDIRECT      <- response.sendRedirect(...)
+  SpotBugs  line 250  class=redirect  UNVALIDATED_REDIRECT      <- setHeader("Location", ...)
+```
+Same file, same CWE class, same vulnerability. semgrep anchors at the taint
+SOURCE (method signature); SpotBugs anchors at the SINK instruction. Delta: 3
+lines. **The scoring key requires an EXACT line match, so it did not merge.**
+The display layer's `TOL=3` would have caught it (|244-247| = 3).
+
+This is the strongest available evidence on the exact-line design decision,
+recorded when that decision was made as "conservative on purpose". On GENERATED
+code the sink sits on one line and both tools point at it. On REAL code the
+tools anchor at different points of the same dataflow, and exact matching
+discards the agreement. The choice was defensible and it has a measured cost:
+on this corpus it cost 100% of the available cross-tool agreement.
+
+### What this establishes, and what it does not
+**Establishes:** the SpotBugs+semgrep pair cannot demonstrate consensus on real
+Java, for two independent and separately-diagnosed reasons. Neither is "the
+tools disagree" — they agreed exactly once and the key missed it.
+
+**Does NOT establish** that consensus fails on real Java. n=1 project, and one
+of the two tools contributed one finding, so the pair never had a chance. This
+is a measurement of THIS PAIR on THIS PROJECT.
+
+**BOUNDS fixed in advance and still binding:** no per-file answer key, so this
+measures RATE not CORRECTNESS; 7a's zero-false-merges does NOT transfer here —
+with zero merges there was nothing to audit, and real-code false-merge rate
+remains UNMEASURED.
+
+### Consequence: A4 is not answerable with this tool pair
+A4 asks for measured partial overlap. This pair produces no overlap on real Java
+because one member is silent on it. Answering A4 needs either a tool pair where
+both members fire on real framework code (CodeQL is the obvious candidate and is
+Rosetta-blocked), or semgrep Pro's interprocedural engine, which is commercial.
+The ecosystem constraint recorded earlier now has a concrete instance.
