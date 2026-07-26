@@ -439,6 +439,45 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    comparator on any future corpus BEFORE claiming consensus adds value there.
    The comparator is cheap: scratchpad/single_vs_consensus.py.
 
+0f. [STRUCTURAL GAP in the 0a guard — record stands regardless of counts]
+   LINEAGE EXISTS AT THE RULE LEVEL, BELOW THE ENGINE LEVEL 0a GUARDS.
+   Found 2026-07-26 while sizing open item 2. semgrep's
+   `unvalidated-redirect` rule declares, in its own metadata:
+       source-rule-url: https://find-sec-bugs.github.io/bugs.htm#UNVALIDATED_REDIRECT
+   i.e. **the semgrep rule is DERIVED FROM the FindSecBugs rule it later
+   "agrees" with.** Semgrep and SpotBugs are genuinely different ENGINES, so the
+   0a/engine-lineage guard correctly lets them merge. But at the RULE level this
+   is a rule agreeing with its own ancestor — shared provenance, not independent
+   corroboration.
+   THE GUARD IS INCOMPLETE IN A WAY NOBODY HAD NOTICED. 0a asks "are these the
+   same engine?" It does not ask "did one of these rules come FROM the other
+   tool?" Two independent engines can carry ported rule sets, and rule porting
+   is COMMON — semgrep's registry openly derives rules from FindSecBugs, and
+   the same pattern plausibly exists for other imported rule families.
+   WHY IT MATTERS BEYOND THE GUARD: the ensemble argument the whole tool rests
+   on is that different tools have different BLIND SPOTS. Two implementations of
+   the SAME RULE have the SAME blind spot by construction. Their agreement is
+   the correlated-error case the framing sweep recorded as carrying no ensemble
+   benefit — the very thing diversity-aware consensus exists to exclude.
+   MEASURED 2026-07-26: 5 of the 11 p/java rules that fired declare FindSecBugs
+   provenance, covering 702 of 1,909 semgrep findings (36.8%). Of 1,588
+   co-located rule pairs on OWASP, 483 (30.4%) are a rule paired with its own
+   ancestor; by location, 278 of 1,229 (22.6%) are derived-only. The four pairs:
+   httpservlet-path-traversal<-PATH_TRAVERSAL_IN 199, des-is-deprecated<-
+   DES_USAGE 171, use-of-sha1<-WEAK_MESSAGE_DIGEST_SHA1 85, use-of-md5<-
+   WEAK_MESSAGE_DIGEST_MD5 28. semgrep's C rules declare NO source, so zlib is
+   unaffected.
+   IMPACT: the enrichment SURVIVES — excluding derived-only pairs moves it from
+   70.5% to 69.7% against a 51.6% base rate. But the SINGLE REAL-CODE AGREEMENT
+   (the Struts near-miss) IS a derived pair, so on real code this project has
+   now observed ZERO independent cross-methodology agreements. See VALIDATION.md.
+   SCOPE OF THE FIX (not built): rule-level provenance would need reading
+   `source-rule-url` (or equivalent) from NATIVE tool output — SARIF DROPS IT,
+   verified: 0 occurrences of `source-rule-url` in semgrep's SARIF rule blob
+   versus its presence in the native JSON. So the shipped SARIF-only pipeline
+   CANNOT SEE rule provenance at all. Any fix needs a second input format or a
+   curated ancestry list.
+
 0c. [HIGH PRIORITY — LIVE PRODUCTION DEFECT, SILENT-ZERO FAILURE MODE. Scoped,
    NOT implemented.] Cross-tool PATH FORMS are structurally incompatible.
    SpotBugs derives file paths from BYTECODE and emits PACKAGE-relative:

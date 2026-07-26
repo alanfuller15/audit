@@ -2524,3 +2524,73 @@ Stated before going near it, so it is not mistaken for further analysis:
 - That is a HEADLINE rewrite, a re-examination of the 0.755 provenance (Lipp
   used six methodologically diverse tools), and a materially smaller claim —
   from "independent evidence" to "corroboration within a method".
+
+## RULE-LEVEL LINEAGE MEASURED (2026-07-26) — the concern was real; most numbers survive, ONE does not
+
+Triggered by finding that semgrep's `unvalidated-redirect` rule declares
+`source-rule-url: find-sec-bugs.github.io/bugs.htm#UNVALIDATED_REDIRECT` — i.e.
+it is DERIVED FROM the FindSecBugs rule it later "agreed" with.
+
+### 1. How much of semgrep's Java output is FindSecBugs-derived?
+```
+p/java rules that fired on OWASP        : 11
+...declaring FindSecBugs provenance     :  5
+semgrep findings from those rules       : 702 / 1,909  (36.8%)
+```
+
+### 2. How many merges are a rule agreeing with its OWN ANCESTOR?
+```
+co-located semgrep x SpotBugs rule pairs : 1,588
+RULE-AND-ITS-OWN-ANCESTOR                :   483  (30.4%)
+independent provenance                   : 1,105  (69.6%)
+
+by location: 1,229 co-located locations — 278 derived-ONLY (22.6%)
+
+the four ancestor pairs:
+  httpservlet-path-traversal <- PATH_TRAVERSAL_IN            199
+  des-is-deprecated          <- DES_USAGE                    171
+  use-of-sha1                <- WEAK_MESSAGE_DIGEST_SHA1      85
+  use-of-md5                 <- WEAK_MESSAGE_DIGEST_MD5       28
+```
+
+### 3. Do the C rules show the same? NO — zlib is unaffected.
+All four semgrep C rules that fired on zlib (`insecure-use-printf-fn`,
+`-scanf-fn`, `-strcat-fn`, `-string-copy-fn`) declare **no source**. The zlib
+numbers carry no rule-level lineage.
+
+### 4. RESTATED: the enrichment SURVIVES
+```
+base rate                                       51.6%
+ALL co-located merges          867/1,229 = 70.5%   (+18.9pp)
+EXCLUDING derived-only pairs   663/  951 = 69.7%   (+18.1pp)
+```
+**Excluding 22.6% of the merge population moves the enrichment by 0.8pp.** The
+70.4% enrichment is NOT an artifact of shared provenance. It holds on the
+independent-provenance subset alone.
+
+7a's zero-false-merges also survives: the 27 divergent cases audited were all
+`XSS_SERVLET`, which is not among the derived rules, so the audit's conclusion
+stands for the independent population.
+
+### 5. THE ONE NUMBER THAT DOES NOT SURVIVE — and it is the important one
+**The single real-code agreement this project has ever found is a
+rule-and-ancestor pair.** The Struts near-miss — semgrep
+`unvalidated-redirect` vs SpotBugs `UNVALIDATED_REDIRECT` — is exactly the
+derived case. So:
+
+- The only cross-methodology agreement observed on REAL code was **not
+  independent corroboration**; it was a rule agreeing with its own parent.
+- That agreement motivated Direction B's adoption (it was the one verified true
+  match at span 21) and framed open item 2.
+- Direction B still passes on OWASP evidence, which is largely independent
+  (69.6% of pairs). But its *real-code* justification is now one derived pair.
+
+**Restated honestly: on real code, this project has observed ZERO instances of
+independent cross-methodology agreement.** The previous count was one, and that
+one was shared provenance.
+
+### Consequence for §6.2
+It does not soften §6.2 — it sharpens it. The co-location finding stands, and
+the one apparent counter-example is removed. Acquisition remains not-the-lever,
+and the case that methodologically diverse tools produce observable independent
+agreement now has no supporting real-code instance at all.
