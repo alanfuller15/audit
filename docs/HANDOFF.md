@@ -275,7 +275,8 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    Regression test to add: two drivers of one lineage must NOT produce
    n_tools>1; two drivers of different lineage must still merge as today.
 
-1. [decision — BLOCKED on 3c] README honesty. Scoped
+1. [UNBLOCKED 2026-07-26 — the blocker DISSOLVED, it did not resolve] README
+   honesty. Scoped
    claim-by-claim against the PUBLIC README in
    docs/SCOPE_shipped_consensus_defect.md §5.
    FIRST: THE LOCAL CHECKOUT WAS BEHIND. Local HEAD af2336a; origin/main 1070558
@@ -291,9 +292,12 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    where independent tools agree"), quickstart step 2's name ("re-rank by
    consensus"), and the named flawfinder+cppcheck pair together promise an
    experience the default cannot deliver.
-   BLOCKED ON ITEM 3c — DO NOT RE-OPEN WITHOUT THE LIPP ARTIFACT.
-   This decision has now been held THREE times, and each prior attempt to settle
-   it was overturned by evidence arriving afterwards:
+   NO LONGER BLOCKED. The Lipp artifact was fetched 2026-07-26 and inspected,
+   and the blocker turned out to be void: there is nothing to re-earn, because
+   0.755 was NEVER a property of this implementation (see 3c(b)). The gate
+   dissolved rather than being satisfied.
+   This decision was held THREE times, each prior attempt overturned by
+   evidence arriving afterwards:
      1. "Don't edit, the fix makes the claims true" — overturned: the fix
         produced ZERO merges on real zlib.
      2. "Maybe add a tool to the quickstart" — overturned: a third tool yielded
@@ -406,27 +410,44 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    modes (constant placeholder; context-collision). Two of three real scanners
    tested violate the "fingerprint is an identity" assumption.
 
-3c. [Mac — GATING DEPENDENCY, blocks item 1] RE-EARN the Lipp numbers under
-   current code. Requires re-obtaining the Lipp artifact (Zenodo DOI
-   10.5281/zenodo.6515687; not on this machine — searched 2026-07-26).
-   (a) The 1,318 dedup cross-check. The item-2 cross-tool key, _norm_uri
-       normalization and +8 map entries can only ADD merges, so
-       "22,403 -> 21,061 dedup, 1,318 overlaps exact" may no longer reproduce.
-   (b) THE LARGER ONE — ROC-AUC 0.755 IS UNANCHORED. It was produced by ranking
-       the Lipp envelope with PRE-FIX code. The fix changes n_tools; n_tools
-       feeds the score (consensus = 1.6 * n_tools); and 0.755 WAS a ranking by
-       agreeing-tool count. The fix therefore changes the quantity the number
-       measured, over that same input. 0.755 is a property of RETIRED code — it
-       described a path that could not merge, not the one that can.
-       DO NOT assert it is "probably better" post-fix. That is plausible and
-       unmeasured, and this project does not make unmeasured assertions.
-       Until re-earned, 0.755 MUST NOT be quoted as a property of the shipped
-       tool — not in the README, not anywhere.
-   TENSION TO EXPECT, both true at once: the fix moves shipped toward validated
-   in MECHANISM and away from it in OUTPUT. The change justified by a
-   measurement invalidated that measurement. VALIDATION.md BOUND 2 anticipated
-   the transfer question but not this self-invalidation. Resolve by
-   re-measuring, NOT by discarding whichever framing is inconvenient.
+3c. [CLOSED 2026-07-26 — artifact fetched, both sub-items resolved as VOID]
+   The Lipp artifact (Zenodo 10.5281/zenodo.6515687, 6.9 MB, 15 files, all
+   MD5-verified) is now at scratchpad/lipp/. Neither sub-item needs re-earning.
+   (a) The 1,318 anchor is a ROUND-TRIP IDENTITY, not validation.
+       DO NOT RE-RUN IT AS THOUGH IT WERE. All three numbers are direct
+       properties of dataset/php/sca_results.json, measured:
+           rows in `findings`        = 21,061   (the "dedup" figure)
+           sum of len(found_by)      = 22,403   (the "raw" figure)
+           rows with >1 tool         =  1,318   (the "overlap" figure)
+       The prior session expanded that table into one SARIF result per
+       (finding, tool) and fed it to --ingest, which collapsed it back to the
+       table. Any correct implementation returns the original row count by
+       construction; it could not have failed. Worse for validation purposes,
+       the expansion gives co-flagging tools IDENTICAL (file, line, cwe), so
+       merging was guaranteed — precisely the condition real scanners do not
+       meet. Reclassify in any future write-up: a smoke test that dedup inverts
+       expansion, not an independent cross-check.
+   (b) ROC-AUC 0.755 needs no re-earning, and the earlier "unanchored" record
+       was WRONG IN ITS REASON. It is not invalidated by the item-2 fix.
+       On Lipp data the fix changes nothing: co-flagging rows share identical
+       (file, line, cwe) and carry no fingerprints, so they merged pre-fix and
+       post-fix alike. Moreover audit.py is a PASS-THROUGH on this input —
+       severity is absent (defaults to warning, sev_n=2 constant) and the text
+       contains "cwe" so kind is always "security" (KIND_W=1.5 constant), giving
+           score = 1.6*n_tools + 3.5 - 2.0*noisy
+       a monotone function of n_tools. Measured: raw n_tools and the
+       audit.py-equivalent score give IDENTICAL ROC-AUC 0.745 / PofB 0.495 on a
+       2,578-file reconstruction (only 1 file trips the noise term).
+       CONSEQUENCE: 0.755 measures LIPP'S PREMISE — that tool agreement predicts
+       vulnerability — on real CVE ground truth. It is externally valid and must
+       NOT be retracted or softened. What it does NOT measure is THIS
+       IMPLEMENTATION's ranking, which contributes nothing on that input. The
+       defect is ATTRIBUTION, not the number.
+       BOUND: reconstruction gave 0.745 vs 0.755 and PofB 0.495 vs 0.655, so the
+       exact universe/labelling differs from the original. Consensus AUC ranged
+       0.735-0.815 across nine plausible universe definitions; 0.755 sits inside.
+   The "MECHANISM vs OUTPUT" tension recorded earlier is VOID — it rested on the
+   fix having changed the measurement, which it did not.
 
 3d. [DONE 2026-07-26] TEST_DIR missed sibling names. Fixed via
    TEST_DIR_PREFIX (directory-only, so filenames are unaffected); both zlib

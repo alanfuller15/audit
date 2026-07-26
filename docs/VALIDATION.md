@@ -1369,3 +1369,61 @@ non-Claude input) but covers C/C++ ONLY. **No Java SARIF has been ingested by
 this project since the map changed.** The extension makes Java measurement
 POSSIBLE; it does not demonstrate the classes are right for Java. A4 remains
 unmeasured.
+
+## Lipp artifact fetched and inspected (2026-07-26) — 3c closes as VOID
+
+Zenodo 10.5281/zenodo.6515687, 6.9 MB, 15 files, all MD5-verified. Contains
+per-project `sca_results.json` `{file, line, cwe, found_by[]}`, `functions.json`,
+`cve_data.json` (CVE -> affected functions), a 5-analyzer rule-id->CWE mapping,
+the CWE hierarchy, and the authors' derived CSVs + R notebook.
+**There is no SARIF in the archive.** Totals: 96,875 findings / 98,417 tool-flags
+/ 55,202 functions / 193 CVEs across 9 projects.
+
+### The 1,318 anchor is a round-trip identity, not a cross-check
+All three reported numbers are direct properties of the source file:
+
+```
+rows in findings (php)   = 21,061   <- reported as the "dedup" result
+sum of len(found_by)     = 22,403   <- reported as "raw"
+rows with >1 tool        =  1,318   <- reported as "overlaps, matched exactly"
+```
+
+The prior session expanded that table into one SARIF result per (finding, tool)
+and fed it to `--ingest`, which collapsed it back to the table. Any correct
+implementation returns the original row count by construction. It is recorded in
+this file as "independently MATCHES the hand-computed count. Not approximate;
+exact" — which reads as corroboration and is not. **Reclassified: a smoke test
+that dedup inverts expansion.** It must not be re-run as validation. The
+expansion also gave co-flagging tools identical `(file, line, cwe)`, so merging
+was guaranteed — exactly the condition real scanners fail.
+
+### ROC-AUC 0.755 — the earlier "unanchored" record was WRONG IN ITS REASON
+That record claimed the item-2 fix invalidated 0.755 by changing `n_tools`.
+It does not. On Lipp data the fix changes nothing: co-flagging rows share
+identical `(file, line, cwe)` and carry no fingerprints, so they merged pre-fix
+and post-fix alike.
+
+Further, `audit.py` is a **pass-through** on this input. Severity is absent
+(defaults to `warning`, `sev_n=2`) and every text contains "cwe" so `kind` is
+always `security` (`KIND_W=1.5`). Hence
+`score = 1.6*n_tools + 3.5 - 2.0*noisy` — monotone in `n_tools`. Measured on a
+2,578-file reconstruction, where exactly one file trips the noise term:
+
+```
+raw n_tools           ROC-AUC=0.745   PofB@20%=0.495
+audit.py-equivalent   ROC-AUC=0.745   PofB@20%=0.495     (identical)
+```
+
+**So the number stands and must not be retracted or softened.** 0.755 measures
+Lipp's premise — tool agreement predicts vulnerability — against real CVE ground
+truth across 9 projects. That is externally valid. What it does not measure is
+this implementation's ranking, which contributes nothing on that input.
+
+**The defect is ATTRIBUTION, not the number.** Both the previous "unanchored"
+framing and the "MECHANISM vs OUTPUT tension" are withdrawn: they rested on the
+fix having changed the measurement, which it did not.
+
+BOUND: the reconstruction gave 0.745 vs 0.755 and PofB 0.495 vs 0.655, so the
+exact universe/labelling differs from the original. Consensus AUC ranged
+0.735-0.815 across nine plausible universe definitions and 0.755 sits inside,
+but this is a close reproduction, not an exact one.
