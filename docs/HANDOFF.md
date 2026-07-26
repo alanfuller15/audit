@@ -144,8 +144,14 @@ Validated (see VALIDATION.md for full provenance + cross-checks):
     * The remaining IFA/PMI advantage does not survive a SIZE-MATCHED control.
   See item 0g and VALIDATION.md "0g CONCLUSION". The README no longer quotes any
   of these. WHAT SURVIVES: multi-tool functions are ~1.5x more likely to contain
-  a real CVE than SIZE-MATCHED single-tool functions (p<0.0001) — a precision
-  finding, NOT a ranking claim.
+  a real CVE than SIZE-MATCHED single-tool functions — a precision finding, NOT
+  a ranking claim. CONFIRMED 2026-07-26 by item 0j against strata refined to
+  10/50/100/200 and exact-LOC, and by continuous covariate adjustment (OR 1.39).
+  **But the accompanying `p<0.0001` is WITHDRAWN** — it conditioned on one arm.
+  Honest significance is p~0.03-0.08 unclustered, p~0.001 clustered on project,
+  project-bootstrap 95% CI [0.99x, 2.58x]. Marginal, not overwhelming. And it
+  supports ">=2 tools beats 1" ONLY — the response is flat at 3 tools and
+  point-estimate negative at >=4, so n_tools is not a graded confidence signal.
 
 Tested and REJECTED (do not re-attempt as pending work):
 - Tool-quality WEIGHTING layer. Tested on real data and it does NOT beat plain
@@ -454,22 +460,67 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    comparator on any future corpus BEFORE claiming consensus adds value there.
    The comparator is cheap: scratchpad/single_vs_consensus.py.
 
-0j. [!! URGENT — THE README'S LAST NUMBER IS SUSPECT !!] The 1.5x claim.
-   README says multi-tool functions are ~1.5x more likely to contain a real CVE
-   than SIZE-MATCHED single-tool functions, p<0.0001. That rests on DECILE
-   matching. The 0i logistic model, controlling with CONTINUOUS log(LOC) — the
-   finer and Kronmal-recommended control — puts the n_tools coefficient at
-   b=+0.057, p=0.582, i.e. NOT SIGNIFICANT, attenuated 89% from +0.525 when
-   log(LOC) is absent. VIF is 1.10, so this is not a collinearity artifact.
-   THE TWO DISAGREE. Likely cause: decile matching leaves large residual size
-   variation within strata on a heavily skewed distribution.
-   IN FLIGHT WHEN THE SESSION ENDED, DO THIS FIRST: re-run the matched test at
-   10 / 50 / 200 strata. If the effect DECAYS as strata refine, the 1.5x does not
-   survive and the README needs a fourth correction — remove or restate it.
-   If it HOLDS at 200 strata, the logistic's linear-in-n_tools specification is
-   the suspect instead (n_tools 1..6 may not act linearly; try it as a factor).
-   Until settled, DO NOT cite the 1.5x. It is the only performance-adjacent
-   number left in the README, and it went in on the weaker of two controls.
+0j. [CLOSED 2026-07-26 — the 1.5x SURVIVES; the `p<0.0001` DOES NOT.
+   The README needs a fourth correction, but NOT the one anticipated.]
+   Full record: VALIDATION.md "0j RESULT". Scripts: analysis/scripts/run_0j.py
+   and fix_clusterperm.py; output in analysis/results/.
+
+   THE PRE-REGISTERED CHECK RAN AND WENT THE OTHER WAY. Matched ratio by strata:
+   1.51x (K=10), 1.43x (20), 1.47x (50), 1.53x (100), 1.52x (200), 1.31x (exact
+   LOC). It does NOT decay. The hypothesised cause of the disagreement — "decile
+   matching leaves large residual size variation within strata" — was MEASURED
+   AND REFUTED: size imbalance is +8.1% at K=10 and -0.3% by K=50, and the ratio
+   does not move when it vanishes. Deciles were adequate here.
+   (K=500/1000 rise to 1.83x/1.91x is control-pool depletion, NOT a growing
+   effect — at K=1000, 16.8% of multi units have <5 distinct controls. Do not
+   quote those.)
+
+   SO THE HANDOFF'S OWN FALLBACK BRANCH FIRED, AND IT WAS RIGHT: the
+   linear-in-n_tools specification was the suspect. As a factor + log(LOC):
+   n_tools=2 OR=1.47 (p=0.051), =3 OR=1.35 (p=0.273), >=4 OR=0.67 (p=0.478).
+   Levels 5-6 are perfect separation (0 vulnerable in 35 units) and had to be
+   collapsed. Essentially ALL the effect is the 1->2 step and the response is
+   flat-to-falling above it, so a single linear slope averages to ~0. 0i's
+   p=0.582 was a FUNCTIONAL-FORM ARTIFACT, not an absence of signal.
+   0i's actual finding (not orderable under an effort budget) is UNAFFECTED.
+
+   THE TWO METHODS NEVER DISAGREED — THEY ESTIMATED DIFFERENT QUANTITIES. 0i
+   fitted n_tools as a continuous slope; the matched test is a binary
+   multi(n>1) vs single(n=1) contrast. Fit the MATCHING contrast with continuous
+   log(LOC) and you get OR=1.39, p=0.076 — agreeing with the 1.47-1.52x from
+   fine matching. Record this: the apparent contradiction that made 0j urgent
+   was an estimand mismatch, and comparing a factor contrast against a linear
+   slope will produce the same false alarm again.
+
+   >>> WHAT IS ACTUALLY WRONG WITH THE README: `p < 0.0001`. <<<
+   That statistic held the multi group's own 81/5,269 FIXED and resampled only
+   the controls, ignoring sampling variability in the numerator population.
+   Honest tests that vary both arms: two-proportion z p=0.041-0.054;
+   within-stratum permutation p=0.030-0.058; logistic p=0.076. Clustered on
+   project (informative cells only) p=0.0008 at K=50. Project-level cluster
+   bootstrap 95% CI: [0.99x, 2.58x], median 1.51x.
+   THE EFFECT IS MARGINAL, NOT OVERWHELMING. The error is independent of the
+   strata question and would have been there at any K.
+
+   CLUSTERING CHECKED: direction consistent in 9/9 projects; leave-one-project-
+   out 1.25x-1.61x, so no single project carries it. But nine clusters is few,
+   and across a resample of them no-effect is barely inside the interval.
+
+   SECOND THING THE README MAY NOT IMPLY: that MORE agreement means MORE signal.
+   The data support ">=2 tools beats 1 tool" and nothing further — flat at 3,
+   point-estimate negative at >=4. Graded confidence in n_tools is unsupported.
+
+   README correction DRAFTED, NOT APPLIED: docs/README_correction_0j_draft.md.
+
+0j-note. THE GENERALISABLE LESSON, recorded because it cost a session's worry:
+   five claims had died when a better-matched CONTROL was applied, so the
+   sixth was assumed to be dying the same way. It was not. Refining the control
+   left the point estimate exactly where it was; what was wrong was the
+   SIGNIFICANCE TEST, which nobody had re-examined because effect size kept
+   being the thing under suspicion. SESSION_HANDOFF §3a's rule ("ask what it is
+   being compared to") is right but INCOMPLETE — also ask what the p-value holds
+   fixed. A resampling p-value that conditions on one arm is not a test of the
+   comparison.
 
 0i. [CLOSED 2026-07-26 — D HOLDS, terminal answer. Do NOT reattempt.]
    Size-controlled formulation. All four candidates run as pre-registered.
@@ -565,8 +616,17 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    CANNOT SEE rule provenance at all. Any fix needs a second input format or a
    curated ancestry list.
 
-0c. [HIGH PRIORITY — LIVE PRODUCTION DEFECT, SILENT-ZERO FAILURE MODE. Scoped,
-   NOT implemented.] Cross-tool PATH FORMS are structurally incompatible.
+0c. [STALE HEADER — CORRECTED 2026-07-26. The DISCLOSURE half IS IMPLEMENTED in
+   shipped code; verified against the tree, not asserted: `_path_root_mismatch`
+   at src/audit.py:834, wired at :1041 and :1339, rendered at
+   audit_html_report.py:74. The README's "Path-root mismatch disclosure" bullet
+   is therefore ACCURATE. Recommended sequence (b)-then-(a) was followed: it
+   DISCLOSES the mismatch but does NOT merge across roots, so the suffix-match
+   half — option (a) behind a uniqueness guard — is genuinely still open.
+   The original entry follows unchanged.]
+   [former header: HIGH PRIORITY — LIVE PRODUCTION DEFECT, SILENT-ZERO FAILURE
+   MODE. Scoped, NOT implemented.]
+   Cross-tool PATH FORMS are structurally incompatible.
    SpotBugs derives file paths from BYTECODE and emits PACKAGE-relative:
        org/owasp/benchmark/testcode/BenchmarkTest00001.java
    semgrep (and source-level tools generally) emit SCAN-ROOT-relative:

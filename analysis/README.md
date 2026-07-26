@@ -32,6 +32,8 @@ how to run them.
 | `manualup.py` | Consensus vs ManualUp (ascending size) and ManualDown (descending size), per Zhou et al. 2018 as described in arXiv:2302.00394. Source of the ManualDown ROC-AUC 0.845 that killed the 0.755 headline. | VALIDATION.md 0g |
 | `size_confound.py` | Spearman(n_tools, size) = +0.629 file / +0.304 function, and the decile-matched random baseline. **This is the decile-matching implementation whose method item 0j re-examines.** | VALIDATION.md 0g/0h |
 | `recon755.py` | Reconstructs the file-level ROC-AUC 0.755 / PofB 0.655 directly from Lipp's `found_by` lists, no SARIF and no `audit.py`. Reproducing it that way is what showed 0.755 was never a property of this implementation. | VALIDATION.md 3c(b) |
+| `run_0j.py` | Item 0j. Whether the README's 1.5x survives size controls finer than deciles: matching at K=10…1000 and exact-LOC, the same contrast under continuous covariate adjustment, `n_tools` as a factor, and the residual size-imbalance diagnostic. Also replaces the original `p<0.0001` with tests that vary both arms. ~50 s. | VALIDATION.md "0j RESULT"; `results/0j_stratification_refinement.txt` |
+| `fix_clusterperm.py` | The cluster permutation from 0j, corrected to compute the statistic over informative (mixed) cells only — pure cells carry no information about the contrast and would narrow the null. ~30 s. | VALIDATION.md "0j RESULT"; `results/0j_cluster_permutation.txt` |
 
 ### OWASP Benchmark v1.2 — synthetic Java, labelled
 
@@ -222,8 +224,12 @@ is a *different* measurement — scanner versions move.
 - Provenance tier of the scripts themselves: `[self-tested]`. They are Claude-
   written analysis code. What is externally grounded is their **inputs** — real
   scanner output, real CVE labels, a published artifact — not the analysis.
-- One measurement quoted in VALIDATION.md has **no script here**: the
-  size-matched precision test (multi 1.54% vs size-matched single 1.02%,
-  2,000 draws, the README's 1.5x). It was run inline and never written to a
-  file. Item 0j re-derives it; see `results/` for the 0j output.
+- The size-matched precision test behind the README's 1.5x (multi 1.54% vs
+  size-matched single 1.02%, 2,000 draws) originally had **no script** — it was
+  run inline and never written to a file. `run_0j.py` re-derives it and
+  reproduces the recorded figures exactly (1.54% / 1.02% / 1.51x) before going
+  on to refine them, so the gap is closed.
+- `run_0j.py` copies its unit construction verbatim from `run_0i.py` so the two
+  are comparable by construction. If you change one, change both or the
+  comparison silently stops meaning anything.
 - `pairwise.py` references a CodeQL SARIF that does not exist (see §1).

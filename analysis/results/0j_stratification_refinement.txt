@@ -1,0 +1,154 @@
+==============================================================================
+0j - DOES THE 1.5x SURVIVE A FINER SIZE CONTROL?
+==============================================================================
+
+function-level units 14,656   vulnerable 135 (0.92%)
+  MULTI-tool (n>1)   5,269   vulnerable  81  = 1.54%   mean LOC    59.4  median    34
+  SINGLE-tool (n=1)  9,387   vulnerable  54  = 0.58%   mean LOC    30.4  median    18
+
+  UNCONTROLLED ratio = 2.67x   (README names this as 2.7x and attributes ~40% of it to size)
+
+==============================================================================
+TEST 1 - MATCHED PRECISION AS STRATA REFINE (2,000 draws each)
+==============================================================================
+  strata       multi matched single      ratioP(ctl>=multi)   mLOC-m   mLOC-c strat.spread dropped
+  K=10          1.54%        1.02% +/-0.12     1.51x     0.0000       59       55        1.4x       0
+  K=20          1.54%        1.08% +/-0.13     1.43x     0.0000       59       58        1.2x       0
+  K=50          1.54%        1.05% +/-0.12     1.47x     0.0005       59       60        1.1x       0
+  K=100         1.54%        1.00% +/-0.12     1.53x     0.0000       59       60        1.0x       0
+  K=200         1.54%        1.01% +/-0.11     1.52x     0.0000       59       60        1.0x       0
+  K=500         1.54%        0.84% +/-0.10     1.83x     0.0000       59       62        1.0x       0
+  K=1000        1.55%        0.81% +/-0.10     1.91x     0.0000       60       62        1.0x      30
+
+  --- limiting case: EXACT LOC matching (stratum = one distinct LOC value) ---
+  exact         1.21%        0.92% +/-0.11     1.31x     0.0135       47       47        1.0x     207
+
+  control-pool depth (why the ratio RISES at very fine K):
+  strata       median singles available per multi unit   % with <5
+  K=10                                             904        0.0%
+  K=20                                             445        0.0%
+  K=50                                             173        0.0%
+  K=100                                             84        0.0%
+  K=200                                             41        0.0%
+  K=500                                             16        1.0%
+  K=1000                                             7       16.8%
+
+==============================================================================
+TEST 1b - IS 'p<0.0001' REAL? Two tests of the SAME matched contrast
+==============================================================================
+  The p-value above holds the multi group's 81/5,269 FIXED and resamples only
+  the controls. Both groups are random samples, so that understates the
+  uncertainty. Two honest alternatives:
+
+  K=10
+    (a) two-proportion z, both groups random : z=+2.36  p=0.0536
+    (b) within-stratum label permutation     : p=0.0295  (59/2000 permutations >= observed)
+
+  K=50
+    (a) two-proportion z, both groups random : z=+2.31  p=0.0508
+    (b) within-stratum label permutation     : p=0.0575  (115/2000 permutations >= observed)
+
+  K=200
+    (a) two-proportion z, both groups random : z=+2.42  p=0.0414
+    (b) within-stratum label permutation     : p=0.0350  (70/2000 permutations >= observed)
+
+==============================================================================
+TEST 2 - THE SAME CONTRAST UNDER CONTINUOUS COVARIATE ADJUSTMENT
+        (Brenner & Blettner's recommended control; the REFERENCE)
+==============================================================================
+
+  multi alone (= the uncontrolled 2.7x)
+    int            b= -5.1523  se= 0.1365  z=-37.75  p=0 ***
+    multi(n>1)     b= +0.9927  se= 0.1765  z= +5.62  p=1.88e-08 ***  OR=  2.70
+
+  multi + log(LOC)   <-- DIRECT ANALOGUE OF THE MATCHED TEST
+    int            b= -8.5980  se= 0.3526  z=-24.39  p=0 ***
+    multi(n>1)     b= +0.3294  se= 0.1856  z= +1.77  p=0.076   OR=  1.39
+    log(LOC)       b= +1.0133  se= 0.0822  z=+12.32  p=0 ***  OR=  2.75
+
+  multi + log(LOC) + log(LOC)^2
+    int            b=-10.2546  se= 1.1035  z= -9.29  p=0 ***
+    multi(n>1)     b= +0.3045  se= 0.1849  z= +1.65  p=0.0995   OR=  1.36
+    log(LOC)       b= +1.8069  se= 0.4996  z= +3.62  p=0.000298 ***  OR=  6.09
+    log(LOC)^2     b= -0.0888  se= 0.0549  z= -1.62  p=0.106   OR=  0.92
+
+==============================================================================
+TEST 3 - IS n_tools NON-LINEAR IN LOG-ODDS? (the fallback the handoff
+        says to check IF the matched effect had held at 200 strata)
+==============================================================================
+  n_tools levels present: [1, 2, 3, 4, 5, 6]
+    n_tools=1:  9,387 units,  54 vulnerable ( 0.58%), mean LOC    30.4
+    n_tools=2:  4,017 units,  57 vulnerable ( 1.42%), mean LOC    50.8
+    n_tools=3:  1,045 units,  20 vulnerable ( 1.91%), mean LOC    74.3
+    n_tools=4:    172 units,   4 vulnerable ( 2.33%), mean LOC   155.8
+    n_tools=5:     31 units,   0 vulnerable ( 0.00%), mean LOC   114.2
+    n_tools=6:      4 units,   0 vulnerable ( 0.00%), mean LOC   161.2
+
+  n_tools=5 and n_tools=6 contain ZERO vulnerable units (31 and 4 units), which
+  is perfect separation - the full 6-level factor has a singular Hessian and no
+  standard errors exist. Levels are collapsed to 1 / 2 / 3 / >=4 so the model is
+  estimable. Collapsing is forced by the data, not chosen to help the result.
+
+  n_tools as FACTOR (1 / 2 / 3 / >=4) + log(LOC), reference n_tools=1
+    int            b= -8.7055  se= 0.3632  z=-23.97  p=0 ***
+    n_tools=2      b= +0.3837  se= 0.1964  z= +1.95  p=0.0507   OR=  1.47
+    n_tools=3      b= +0.3026  se= 0.2762  z= +1.10  p=0.273   OR=  1.35
+    n_tools>=4     b= -0.3939  se= 0.5548  z= -0.71  p=0.478   OR=  0.67
+    log(LOC)       b= +1.0404  se= 0.0846  z=+12.30  p=0 ***  OR=  2.83
+
+  READ THIS AGAINST 0i's LINEAR TERM. 0i fitted n_tools as a single linear
+  slope and got b=+0.057, p=0.582. The factor model shows why that is the wrong
+  specification: essentially all of the effect is the 1 -> 2 step, and the
+  response is FLAT or falling above 2. A linear slope averages a real first step
+  against a flat tail and returns ~0. The null 0i reported is an artifact of the
+  functional form, not an absence of signal.
+
+==============================================================================
+TEST 4 - WHY THE TWO METHODS CAN DISAGREE: residual size imbalance
+==============================================================================
+  K=10    mean LOC  multi     59.4   stratum-mean of available controls     54.9   imbalance     +4.4 LOC (+8.1%)
+  K=50    mean LOC  multi     59.4   stratum-mean of available controls     59.5   imbalance     -0.2 LOC (-0.3%)
+  K=200   mean LOC  multi     59.4   stratum-mean of available controls     60.1   imbalance     -0.7 LOC (-1.2%)
+
+  (a positive imbalance means the matched control is SMALLER than the
+   multi-tool unit it is standing in for, so size favours multi and the
+   matched ratio is inflated by exactly that much.)
+
+==============================================================================
+TEST 5 - CLUSTERING. 14,656 units come from 9 projects and vulnerable
+        functions cluster by project and by CVE. Unit-independence is an
+        assumption both tests above make, and p is already near 0.05.
+==============================================================================
+
+  project        units   multi  m.vuln   m.rate  single  s.vuln   s.rate  raw ratio
+  binutils       1,332     426      20    4.69%     906      19    2.10%      2.24x
+  ffmpeg         2,646     872       4    0.46%   1,774       5    0.28%      1.63x
+  libpng            74      10       1   10.00%      64       4    6.25%      1.60x
+  libtiff          128      39       4   10.26%      89       4    4.49%      2.28x
+  libxml2        1,162     410      16    3.90%     752       3    0.40%      9.78x
+  openssl        3,330   1,197      15    1.25%   2,133       7    0.33%      3.82x
+  php            4,666   2,025       8    0.40%   2,641       2    0.08%      5.22x
+  poppler          684      78       4    5.13%     606      10    1.65%      3.11x
+  sqlite3          634     212       9    4.25%     422       0    0.00%       infx
+
+  LEAVE-ONE-PROJECT-OUT, K=50 matched ratio (does one project carry it?):
+    ALL PROJECTS         multi  1.54%  matched single  1.06%  ratio  1.45x   (n_multi=5,269)
+    drop binutils        multi  1.26%  matched single  0.79%  ratio  1.60x   (n_multi=4,843)
+    drop ffmpeg          multi  1.75%  matched single  1.13%  ratio  1.54x   (n_multi=4,397)
+    drop libpng          multi  1.52%  matched single  1.00%  ratio  1.52x   (n_multi=5,259)
+    drop libtiff         multi  1.47%  matched single  0.96%  ratio  1.53x   (n_multi=5,230)
+    drop libxml2         multi  1.34%  matched single  1.07%  ratio  1.25x   (n_multi=4,859)
+    drop openssl         multi  1.62%  matched single  1.15%  ratio  1.41x   (n_multi=4,072)
+    drop php             multi  2.25%  matched single  1.40%  ratio  1.61x   (n_multi=3,244)
+    drop poppler         multi  1.48%  matched single  0.94%  ratio  1.58x   (n_multi=5,191)
+    drop sqlite3         multi  1.42%  matched single  1.06%  ratio  1.34x   (n_multi=5,057)
+
+  CLUSTER PERMUTATION - permute the multi/single label within
+  (project x size stratum) cells, so the null respects project structure:
+    p = 0.0010   (2/2000 permutations >= observed diff of 0.96pp)
+
+  CLUSTER BOOTSTRAP - resample the 9 PROJECTS with replacement,
+  recompute the K=50 matched ratio. This is the honest interval if the
+  project is the sampling unit rather than the function:
+    matched ratio 95% CI over projects: [0.99x, 2.58x]   median 1.51x
+    fraction of project-bootstraps with ratio <= 1.0 (no effect): 0.033

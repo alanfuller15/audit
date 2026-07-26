@@ -3243,6 +3243,13 @@ to the floor; B, C and raw consensus all fail to beat size-matched random.
 It closes this direction honestly rather than leaving it to be reattempted.
 
 ### !! UNRESOLVED — THIS RUN PUTS THE README'S 1.5x CLAIM IN DOUBT !!
+> **[RESOLVED 2026-07-26 — see "0j RESULT" at the end of this file. The doubt
+> recorded below was reasonable but the hypothesis in it is now MEASURED AND
+> REFUTED: refining the strata does NOT decay the effect (1.51x at K=10, 1.52x
+> at K=200) and residual size imbalance is gone by K=50. The real disagreement
+> was that 0i's linear-in-n_tools slope and the matched test estimate DIFFERENT
+> QUANTITIES. What did not survive is the `p<0.0001`, for an unrelated reason.
+> Do not cite the paragraphs below as the current state.]**
 The README currently states multi-tool functions are ~1.5x more likely to
 contain a real CVE than SIZE-MATCHED single-tool functions (p<0.0001). That was
 measured by DECILE matching. This run's logistic model, using CONTINUOUS
@@ -3258,3 +3265,189 @@ matched test at 10 / 50 / 200 strata and see whether the effect decays as strata
 are refined. If it decays toward the logistic result, the 1.5x does not survive
 and the README needs a fourth correction. **Treat the 1.5x as SUSPECT until
 this is settled.**
+
+## 0j RESULT (2026-07-26) — RESOLVED. The 1.5x SURVIVES; the p<0.0001 DOES NOT.
+## The hypothesised mechanism was measured and REFUTED.
+
+Tier: `[self-tested]` analysis over `[externally-grounded]` inputs (Lipp et al.
+CVE labels, Zenodo 10.5281/zenodo.6515687). Same tier the 1.5x already carried.
+**This is not a tier move.** Scripts: `analysis/scripts/run_0j.py`,
+`analysis/scripts/fix_clusterperm.py`. Output: `analysis/results/0j_*.txt`.
+
+### STUDY first (the method question, settled before the test was run)
+Brenner H, Blettner M. "Controlling for continuous confounders in epidemiologic
+research." *Epidemiology* 1997;8(4):429-34. PMID 9209859. `[fetched]`, abstract
+retrieved verbatim this session:
+
+> "…inclusion of the confounder as a single linear term often provides
+> satisfactory control for confounding even in situations in which the model
+> assumptions are clearly violated. In contrast, categorization of the
+> confounder may often lead to serious residual confounding **if the number of
+> categories is small**."
+
+This is why the covariate-adjusted logistic was treated as the REFERENCE and
+decile matching as the SUSPECT, rather than the reverse. It corrects the
+inherited framing, in which decile matching had been chosen because there is no
+numpy on this machine — a tooling constraint that had silently become a
+methodological choice (SESSION_HANDOFF §3b).
+
+### REPRODUCTION CHECK, run before anything was allowed to be overturned
+`run_0j.py` reproduces the prior session's recorded decile figures exactly,
+without being fitted to them:
+
+```
+recorded (prior session)  multi 1.54%   size-matched single 1.02% +/- 0.14   = 1.51x
+reproduced (this session) multi 1.54%   size-matched single 1.02% +/- 0.12   = 1.51x
+```
+Unit construction is copied verbatim from `run_0i.py`, so 0i and 0j are
+comparable by construction.
+
+### TEST 1 — the effect does NOT decay as strata refine
+```
+strata      multi   matched single      ratio   mean LOC multi / control
+K=10        1.54%   1.02% +/-0.12       1.51x        59 / 55
+K=20        1.54%   1.08% +/-0.13       1.43x        59 / 58
+K=50        1.54%   1.05% +/-0.12       1.47x        59 / 60
+K=100       1.54%   1.00% +/-0.12       1.53x        59 / 60
+K=200       1.54%   1.01% +/-0.11       1.52x        59 / 60
+exact LOC   1.21%   0.92% +/-0.11       1.31x        47 / 47   (207 multi unmatchable)
+```
+K=500 (1.83x) and K=1000 (1.91x) are NOT evidence of a growing effect and must
+not be quoted: at K=1000 the median multi unit has only 7 distinct single-tool
+controls in its stratum and 16.8% have fewer than 5, so the same few controls
+are resampled and the ratio moves for reasons unrelated to size. Reported here
+so the rise is not later mistaken for signal.
+
+### THE HYPOTHESISED MECHANISM IS REFUTED, NOT MERELY UNCONFIRMED
+The prior session's stated reason for doubting the 1.5x was that "decile
+matching leaves large residual size variation within strata on a heavily skewed
+distribution." Measured directly:
+```
+K=10   mean LOC multi 59.4 vs available controls 54.9   imbalance +4.4 LOC (+8.1%)
+K=50   mean LOC multi 59.4 vs available controls 59.5   imbalance -0.2 LOC (-0.3%)
+K=200  mean LOC multi 59.4 vs available controls 60.1   imbalance -0.7 LOC (-1.2%)
+```
+Deciles carried an +8% size imbalance favouring the multi group; it is gone by
+K=50. If residual size variation were driving the result, the ratio would fall
+as that imbalance vanished. It does not — it is 1.51x at K=10 and 1.52x at
+K=200. **Deciles were adequate here.** Brenner & Blettner's warning is about
+what CAN happen with few categories; on this variable and this contrast, it did
+not.
+
+### WHY 0i AND THE MATCHED TEST APPEARED TO DISAGREE — DIFFERENT ESTIMANDS
+This is the substantive correction, and it is a correction to the HANDOFF's
+framing of 0j, not to the measurement.
+
+0i fitted `n_tools` as a **single linear slope** (b=+0.057, p=0.582). The
+matched test is a **binary multi(n>1) vs single(n=1)** contrast. Those are not
+the same quantity. Fitting the MATCHING contrast with the continuous covariate:
+```
+multi alone                    b=+0.9927  p=1.9e-08   OR=2.70   (= the uncontrolled 2.7x)
+multi + log(LOC)               b=+0.3294  p=0.076     OR=1.39   <-- direct analogue
+multi + log(LOC) + log(LOC)^2  b=+0.3045  p=0.100     OR=1.36
+```
+OR=1.39 under continuous adjustment against 1.47-1.52x under fine matching:
+**the two methods agree on magnitude.** They differed only because the two
+numbers being compared were answering different questions.
+
+### 0i's NULL WAS A FUNCTIONAL-FORM ARTIFACT
+The HANDOFF pre-registered this branch: "If it HOLDS at 200 strata, the
+logistic's linear-in-n_tools specification is the suspect instead." It held, so
+the specification was tested. `n_tools` as a factor + log(LOC):
+```
+n_tools=1:  9,387 units,  54 vuln (0.58%)   reference
+n_tools=2:  4,017 units,  57 vuln (1.42%)   b=+0.384  p=0.051   OR=1.47
+n_tools=3:  1,045 units,  20 vuln (1.91%)   b=+0.303  p=0.273   OR=1.35
+n_tools>=4:   207 units,   4 vuln (1.93%)   b=-0.394  p=0.478   OR=0.67
+log(LOC)                                    b=+1.040  p<1e-30   OR=2.83
+```
+Levels 5 and 6 (31 and 4 units, ZERO vulnerable) are perfect separation — the
+6-level factor has a singular Hessian and no standard errors exist. Collapsing
+to 1/2/3/>=4 is forced by the data, not chosen.
+
+**Essentially all of the effect is the 1 -> 2 step; the response is flat at 3
+and negative above.** A single linear slope averages a real first step against a
+flat-to-falling tail and returns ~0. So 0i's p=0.582 is an artifact of the
+functional form, not an absence of signal. **0i's headline finding — that the
+signal is not ORDERABLE under an effort budget — is untouched by this** and
+still stands; what is corrected is only the inference that `n_tools` carries no
+precision signal at all.
+
+### !! THE p<0.0001 IS NOT SUPPORTABLE — THIS IS WHAT THE README GETS WRONG !!
+The recorded p<0.0001 came from `P(size-matched control >= multi)`, which holds
+the multi group's own 81/5,269 **FIXED** and resamples only the controls. Both
+arms are random samples, so that statistic ignores sampling variability in the
+numerator population and is anti-conservative by orders of magnitude.
+
+Replaced with tests that vary both arms:
+```
+                                            K=10      K=50      K=200
+two-proportion z (both groups random)      p=0.054   p=0.051   p=0.041
+within-stratum label permutation           p=0.030   p=0.058   p=0.035
+logistic multi + log(LOC)                            p=0.076
+```
+**The honest p is ~0.03-0.08, not <0.0001.** The effect is marginal, not
+overwhelming. This error is independent of the strata question and would have
+been present at any K.
+
+### CLUSTERING — checked, because 81 events across 9 projects is not 81 draws
+```
+project     multi n   m.rate   single n   s.rate   raw ratio
+binutils        426    4.69%        906    2.10%     2.24x
+ffmpeg          872    0.46%      1,774    0.28%     1.63x
+libpng           10   10.00%         64    6.25%     1.60x
+libtiff          39   10.26%         89    4.49%     2.28x
+libxml2         410    3.90%        752    0.40%     9.78x
+openssl       1,197    1.25%      2,133    0.33%     3.82x
+php           2,025    0.40%      2,641    0.08%     5.22x
+poppler          78    5.13%        606    1.65%     3.11x
+sqlite3         212    4.25%        422    0.00%      inf
+```
+**The direction is consistent in all 9 of 9 projects.** Leave-one-project-out
+(K=50) gives 1.25x-1.61x, so no single project carries it.
+
+Cluster permutation, permuting the multi/single label within (project x size
+stratum) cells and computing the statistic over INFORMATIVE (mixed) cells only —
+pure cells carry no information about the contrast and letting them contribute a
+fixed offset would narrow the null:
+```
+K=10    84 informative cells, 99.6% of units   p=0.0000  (0/4000)
+K=50   330 informative cells, 97.0% of units   p=0.0008  (3/4000)
+K=200  708 informative cells, 94.1% of units   p=0.0022  (9/4000)
+```
+Conditioning on project SHARPENS the result rather than weakening it, because
+between-project base rates vary enormously (php 0.08% to libpng 6.25%) and
+removing that heterogeneity removes noise, not signal.
+
+**But the generalisation bound is wide.** Cluster bootstrap resampling the 9
+PROJECTS with replacement — the honest interval if the project, not the
+function, is the sampling unit:
+```
+matched ratio 95% CI over projects: [0.99x, 2.58x]   median 1.51x
+fraction of project-bootstraps with ratio <= 1.0: 0.033
+```
+Within this corpus the effect is solid; across a different sample of nine
+projects, no-effect is barely inside the interval. Nine clusters is few.
+
+### WHAT THE README MAY AND MAY NOT SAY
+MAY: multi-tool functions are ~1.5x more likely to contain a real CVE than
+size-matched single-tool functions. Point estimate stable at 1.43x-1.53x across
+every stratification from 10 to 200, 1.39x under continuous covariate
+adjustment, direction consistent in 9/9 projects.
+
+MAY NOT:
+1. **`p < 0.0001`.** Withdrawn. The honest figure is p~0.03-0.08 unclustered
+   (p~0.001 clustered on project), with a project-bootstrap 95% CI of
+   [0.99x, 2.58x].
+2. **Any suggestion that MORE agreement means MORE signal.** The data support
+   ">=2 tools beats 1 tool" and nothing beyond it: the response is flat at 3
+   tools and point-estimate NEGATIVE at >=4 (OR 0.67). "Independent tools agree"
+   as a graded confidence signal is NOT supported by this result.
+
+### The pattern SESSION_HANDOFF §3a predicted, with the sign reversed
+Five claims died this session-series when a better-matched control was applied,
+and the handoff expected a sixth. It did not happen: refining the control left
+the point estimate where it was. What was wrong was never the comparator — it
+was the **significance test**, which nobody had re-examined because the effect
+size kept being the thing under suspicion. The lesson generalises: check the
+test as well as the control.
