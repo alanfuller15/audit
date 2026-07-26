@@ -17,12 +17,25 @@ static C analyzers against 192 validated CVEs across 27 real projects and found 
 tools detects substantially more vulnerabilities than the best single tool. That is *their*
 result on *their* data, and it is why this tool is built the way it is.
 
-**One finding measured here, on that same corpus:** functions flagged by *multiple independent
-tools* are about **1.5x more likely to contain a real CVE** than comparable functions flagged by
-one (1.54% vs 1.02%, p < 0.0001, against real CVE ground truth). That figure is **size-matched** —
-larger functions attract both more tool attention and more bugs, so the comparison controls for
-size. Uncontrolled, the same gap looks like 2.7x; roughly 40% of it is size. The agreement signal
-is real, and it is smaller than it first appears.
+**One finding measured here, on that same corpus:** functions flagged by **two or more** tools are
+about **1.5x more likely to contain a real CVE** than comparable functions flagged by one
+(1.54% vs 1.02%, against real CVE ground truth) — though a bootstrap across the nine projects in
+the corpus puts the range at roughly **1.0x to 2.6x**. That figure is **size-matched**: larger
+functions attract both more tool attention and more bugs, so the comparison controls for size.
+Uncontrolled, the same gap looks like 2.7x; roughly 40% of it is size.
+
+Two limits on that number matter more than the number does:
+
+- **It is a threshold, not a score.** The effect is entirely in the step from one tool to two.
+  Once size is controlled, three agreeing tools are *no better* than two, and four or more sits
+  slightly lower — on only 207 functions containing 4 CVEs, so that dip is not itself a finding.
+  What the data do not support, in either direction, is that more agreement means stronger
+  evidence. A fourth tool agreeing adds nothing measurable over a second.
+- **Nine projects is a small base to generalise from.** Inside this corpus the effect is stable —
+  it holds under every size control tried, and the direction is consistent in all nine projects —
+  but the interval above touches 1.0x. That is the difference between a measured effect and one a
+  different nine projects would reliably reproduce. It is evidence the signal is real, not a
+  calibrated multiplier to plan around.
 
 **What that does not establish — and this distinction is the point:** that a *ranker* built on
 that signal helps you triage. This implementation's ranking has **not** been shown to beat a

@@ -1,8 +1,11 @@
-# README correction #4 — DRAFT, NOT APPLIED
+# README correction #4 — APPLIED 2026-07-26
 
-Produced by item 0j, 2026-07-26. Evidence: `docs/VALIDATION.md` "0j RESULT".
-**Nothing in the README has been changed.** This is a proposal for the
-inventor's decision.
+Produced by item 0j. Evidence: `docs/VALIDATION.md` "0j RESULT".
+
+**STATUS: APPLIED**, with two amendments directed by the inventor on review.
+This file is now the RECORD of correction #4, not a live proposal — do not
+re-apply it. The applied text is in README.md; the "PROPOSED" block below is
+superseded by the two amendments recorded at the end.
 
 ---
 
@@ -106,3 +109,52 @@ should be marked done rather than left as a live defect.
 Note the scope of what shipped: it *discloses* the mismatch, per the
 recommended sequence (b)-then-(a). It does not *merge* across roots, so the
 suffix-matching half of 0c is genuinely still open.
+
+---
+
+## AMENDMENTS ON REVIEW (inventor, 2026-07-26) — these define the APPLIED text
+
+The draft above was accepted with two changes. Both were corrections to the
+draft, and both are recorded because they generalize.
+
+### Amendment 1 — carry the uncertainty as an INTERVAL, not a p-range
+
+The draft did not omit significance (it carried `p ≈ 0.03–0.08` alongside the
+CI), but leading with a p-range makes a README reader parse a test to learn one
+thing. The bare p-range is dropped from the published text; the project
+bootstrap interval carries the uncertainty instead:
+
+> …about **1.5x more likely** … — though a bootstrap across the nine projects in
+> the corpus puts the range at roughly **1.0x to 2.6x**.
+
+RULE THIS ENCODES: an unqualified point estimate implies precision the interval
+does not support. Removing an overstated significance claim does not license
+replacing it with silence — that overcorrects in the other direction. The
+interval is the honest form because it states the uncertainty in the same units
+as the claim.
+
+### Amendment 2 — state the threshold as a LIMIT, not a scope narrowing
+
+The draft said three-or-more tools "does not measurably increase the odds
+further." That understates: adjusted for size the point estimate at >=4 is
+BELOW two tools (OR 0.67). ">=2 tools" on its own also reads as "at least two,
+and more is better," which is the opposite of what was measured. Applied text:
+
+> Once size is controlled, three agreeing tools are *no better* than two, and
+> four or more sits slightly lower — on only 207 functions containing 4 CVEs, so
+> that dip is not itself a finding. What the data do not support, in either
+> direction, is that more agreement means stronger evidence.
+
+NOTE THE BOUND IN BOTH DIRECTIONS. OR 0.67 at >=4 comes with p=0.478 on 207
+units and 4 events. That is ABSENCE OF EVIDENCE THAT MORE HELPS, not evidence
+that more hurts. The fix for an overstated positive must not become an
+overstated negative — the text says the data do not support a graded reading
+"in either direction" precisely so a later reader does not cite this README as
+having found that four tools are worse than two.
+
+### Amendment 3 — the nine-cluster bound belongs in the README
+
+Previously it lived only in VALIDATION.md. It is the difference between "a
+measured effect" and "a measured effect that a different nine projects might not
+show," which is exactly the kind of bound a reader of the README needs and a
+reader of VALIDATION.md already has. Now published as its own bullet.
