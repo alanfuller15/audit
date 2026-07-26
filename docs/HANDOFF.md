@@ -235,6 +235,18 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
 
    DONE. 0b was implemented first, as required.
 
+   SCOPE NOTE (2026-07-26, narrows but does not overturn the decision):
+   0a's suppression guards SonarQube agreement with an importable tool. But
+   SonarQube **Community Build has NO taint analysis** — injection detection
+   starts at Developer Edition [fetched] — so free-tier users cannot reach the
+   guarded case at all, because their SonarQube cannot produce the injection
+   findings that would agree with SpotBugs in the first place.
+   The decision STANDS: it generalizes to any import-capable tool, and paid
+   SonarQube deployments are real and are exactly where an enterprise CI would
+   hit the exploit path. But its PRACTICAL scope is narrower than it appeared
+   when decided, and a later session should not cite 0a as evidence that the
+   suppression is frequently exercised.
+
 0b. [IMPLEMENTED 2026-07-26 — was a PRECONDITION of 0a] `lineage_warnings` was in
    the JSON output but `audit_html_report.build()` did not render it — same shape as the
    display-dedup gap. On the Action path the caveat informs NOBODY.
