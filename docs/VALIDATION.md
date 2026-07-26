@@ -1505,6 +1505,25 @@ Every labelled case where semgrep resolved a class agreed with the CWE the
 benchmark authors planted. Zero contradictions across 9 distinct vulnerability
 categories (sqli, xss, cmdi, path, ldapi, xpathi, crypto, hash, random).
 
+**AMENDED 2026-07-26 — this metric is WEAKER than first presented.** The
+file-level comparison CANNOT distinguish "our class is wrong" from "the tool
+found a second real bug in the same file". The benchmark labels FILES with one
+planted vulnerability; scanners legitimately find other real issues in those
+files. Running the same metric over SpotBugs produced 549 apparent
+"mismatches", and every bucket examined was a CORRECT classification of a
+genuine additional finding (`XSS_SERVLET` on weakrand tests that echo the
+random value; `PATH_TRAVERSAL_IN` on crypto/hash tests that read a
+parameter-named file).
+
+semgrep scored 1,511/1,511 because its rules are NARROW and fire almost only on
+the planted category — not because the instrument is sound. The result is
+consistent with a correct map; it is not strong evidence FOR one.
+
+**The correct instrument is the rule-by-rule audit**, which inspects each rule's
+metadata->class assignment directly. Run over SpotBugs' 27 class-resolving
+rules, it found TWO errors that the file-level metric could never surface (see
+"Multi-class metadata" below). Prefer it for any future map validation.
+
 ### The coherence criterion's prediction held
 SPEC_java_admission.md §6 predicted, before any Java data existed, that Java
 map extension would carry LOWER false-merge risk than the C/C++ experience
@@ -1577,3 +1596,72 @@ That is a prediction, not a result, and A4 exists to measure it. But it means an
 install does not guarantee a measurable merge rate — and if all three pairs
 come back near zero, that is a finding about the Java ecosystem rather than
 about this tool.
+
+## Multi-class metadata now resolves to NONE (2026-07-26)
+
+`_cwe_class_of` took the FIRST mapped CWE in a text blob. Text order carries no
+semantic meaning, so the winner was arbitrary. Found by running a SECOND Java
+tool — semgrep never exposed it because its tags carry one CWE each.
+
+### The two cases are DIFFERENT IN KIND
+Recorded separately because the fix is right for one and merely safe for the
+other, and a later session must not treat them as the same problem.
+
+**(a) GENUINE AMBIGUITY — `INFORMATION_EXPOSURE_THROUGH_AN_ERROR_MESSAGE`**
+Metadata lists CWE-22, 89, 209, 211. The rule is about error-message exposure;
+22 and 89 are incidental prose in a "related" discussion. First-match returned
+`path`. **None is the RIGHT answer** — no single class describes this rule.
+9 findings.
+
+**(b) SPECIFICITY, NOT AMBIGUITY — `WEAK_MESSAGE_DIGEST_MD5` / `_SHA1`**
+Metadata lists CWE-327 and CWE-328. **Both tags are CORRECT**; CWE-328 (weak
+hash) is a CHILD of CWE-327 (broken crypto) and is the more precise one. There
+is a right answer — `hash` — and the fix does not find it. **None is the SAFE
+answer, not the right one.** 113 findings.
+
+### The cost, stated accurately
+```
+SpotBugs+FindSecBugs resolved: 3,277 -> 3,155   (-122)
+  crypto 445 -> 332   (-113, the MD5/SHA1 specificity case)
+  path   646 -> 637   (-9,   the genuine-ambiguity case)
+semgrep resolved:      1,848 -> 1,848   (unchanged)
+zlib 3-tool ingest:    unchanged (1,164 raw / 1,135 dedup / 2 merges)
+```
+
+**113 of the 122 lost findings are the MD5/SHA1 case, so the fix makes `hash`
+UNREACHABLE for SpotBugs.** That is not a rounding cost. `hash` was kept
+separate from `crypto` on this corpus's OWN evidence — OWASP Benchmark labels
+crypto (246) and hash (236) as distinct categories, and the earlier session
+recorded both as perfect discriminators. The fix silences a class we have
+specific reason to believe is real and useful. It is accepted because a wrong
+class can cause a FALSE MERGE (inflating n_tools, the signal every published
+number rests on) while a miss only costs recall — but it is a real loss, not a
+4%-of-resolution rounding error, and it is the reason item 3e exists.
+
+Regression-tested both cases plus four non-regressions (single-class still
+resolves; several CWEs mapping to ONE class still resolve; a denied CWE
+alongside a mapped one does not block). Harness at 37 checks.
+
+## DESIGN CONCLUSION: the fingerprint-first model does not hold on real SARIF
+
+Three of three real scanners tested violate or lack the assumption that a
+fingerprint identifies one finding:
+
+| scanner | fingerprint behaviour | consequence if trusted |
+|---|---|---|
+| semgrep OSS | CONSTANT placeholder `"matchBasedId/v1": "requires login"` on every result | 33 zlib findings collapsed to 1 |
+| flawfinder | `contextHash/v1` hashes surrounding source, so repeated idioms COLLIDE | 588 collapsed to 484 (correct: 582) |
+| SpotBugs 4.10.3 | emits NO fingerprints at all | nothing to trust; location key used |
+
+This is no longer three incidents. It is a pattern, and it falsifies the
+premise `_result_key` was originally built on. DefectDojo's fingerprint-first
+dedup model assumes tools emit stable per-finding identities; **on real SARIF
+from real scanners, that assumption held in zero of three cases.**
+
+Standing consequences:
+1. The degeneracy check is not a patch for two bad tools — it is load-bearing
+   infrastructure, and must run for every tool, always.
+2. Any newly supported tool must be audited for BOTH failure modes before its
+   fingerprints are trusted, and absence is a third outcome to expect.
+3. Location+class is the primary identity in practice; fingerprints are an
+   optimisation that frequently is not available. Design accordingly.

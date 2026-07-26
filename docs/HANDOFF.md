@@ -461,6 +461,28 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    The "MECHANISM vs OUTPUT" tension recorded earlier is VOID — it rested on the
    fix having changed the measurement, which it did not.
 
+3e. [FILED, not built — REFINEMENT that recovers a real loss] Hierarchy-aware
+   class resolution. Multi-class rule metadata now resolves to NONE (correct for
+   genuine ambiguity, merely SAFE for specificity pairs). COST, stated plainly:
+   of the 122 findings this drops on SpotBugs+FindSecBugs, **113 are the
+   WEAK_MESSAGE_DIGEST_MD5/_SHA1 case (CWE-327 + CWE-328), which makes the
+   `hash` class UNREACHABLE for SpotBugs.** `hash` was kept separate from
+   `crypto` on OWASP Benchmark's own evidence — 246 crypto vs 236 hash as
+   DISTINCT labelled categories, both recorded as perfect discriminators. So the
+   fix silences a class we have specific reason to think is real. Do NOT
+   describe this as "costs 4% of resolution".
+   THE REFINEMENT: use MITRE's DAG to distinguish the two cases —
+     ancestor-related -> take the MOST SPECIFIC (327+328 -> `hash`)
+     unrelated        -> None (22 under CWE-664, 89 under CWE-707 -> None)
+   REACHABILITY CHECKED, and it works: buckets.json from the Lipp archive
+   (scratchpad/lipp/cwe_mapping/buckets.json, 162 CWEs, parent_of/child_of)
+   contains BOTH — `CWE-328 child_of CWE-327` is encoded, and CWE-22/CWE-89 sit
+   under different pillars. The refinement would resolve both cases correctly.
+   PARTIAL-COVERAGE CAVEAT: buckets.json has only 162 CWEs and is C-focused —
+   209, 211 and 326 are ABSENT. Unrelated-OR-absent must map to None, so the
+   refinement improves specificity cases without weakening the conservative
+   default. Licence: CC-BY-4.0, attribution required if vendored.
+
 3d. [DONE 2026-07-26] TEST_DIR missed sibling names. Fixed via
    TEST_DIR_PREFIX (directory-only, so filenames are unaffected); both zlib
    merges now correctly noisy_loc=True, score 6.7->4.7. 9 regression cases

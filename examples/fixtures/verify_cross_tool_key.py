@@ -253,7 +253,35 @@ for path, want, why in [
         ("src/contest/foo.c", False, "substring 'test', not a prefix")]:
     check(audit.is_test_file(path) == want, f"test-dir heuristic: {why}", path)
 
-# ── 11. Determinism and order-independence ──────────────────────────────────
+# ── 11. Multi-class metadata resolves to NONE (found on real SpotBugs output) ─
+# Text order carries no semantic meaning, so first-mapped-CWE-wins picked an
+# arbitrary winner. Two real FindSecBugs rules exposed it, in different ways.
+from audit import _cwe_class_of  # noqa: E402
+
+# (a) GENUINE AMBIGUITY: rule is about error-message exposure; 22/89 are
+#     incidental prose. None is the RIGHT answer.
+check(_cwe_class_of("INFORMATION_EXPOSURE_THROUGH_AN_ERROR_MESSAGE",
+                    "CWE-22 CWE-89 CWE-209 CWE-211 error message exposure", "") is None,
+      "ambiguous multi-class metadata resolves to None (was: 'path')")
+
+# (b) SPECIFICITY, not ambiguity: CWE-328 is a CHILD of CWE-327, both correct.
+#     None is the SAFE answer, not the right one — see HANDOFF 3e.
+check(_cwe_class_of("WEAK_MESSAGE_DIGEST_MD5", "CWE-327 CWE-328 weak digest", "") is None,
+      "specificity pair 327/328 resolves to None (was: 'crypto', shadowing 'hash')")
+
+# Single-class metadata must still resolve — the fix must not break the 97%.
+check(_cwe_class_of("SQL_INJECTION_JDBC", "CWE-89 sql injection", "") == "sqli",
+      "single-class metadata still resolves")
+check(_cwe_class_of("XSS_SERVLET", "CWE-79 potential XSS", "") == "xss",
+      "single-class metadata still resolves (xss)")
+# Repeats of the SAME class are not ambiguity.
+check(_cwe_class_of("R", "CWE-22 and also CWE-23 and CWE-36 path traversal", "") == "path",
+      "several CWEs mapping to ONE class still resolve")
+# A denied CWE alongside a mapped one is not ambiguity — denied ones are skipped.
+check(_cwe_class_of("R", "CWE-398 CWE-89 injection", "") == "sqli",
+      "denied CWE alongside a mapped one does not block resolution")
+
+# ── 12. Determinism and order-independence ──────────────────────────────────
 a1 = audit.ingest_sarif([FF, CC])
 a2 = audit.ingest_sarif([CC, FF])
 strip = lambda a: [(r["score"], r["uri"], r["line"], r["ruleId"], r["n_tools"])

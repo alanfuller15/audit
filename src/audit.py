@@ -647,9 +647,35 @@ _CWE_DENY = {
 _CWE_RE = re.compile(r"cwe[-_/:=\"'\s]{0,4}(\d+)", re.I)
 
 def _cwe_class_of(rule_id, message, uri=""):
-    """Resolve a coarse vulnerability class from any CWE number appearing in the
-    ruleId / message / uri. Returns None when nothing maps — and None NEVER
-    merges, which is the conservative default."""
+    """Resolve a coarse vulnerability class from CWE numbers appearing in the
+    ruleId / message / uri (or rule metadata, when the caller passes it).
+
+    Returns None when nothing maps, AND when the text implies MORE THAN ONE
+    class. None never merges, which is the conservative default this pipeline
+    applies to every other uncertainty (unresolvable class, denied CWE, unknown
+    lineage, degenerate fingerprint, inexact line).
+
+    WHY NOT FIRST-MATCH-WINS (the previous behaviour): text order carries no
+    semantic meaning, so the first mapped CWE in a blob is an arbitrary winner.
+    Measured on real SpotBugs+FindSecBugs output, that mis-classified 122
+    findings in two DIFFERENT ways:
+
+      * GENUINE AMBIGUITY — INFORMATION_EXPOSURE_THROUGH_AN_ERROR_MESSAGE lists
+        CWE-22, 89, 209, 211. It is a rule about error-message exposure; 22 and
+        89 are incidental prose. First-match returned `path`. None is the RIGHT
+        answer here.
+      * SPECIFICITY, NOT AMBIGUITY — WEAK_MESSAGE_DIGEST_MD5/_SHA1 list CWE-327
+        and CWE-328. Both tags are CORRECT; 328 (weak hash) is a child of 327
+        (broken crypto) and is the more precise one. First-match returned
+        `crypto`, shadowing `hash`. None is the SAFE answer here, not the right
+        one — resolving it properly needs hierarchy awareness (see
+        HANDOFF item 3e).
+
+    Collapsing both to None is deliberate: it is correct for the first and
+    merely lossy for the second, and a lossy miss costs recall while a wrong
+    class can cause a FALSE MERGE, which inflates n_tools.
+    """
+    found = []
     for m in _CWE_RE.finditer(f"{rule_id} {message} {uri}"):
         try:
             n = int(m.group(1))
@@ -657,9 +683,10 @@ def _cwe_class_of(rule_id, message, uri=""):
             continue
         if n in _CWE_DENY:
             continue
-        if n in _CWE_CLASS:
-            return _CWE_CLASS[n]
-    return None
+        cls = _CWE_CLASS.get(n)
+        if cls and cls not in found:
+            found.append(cls)
+    return found[0] if len(found) == 1 else None
 
 # ── ENGINE LINEAGE (diversity-aware consensus must be ENGINE-aware) ─────────
 # Consensus counts agreement across DIFFERENT tools. "Different" must mean a
