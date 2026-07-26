@@ -57,6 +57,16 @@ CODE_EXT = {".py",".js",".ts",".jsx",".tsx",".mjs",".cjs",".go",".rs",".java",".
 # x.spec.ts (js/ts), and tests|test|__tests__|spec dirs (any stack).
 TEST_NAME = re.compile(r"(^test_|_test$|_spec$|\.test$|\.spec$|^test$|^spec$)", re.I)
 TEST_DIR = re.compile(r"(^|/)(tests?|__tests__|spec|specs)(/|$)", re.I)
+# Sibling directory names that are test/benchmark harnesses but do not match the
+# exact-word list above. Found 2026-07-26: zlib's contrib/testzlib/ is benchmark
+# code, and BOTH cross-tool merges on that corpus landed there while the finding
+# was scored as ordinary library code.
+# DELIBERATELY DIRECTORY-ONLY (requires a trailing '/'): a *file* named
+# testzlib.c is left to TEST_NAME, so widening here cannot start flagging
+# production sources whose filename happens to start with "test".
+# Calibrated against zlib's real tree — contrib/{blast,puff,minizip,untgz} are
+# genuine utilities and must NOT match; only contrib/testzlib does.
+TEST_DIR_PREFIX = re.compile(r"(^|/)(test[\w.-]*|bench|benchmarks?)/", re.I)
 # --- Fixture / test-data exclusion ----------------------------------------
 # Files under these dirs are INPUTS to tests, not application code and not tests.
 # They must not inflate the "untested" count (the detect-secrets false-positive:
@@ -138,7 +148,8 @@ def is_fixture(rel):
 
 def is_test_file(rel):
     base = os.path.splitext(os.path.basename(rel))[0]
-    return bool(TEST_NAME.search(base) or TEST_DIR.search(rel))
+    return bool(TEST_NAME.search(base) or TEST_DIR.search(rel)
+                or TEST_DIR_PREFIX.search(rel))
 
 def find_markers(root, all_files):
     """Recursively locate every stack-marker file in the tree (not just root).
@@ -579,13 +590,52 @@ _CWE_CLASS = {
     128: "int",   # added: wrap-around error
     195: "int",   # added: signed-to-unsigned conversion error
     197: "int",   # added: numeric truncation error
+
+    # ── Java / web classes (added 2026-07-26; see docs/SPEC_java_admission.md) ──
+    # Every entry below is an EFFECT category naming ONE sink, so its consequence
+    # set is class-coherent. That is the criterion (VALIDATION.md, "Map/deny
+    # criterion"), NOT CWE abstraction level — CWE-676 is Base and mapping-Allowed
+    # yet spans buf/fmt/cmdi, while CWE-119 is Class and mapping-Discouraged yet
+    # is coherent. Effect vs mechanism, not general vs specific.
+    89: "sqli", 564: "sqli",              # SQL injection (564 = Hibernate variant)
+    78: "cmdi",                            # OS command injection
+    79: "xss", 80: "xss", 83: "xss",       # cross-site scripting (+ variants)
+    22: "path", 23: "path", 36: "path",    # path traversal (+ variants)
+    502: "deser",                          # deserialization of untrusted data
+    611: "xxe",                            # XML external entity
+    918: "ssrf",                           # server-side request forgery
+    90: "ldapi",                           # LDAP injection
+    643: "xpathi",                         # XPath injection
+    352: "csrf",                           # cross-site request forgery
+    601: "redirect",                       # open redirect
+    327: "crypto", 326: "crypto",          # broken/weak cryptographic algorithm
+    328: "hash",                           # weak hash — kept SEPARATE from crypto:
+    #   the OWASP Benchmark analysis treated crypto and hash as distinct
+    #   categories and both were perfect discriminators (100% TPR / 0% FPR).
+    #   Merging them would be the only unforced widening here, so it is not done.
+    798: "creds", 259: "creds",            # hardcoded credentials / password
+    330: "random", 338: "random",          # weak / cryptographically-poor PRNG
 }
 # Junk-drawer / too-generic CWEs. Matching on these would merge unrelated
 # findings that happen to share a vague parent category.
 _CWE_DENY = {
     398, 561, 563, 570, 571, 682, 704,
-    664,  # added: improper control of a resource through its lifetime (20 checks)
-    758,  # added: reliance on undefined/unspecified behaviour (20 checks)
+    664,  # improper control of a resource through its lifetime (20 checks)
+    758,  # reliance on undefined/unspecified behaviour (20 checks)
+    # Java/web MECHANISM and parent categories. Same trap as CWE-676: they
+    # collect weaknesses that share a CAUSE but differ in CONSEQUENCE, and
+    # consequence is what these classes encode. CWE-74 is the direct analogue —
+    # it is the parent of 77/78/79/89/90/643, so it spans sqli, cmdi, xss,
+    # ldapi and xpathi at once. Mapping it would merge them all.
+    20,   # improper input validation (Class — spans essentially everything)
+    74,   # injection, generic (spans sqli/cmdi/xss/ldapi/xpathi)
+    77,   # command injection, generic parent of 78
+    93, 116,  # CRLF / improper encoding-or-escaping, generic
+    200,  # exposure of sensitive information (Class — very broad)
+    693, 707, 710,  # Pillars
+    676,  # use of a potentially dangerous function — the original instance:
+    #     strcpy->buf, scanf->fmt, system->cmdi. Confirmed on real semgrep
+    #     output (31 of 33 zlib findings were CWE-676).
 }
 # DELIBERATELY LEFT UNMAPPED (no merge) pending frequency evidence — each would
 # need its own class, and a class with one member can never produce a merge:
@@ -1047,7 +1097,8 @@ def ingest_sarif(paths):
         rec["consensus_tools"] = set(_byl.values())
         rec["sev_n"] = SEV.get(rec["level"], 1)
         rec["noisy_loc"] = bool(FIXTURE_DIR.search(rec["uri"]) or is_packaging(rec["uri"])
-                                or TEST_DIR.search(rec["uri"]))
+                                or TEST_DIR.search(rec["uri"])
+                                or TEST_DIR_PREFIX.search(rec["uri"]))
         rec["kind"] = kind_of(rec)
         # consensus term: quality-weighted across the tools agreeing ON THIS
         # finding (was: flat 1.6 * n_tools). weighted_consensus_term reduces to

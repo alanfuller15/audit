@@ -428,7 +428,10 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    the transfer question but not this self-invalidation. Resolve by
    re-measuring, NOT by discarding whichever framing is inconvenient.
 
-3d. [trivial] TEST_DIR misses sibling names. `contrib/testzlib/testzlib.c` is
+3d. [DONE 2026-07-26] TEST_DIR missed sibling names. Fixed via
+   TEST_DIR_PREFIX (directory-only, so filenames are unaffected); both zlib
+   merges now correctly noisy_loc=True, score 6.7->4.7. 9 regression cases
+   incl. negatives. Original note: `contrib/testzlib/testzlib.c` is
    benchmark code but TEST_DIR requires a segment matching exactly `tests?`, so
    it is not down-weighted. Consider `test*`/`benchmark`. Both zlib merges
    landed there; there were ZERO merges in zlib's actual library sources.

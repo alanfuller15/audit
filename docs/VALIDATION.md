@@ -1277,3 +1277,73 @@ later session reading a low consensus count on a Sonar-based deployment
 recognizes it as a deliberate policy, not a bug.
 
 Tier: `[self-tested]`. Lineage facts remain `[fetched]`.
+
+## 3d + Java class-map extension (2026-07-26)
+
+### 3d — test-directory heuristic widened
+`TEST_DIR` required a path segment matching exactly `tests?`, so zlib's
+`contrib/testzlib/` — benchmark code — was scored as ordinary library source.
+Both cross-tool merges on that corpus landed there.
+
+Added `TEST_DIR_PREFIX`, matching directory segments beginning with `test` or
+named `bench`/`benchmark(s)`. **Directory-only by construction** (requires a
+trailing `/`): a FILE named `testzlib.c` is still left to `TEST_NAME`, so
+widening here cannot begin down-weighting production sources whose filename
+happens to start with "test".
+
+Calibrated against zlib's real tree rather than guessed —
+`contrib/{blast,puff,minizip,untgz}` are genuine utilities and must not match;
+only `contrib/testzlib` does. 9 regression cases, and the NEGATIVES are the
+point: `src/tester.c` (file, not dir), `src/latest/`, `src/contest/`
+(substring, not prefix) all correctly do not match.
+
+Effect on the zlib merges: both now `noisy_loc=True`, score 6.7 -> 4.7. This
+confirms the starker statement recorded earlier — **zero cross-tool merges in
+zlib's library sources** — and now the tool itself knows it, rather than a human
+having to notice.
+
+### Java class-map extension — first application of the coherence criterion
+`_CWE_CLASS` held only memory-safety classes, so Java class resolution was ~0
+and no Java cross-tool merge could occur at all (SPEC_java_admission.md §6).
+
+Added 15 effect categories, each naming ONE sink and therefore class-coherent:
+`sqli` (89, 564) · `cmdi` (78) · `xss` (79, 80, 83) · `path` (22, 23, 36) ·
+`deser` (502) · `xxe` (611) · `ssrf` (918) · `ldapi` (90) · `xpathi` (643) ·
+`csrf` (352) · `redirect` (601) · `crypto` (326, 327) · `hash` (328) ·
+`creds` (259, 798) · `random` (330, 338).
+
+`crypto` and `hash` deliberately kept SEPARATE. Merging them would have been the
+only unforced widening in this batch, and the OWASP Benchmark analysis treated
+them as distinct categories where BOTH were perfect discriminators
+(100% TPR / 0% FPR) — no reason to blur a boundary that measured cleanly.
+
+Denied as MECHANISM/parent categories, the same trap as CWE-676: 20 (improper
+input validation), **74 (injection — the direct analogue, parent of
+77/78/79/89/90/643, so it spans sqli+cmdi+xss+ldapi+xpathi at once)**, 77, 93,
+116, 200, and the Pillars 693/707/710. CWE-676 itself is now explicitly denied
+rather than merely unmapped, since real semgrep output showed 31 of 33 zlib
+findings carrying it.
+
+Map is now 22 classes over 58 CWEs, with 19 denied.
+
+### FALSE-MERGE AUDIT — the check that mattered
+Extending a shared map risks creating spurious merges in the language it was NOT
+extended for. Measured on the real zlib 3-tool corpus:
+
+```
+before extension:  1,164 raw / 1,135 dedup / 2 merges
+after  extension:  1,164 raw / 1,135 dedup / 2 merges
+```
+
+Identical, and the same two findings. **No new C/C++ merges were manufactured.**
+This is the audit SPEC_java_admission.md required to follow the first extension;
+it is satisfied for C/C++ and remains OPEN for Java, where no real corpus has
+been ingested.
+
+### Bound
+`[self-tested]`. The class assignments are reasoned from CWE definitions under
+the coherence criterion, and the false-merge audit is real (non-Claude tools,
+non-Claude input) but covers C/C++ ONLY. **No Java SARIF has been ingested by
+this project since the map changed.** The extension makes Java measurement
+POSSIBLE; it does not demonstrate the classes are right for Java. A4 remains
+unmeasured.

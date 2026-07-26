@@ -235,7 +235,25 @@ if _saved is None:
 else:
     os.environ["AUDIT_INDEPENDENT_TOOLS"] = _saved
 
-# ── 10. Determinism and order-independence ──────────────────────────────────
+# ── 10. Test-directory heuristic (item 3d) ──────────────────────────────────
+# zlib's contrib/testzlib/ is benchmark code but TEST_DIR required a segment
+# matching exactly `tests?`, so BOTH cross-tool merges on that corpus were
+# scored as ordinary library code. Widened to directory-prefix matching.
+# The negatives matter as much as the positives: this must not start
+# down-weighting production sources.
+for path, want, why in [
+        ("zlib-1.3.1/contrib/testzlib/testzlib.c", True, "the reported case"),
+        ("proj/testsuite/foo.c", True, "test-prefixed dir"),
+        ("proj/benchmark/foo.c", True, "benchmark dir"),
+        ("zlib-1.3.1/contrib/blast/blast.c", False, "real utility, must not match"),
+        ("zlib-1.3.1/contrib/minizip/miniunz.c", False, "real utility, must not match"),
+        ("zlib-1.3.1/deflate.c", False, "library source"),
+        ("src/tester.c", False, "FILE not dir — must not match"),
+        ("src/latest/foo.c", False, "substring 'test', not a prefix"),
+        ("src/contest/foo.c", False, "substring 'test', not a prefix")]:
+    check(audit.is_test_file(path) == want, f"test-dir heuristic: {why}", path)
+
+# ── 11. Determinism and order-independence ──────────────────────────────────
 a1 = audit.ingest_sarif([FF, CC])
 a2 = audit.ingest_sarif([CC, FF])
 strip = lambda a: [(r["score"], r["uri"], r["line"], r["ruleId"], r["n_tools"])
