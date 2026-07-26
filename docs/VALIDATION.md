@@ -1489,3 +1489,91 @@ real published benchmark with human labels. It establishes that the Java classes
 resolve and agree with ground truth. It does NOT establish a merge rate, a false
 merge rate, or anything about real (non-synthetic) Java. See §6a of
 SPEC_java_admission.md for why this corpus cannot serve A4.
+
+## The Java class map, measured against external labels (2026-07-26)
+
+This is the strongest evidence the Java class map has, and it is MEASUREMENT
+against human labels, not an argument.
+
+```
+labelled OWASP Benchmark cases with >=1 semgrep-resolved class : 1,511
+  planted CWE's class PRESENT in the resolved set              : 1,511
+  planted CWE's class ABSENT                                   :     0
+```
+
+Every labelled case where semgrep resolved a class agreed with the CWE the
+benchmark authors planted. Zero contradictions across 9 distinct vulnerability
+categories (sqli, xss, cmdi, path, ldapi, xpathi, crypto, hash, random).
+
+### The coherence criterion's prediction held
+SPEC_java_admission.md §6 predicted, before any Java data existed, that Java
+map extension would carry LOWER false-merge risk than the C/C++ experience
+suggested — because Java's candidate CWEs are EFFECT categories naming one sink
+each (CWE-89 spans nothing), whereas C/C++'s problem cases were MECHANISM
+categories (CWE-676 spans buf+fmt+cmdi). That prediction was recorded as
+reasoned-not-demonstrated, with a false-merge audit required to follow.
+
+The prediction held on first contact with real Java labels. Recorded because the
+criterion now has a successful out-of-sample test, not just an explanatory fit.
+
+### BOUND — what this does and does not establish
+- **Does** establish: the classes are drawn correctly. Where a tool says "this
+  is SQL injection", our map calls it `sqli`, and the ground truth agrees.
+- **Does NOT** establish that MERGING is safe. A single tool cannot produce a
+  cross-tool merge, so no merge was tested and no false merge could have been
+  observed. 7a remains OUTSTANDING.
+- The 56 multi-class files (`sqli+xss` 29, `xpathi+xss` 27) are the sites where
+  a merge could go wrong. Identified, not adjudicated.
+- Synthetic corpus. Correct class assignment on generated code is weaker
+  evidence than it would be on real code, though the failure mode it rules out
+  (a class that simply does not match what tools mean) is largely
+  corpus-independent.
+
+Tier: `[standard-checked]` — validated against a published, human-labelled
+reference artifact, with our harness. Not `[externally-verified]`: no non-Claude
+judge assessed the merging behaviour, because none was exercised.
+
+## Java engine availability — A4 is ECOSYSTEM-CONSTRAINED, not blocked (2026-07-26)
+
+Question: which Java engine PAIRS could produce a valid consensus measurement —
+genuinely distinct lineage, both with real security coverage, both free?
+
+### Disqualified, with reasons
+- **FindSecBugs** — a SpotBugs PLUGIN. One engine with SpotBugs; cannot
+  self-corroborate. `[fetched]`
+- **SonarQube Community Build** — **has NO taint analysis.** Taint/injection
+  detection starts at Developer Edition; the free tier cannot detect the
+  dominant Java vulnerability class. Also subject to 0a suppression against
+  SpotBugs/PMD/Checkstyle. `[fetched]`
+- **PMD**, **Error Prone** — general-purpose correctness/style engines; thin
+  security coverage, no injection taint.
+- **Infer** — null/resource/concurrency focus, not injection.
+
+### The three qualifying engines
+| engine | security coverage | build needed | runnable here |
+|---|---|---|---|
+| SpotBugs + FindSecBugs | real (~128 security detectors) | YES — analyses bytecode | needs JDK + Maven |
+| semgrep OSS | real but INTRAPROCEDURAL only; demonstrated 1,848 findings incl. sqli/xss/cmdi/path/ldapi/xpathi | no | **YES, today** |
+| CodeQL | deepest (interprocedural); free for OSI-licensed open source and academic use, commercial licence for closed source `[fetched]` | YES | NO — arm64/Rosetta |
+
+### The answer: 3 engines, 3 valid pairs. NOT CodeQL-or-nothing.
+```
+SpotBugs+FindSecBugs x semgrep    <- needs JDK + Maven + SpotBugs. NO Rosetta.
+SpotBugs+FindSecBugs x CodeQL     <- needs JDK + Maven + Rosetta.
+semgrep              x CodeQL     <- needs build + Rosetta.
+```
+The cheapest valid pair avoids Rosetta entirely, so **the JDK is the decision,
+not Rosetta** — unless the goal is specifically the deepest-coverage pair.
+
+### The constraint that DOES bite, and it is not toolchain
+Java's free security-scanner ecosystem is THIN: three engines, where C/C++ had
+flawfinder, cppcheck, semgrep and CodeQL plus a commercial tool. Worse, all
+three pairs sit on the pattern-vs-dataflow axis that produced ZERO overlap in
+C/C++ — semgrep is source-pattern/intraprocedural; SpotBugs is bytecode
+dataflow; CodeQL is interprocedural dataflow. The overlap constraint predicts
+these may under-overlap for the same reason flawfinder and cppcheck did.
+
+That is a prediction, not a result, and A4 exists to measure it. But it means an
+install does not guarantee a measurable merge rate — and if all three pairs
+come back near zero, that is a finding about the Java ecosystem rather than
+about this tool.
