@@ -189,6 +189,62 @@ Untestable with existing public data (do not waste effort re-attempting):
   access limit. Reopen ONLY with self-run tools + manual per-finding labeling.
 
 ────────────────────────────────────────────────────────────────────────
+## 6.2 ACQUISITION IS NOT THE LEVER (established 2026-07-26, measured 3x)
+
+READ THIS BEFORE PROPOSING TO INSTALL OR BUY ANY SCANNER.
+
+The consensus premise has now failed to produce observable agreement three
+times, in three configurations, for three different proximate reasons:
+
+  1. flawfinder + cppcheck (C/C++, real zlib)
+     Anti-correlated CLASS coverage — fmt/buf vs null/uninit/int.
+     14 exact co-locations, 0 with matching class.            -> 0 merges
+  2. + semgrep as a THIRD tool (same corpus)
+     2 merges in 1,164 findings — and both were flawfinder+semgrep, the two
+     most METHODOLOGICALLY SIMILAR tools, in benchmark code, none in library
+     sources.                                                  -> ~0 merges
+  3. SpotBugs + semgrep (Java, real Struts)
+     CLASSES MATCHED EXACTLY (redirect/redirect). LOCATIONS did not — semgrep
+     anchored at the taint SOURCE (line 244), SpotBugs at the SINK (247).
+                                                               -> 0 merges
+
+A FOURTH TOOL BRINGS A FOURTH ANCHORING CONVENTION and another pair that may
+not co-locate. **CodeQL is interprocedural and would anchor differently again,
+so Rosetta does NOT answer this question and must not be installed on the theory
+that it might.** The same applies to semgrep Pro, SonarQube Developer Edition,
+or any other purchase.
+
+THE ACTUAL CONSTRAINT, stated once:
+> The PREMISE values METHODOLOGICAL DIVERSITY — tools with different methods
+> have different blind spots, so their agreement is independent evidence.
+> The MECHANISM requires CO-LOCATION — same file, same line, same class.
+> These pull AGAINST each other. The more methodologically different two tools
+> are, the less likely they are to describe the same bug at the same line.
+> **Nothing purchasable resolves that.**
+
+WHAT REMAINS GENUINELY OPEN, in priority order:
+  1. DIRECTION B — bounded evaluation of point-in-range matching, on the
+     minority of findings where a genuine multi-line range exists. Sized
+     2026-07-26: reachable with data on disk, but SpotBugs omits endLine on
+     70-89% of results and semgrep's range is usually a single line, so it
+     degenerates to exact matching in the common case. Worth measuring; not a
+     fix. Requirements in item 0e (measure source-sink SEPARATION, do not sweep
+     a window, do not treat TOL=3 as validated).
+  2. Whether any principled ENTITY-LEVEL match exists WITHOUT a Java/C parser.
+     Direction A is blocked today: SpotBugs emits logicalLocations on 100% of
+     results, semgrep on 0%, and matching needs both sides.
+  3. Whether the honest description is SAME-METHODOLOGY agreement — and if so,
+     the CLAIM CHANGE that entails. This is not a caveat: the README's premise
+     is that DIFFERENT tools agreeing is the signal, the 0.755 provenance rests
+     on Lipp's six methodologically diverse tools, and the ensemble literature
+     specifically distinguishes correlated-error agreement as weaker. Adopting
+     it means rewriting the headline, not annotating it.
+
+>>> NO FURTHER TOOL ACQUISITION IS WARRANTED UNTIL ONE OF THOSE THREE IS
+>>> SETTLED. Acquisition adds pairs; it does not address whether any
+>>> methodologically-diverse pair can produce agreement this mechanism can see.
+
+────────────────────────────────────────────────────────────────────────
 ## 7. PENDING WORK (REORDERED 2026-07-26 by a structural finding — read §6.1)
 
 THE FINDING THAT REORDERED THIS: the shipped flawfinder+cppcheck pair CANNOT
