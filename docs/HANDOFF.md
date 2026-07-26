@@ -287,6 +287,25 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    Regression test to add: two drivers of one lineage must NOT produce
    n_tools>1; two drivers of different lineage must still merge as today.
 
+0d. [FINDING — affects a PUBLIC README claim] Consensus does NOT beat the best
+   single tool on OWASP Benchmark. Measured 2026-07-26 on the same corpus and
+   labels used for the 7a audit:
+       base rate 51.6% · SpotBugs+FSB 64.0% · semgrep 68.3% · CONSENSUS 70.4%
+       consensus vs semgrep: +2.1pp, z=1.20, p=0.232   NOT significant
+       file-level          : +3.5pp, z=1.86, p=0.063   NOT significant
+       consensus vs SpotBugs: +6.4pp, p=7.9e-05        significant
+   Consensus beats the WEAKER tool and is indistinguishable from the STRONGER
+   one. It also surfaces 1,156 findings where semgrep alone surfaces 1,848.
+   WHY THIS MATTERS BEYOND THE NUMBER: the README says 0.755 "beats a coin flip
+   and the best single tool". That phrasing is sourced from LIPP's C/C++ result
+   (0.755 vs 0.596), which is real and is not challenged here. But this is the
+   first time the SHIPPED IMPLEMENTATION has been measured against a single-tool
+   comparator on any corpus, and it did not clear that bar. One synthetic corpus,
+   one tool pair — NOT grounds to amend the README, which quotes a C/C++ result.
+   IT IS grounds to (a) not generalize the Java enrichment, and (b) run the same
+   comparator on any future corpus BEFORE claiming consensus adds value there.
+   The comparator is cheap: scratchpad/single_vs_consensus.py.
+
 0c. [HIGH PRIORITY — LIVE PRODUCTION DEFECT, SILENT-ZERO FAILURE MODE. Scoped,
    NOT implemented.] Cross-tool PATH FORMS are structurally incompatible.
    SpotBugs derives file paths from BYTECODE and emits PACKAGE-relative:

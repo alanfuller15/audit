@@ -1738,6 +1738,46 @@ benchmark base rate (real vulns)            : 51.6%
                                     ENRICHMENT: +18.8pp
 ```
 
+**AMENDED SAME DAY — I OVERSTATED THIS. Read the correction below before the
+paragraph that follows it.** Leading with "+18.8pp over base rate" used the
+WRONG COMPARATOR. The base rate is the coin flip. The claim this tool actually
+makes — and that the README makes — is that consensus beats the BEST SINGLE
+TOOL. Measured on the same corpus and labels:
+
+```
+                                  per-finding      file-level
+  base rate                          51.6%            51.6%
+  SpotBugs+FSB (class-resolved)      64.0%            55.5%
+  semgrep      (class-resolved)      68.3%            65.6%
+  CONSENSUS    (merges)              70.4%            69.1%
+
+  consensus vs BEST single (semgrep):
+     per-finding  +2.1pp   z=1.20  p=0.232   NOT significant
+     file-level   +3.5pp   z=1.86  p=0.063   NOT significant
+  consensus vs SpotBugs:
+                  +6.4pp   z=3.95  p=7.9e-05  significant
+```
+
+**VERDICT: consensus does NOT significantly beat the better single tool on this
+corpus.** It significantly beats the weaker one (SpotBugs) and is
+indistinguishable from the stronger one (semgrep). And it surfaces 1,156
+findings where semgrep alone surfaces 1,848 — so as a FILTER it would discard
+449 of the 1,263 true-positive-file findings semgrep alone found, a 36% loss,
+for a precision gain that does not reach significance.
+
+Fairness note that does NOT rescue the claim: the tool RANKS rather than
+filters — non-merged findings are scored lower, not dropped — so "costs recall"
+overstates the operational cost. But it does not touch the precision result:
+against the right comparator, consensus is not demonstrated to add signal here.
+
+**So the correct reading is outcome (2): the enrichment over base rate is REAL
+but is NOT evidence FOR consensus.** Both single tools also beat base rate, and
+the better one beats it by nearly as much as consensus does. The paragraph below
+is retained because its point about the CODE PATH stands — but its claim to be
+evidence for the consensus premise does not.
+
+---
+
 **This is the first time this IMPLEMENTATION has demonstrated the signal it is
 built on, on any corpus.** Everything before it was either design-grounding
 (literature), principle-validation on someone else's derived table (Lipp's
@@ -1747,11 +1787,17 @@ premise reproduces THROUGH THE ACTUAL CODE PATH: real scanners -> real SARIF ->
 Where the tool says two independent engines agree, a real vulnerability is
 substantially more likely to be present.
 
-**TIER: `[standard-checked]`.** Validated against a published, human-labelled
-reference artifact, with non-Claude engines (SpotBugs, semgrep) on non-Claude
-input. It does NOT reach `[externally-verified]`: the harness that computes the
-enrichment and the judgement that it is meaningful are both Claude's — no
-external judge assessed the ranking.
+**TIER: `[standard-checked]`** for the measurement itself — validated against a
+published, human-labelled reference artifact, with non-Claude engines on
+non-Claude input. NOT `[externally-verified]`: the harness and the
+interpretation are Claude's.
+
+**But the CLAIM the tier attaches to must now be narrower.** What is
+`[standard-checked]` is: "merges land on vulnerable files 70.4% of the time
+against a 51.6% base rate, and the whole path from real scanners through
+ingest_sarif to labels executes correctly." What is NOT established is that
+consensus outperforms the best single tool — measured, and it does not, at
+p=0.232 (per-finding) / p=0.063 (file-level).
 
 **BOUND, and it is severe:** this is measured on a corpus THIS PROJECT HAS
 ALREADY RECORDED AS UNREPRESENTATIVE — synthetic, structurally uniform, and
