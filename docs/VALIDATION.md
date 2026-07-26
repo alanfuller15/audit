@@ -2674,3 +2674,98 @@ matching is coarser and its false-merge rate is UNMEASURED — the same question
 Direction B raised, now at larger scale and with a larger payoff. The 35.95%
 and 6.4x are agreement RATES, not correctness; nothing here shows those merges
 are the same bug.
+
+## DOES FUNCTION-LEVEL AGREEMENT CARRY SIGNAL? (2026-07-26) — YES, but with a
+## significant negative attached that must travel with it
+
+Computed on the Lipp artifact: real C code, 6 tools, CVE ground truth,
+function boundaries. Everything from disk.
+
+### 1-2. Precision and enrichment by granularity
+```
+LINE LEVEL (file,line,CWE)   base 1.18%
+  single-tool 95,368 units  precision 1.19%
+  MULTI-tool   1,507 units  precision 0.80%   -0.39pp   z=-1.40 p=0.163  n.s.
+  -> line-level agreement carries NO signal, and trends NEGATIVE
+
+FUNCTION LEVEL               base 0.92%
+  single-tool  9,387 units  precision 0.58%
+  MULTI-tool   5,269 units  precision 1.54%   +0.96pp   z=5.85 p=4.9e-09  ***
+  -> function-level agreement carries REAL SIGNAL
+
+FILE LEVEL                   base 2.34%
+  single-tool  2,685 units  precision 0.34%
+  MULTI-tool   2,736 units  precision 4.17%   +3.83pp
+```
+**The 6.4x extra merges are not noise.** At function level, multi-tool units are
+2.7x more likely to be genuinely vulnerable than single-tool units, at
+p=4.9e-09. At LINE level the same comparison is flat-to-negative — which is
+precisely where our key operates.
+
+### 3. n_tools monotonicity — holds at function/file level, INVERTS at line level
+```
+LINE      1 tool 1.19%  ->  2 tools 0.82%  ->  3 tools 0.00%      DECREASING
+FUNCTION  1 tool 0.58%  ->  2 tools 1.42%  ->  3 1.91%  ->  4 2.33%   rising
+          (5 tools 0.0% n=31, 6 tools 0.0% n=4 — collapses on tiny n)
+FILE      1 tool 0.34%  ->  2 1.43%  ->  3 2.40%  ->  4 9.60%  ->  5 14.97%
+```
+**The monotonicity the whole premise rests on is a FUNCTION/FILE-level property.
+At line level it runs backwards.**
+
+VALIDATION.md's recorded "1 tool 0.9% -> 4 tools 11.6%" is FILE-level in kind.
+It does not reproduce exactly here (0.34% -> 9.60%) because that figure used a
+5-tool subset and a different file universe; same shape, different parameters.
+Recorded as a near-match, not a match.
+
+### 4. THE NEGATIVE — function-level consensus LOSES to the best single tool
+```
+CodeChecker   flags   608 functions  precision 2.63%   <- best single
+Flawfinder    flags 2,423            precision 1.73%
+CommSCA       flags 7,994            precision 1.16%
+Cppcheck      flags   488            precision 1.23%
+Infer         flags 2,146            precision 1.07%
+CodeQL        flags 7,764            precision 0.82%
+
+CONSENSUS     flags 5,269 functions  precision 1.54%
+  vs best single: -1.09pp   z=-2.01  p=0.0449   SIGNIFICANTLY WORSE
+```
+This is a real negative and must not be buried under the positive above.
+**Consensus beats SINGLE-TOOL-AVERAGE decisively and loses to the BEST single
+tool significantly.**
+
+HONEST CAVEAT, which does not rescue it: this is a PRECISION-ONLY comparison
+between selectors with very different recall. CodeChecker flags 608 functions
+(4%); consensus flags 5,269 (36%). A selector that flags less can have higher
+precision trivially. The fair comparison for a RANKER is ranking quality at
+equal review budget (ROC-AUC / PofB), not raw precision — and that is exactly
+what Lipp's own 0.755 measured. So this does not show consensus is useless; it
+shows consensus is not a high-precision FILTER, and that "beats the best single
+tool" needs the ranking framing to be defensible.
+
+### 5. FALSE-MERGE SIGNATURE: NOT FOUND — and the predicted pattern is INVERTED
+```
+size (lines)   multi n  multi prec  single n  single prec     gain
+0-10               399       0.00%      1983        0.05%   -0.05pp
+11-25            1,027       0.29%      2793        0.18%   +0.11pp
+26-50            1,116       0.54%      2141        0.42%   +0.12pp
+51-107           1,260       1.59%      1481        1.22%   +0.37pp
+108-300            971       2.99%       742        2.02%   +0.97pp
+301+               496       4.64%       247        2.43%   +2.21pp
+```
+The predicted signature was "gain concentrates in SMALL functions and INVERTS in
+large ones", which would argue for a size cap as Direction B needed a span cap.
+**The measured pattern is the exact opposite: the gain grows monotonically with
+function size**, reaching +2.21pp in functions over 300 lines.
+
+**So a size cap is NOT indicated on this evidence.** But the large-function
+result is CONFOUNDED: base vulnerability rate also rises with size (single-tool
+precision rises 0.05% -> 2.43% across the same buckets), because a bigger
+function is more likely to contain a CVE. Multi-tool keeps roughly a 2x
+advantage throughout, which is consistent with real signal rather than
+co-residence — but the confound is not resolved here, and co-residence cannot be
+excluded on this data alone.
+
+### Bottom line
+Function-level matching is where the premise's signal actually lives. Line-level
+matching — what we implement — is measurably the wrong granularity: agreement
+there is uninformative and anti-monotonic. That is the actionable finding.

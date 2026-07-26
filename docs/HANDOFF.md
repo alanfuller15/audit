@@ -883,6 +883,28 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    correct on the evidence available; the missing piece was found by SEARCHING
    for the other artifact, not by capitulating to the assertion.
 
+9. A RECORDED FACT ABOUT A SOURCE'S *METHOD* IS A CONSTRAINT ON OUR
+   IMPLEMENTATION, NOT BACKGROUND (established 2026-07-26 by a costly miss).
+   VALIDATION.md had recorded, since the original Lipp validation:
+       "Unit = FUNCTION (the paper's validated granularity choice;
+        Section 3.2, FEC metric)"
+   That sentence sat in the record for the whole project. Meanwhile the
+   implementation matched at LINE level, and every zero-merge result — zlib,
+   Struts, the three-tool test — followed from that mismatch. Measured after the
+   fact: on Lipp's own data, multi-tool agreement is 1.56% at line level and
+   35.95% at function level, and cross-methodology pairs go from 1,169 to 7,514
+   (6.4x). Cppcheck+Flawfinder, our zlib pair, goes from 0 to 66.
+   THE FACT WAS IN THE RECORD; THE IMPLICATION WAS NOT DRAWN. It was filed as a
+   note about how someone else measured, rather than as a specification our key
+   had to match.
+   THE RULE: when a source's methodology is recorded — its unit of analysis, its
+   aggregation, its matching criterion — treat it as a CONSTRAINT the
+   implementation must satisfy to inherit that source's results, and check the
+   implementation against it explicitly. A validated number is only inherited if
+   the thing measured is the thing built. Re-read method notes when a result
+   fails to reproduce; the discrepancy is more often in the unit than in the
+   data.
+
 ────────────────────────────────────────────────────────────────────────
 ## 9. PROVENANCE OF THIS DOCUMENT
 
