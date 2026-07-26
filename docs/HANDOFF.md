@@ -287,6 +287,49 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    Regression test to add: two drivers of one lineage must NOT produce
    n_tools>1; two drivers of different lineage must still merge as today.
 
+0c. [HIGH PRIORITY — LIVE PRODUCTION DEFECT, SILENT-ZERO FAILURE MODE. Scoped,
+   NOT implemented.] Cross-tool PATH FORMS are structurally incompatible.
+   SpotBugs derives file paths from BYTECODE and emits PACKAGE-relative:
+       org/owasp/benchmark/testcode/BenchmarkTest00001.java
+   semgrep (and source-level tools generally) emit SCAN-ROOT-relative:
+       <whatever>/src/main/java/org/owasp/benchmark/testcode/BenchmarkTest00001.java
+   The first is a SUFFIX of the second.
+
+   FAILURE MODE: a Java user running SpotBugs + semgrep the obvious way gets
+   ZERO cross-tool merges and NO diagnostic. The tool reports "consensus" as an
+   informative signal and silently finds none. Same class as the fingerprint
+   defects: a wrong assumption about tool output that degrades silently rather
+   than erroring.
+
+   `_norm_uri` CANNOT FIX THIS. It is lexical normalization (backslashes,
+   `./`, `../`, duplicate slashes, `file://`, percent-encoding) and a SUFFIX
+   RELATIONSHIP IS NOT A NORMALIZATION PROBLEM — neither string is malformed;
+   they are correct paths relative to different roots. Do not attempt to solve
+   it there.
+
+   CANDIDATE DIRECTIONS (pick deliberately; both have costs):
+     (a) BASENAME + SUFFIX MATCH. Treat paths as equal when one is a path-suffix
+         of the other (segment-aligned, not substring). Cheap and effective, but
+         it can FALSELY unify same-named files in different modules
+         (`a/util/Config.java` vs `b/util/Config.java`) — a false merge, the
+         error direction the asymmetric-cost rule forbids. Would need a
+         guard: unify only when the suffix match is UNIQUE across the corpus.
+     (b) DETECT AND WARN. Compute suffix-relatedness across tools at ingest; if
+         two tools' path sets are suffix-related but never equal, emit a loud
+         disclosure ("tools report paths relative to different roots; cross-tool
+         merging is disabled") and tell the operator how to align them. Does not
+         merge anything, but converts a silent zero into a stated one — which is
+         this project's standing preference (cf. 0a/0b).
+   RECOMMENDED SEQUENCE: (b) first — it is honest, cannot cause a false merge,
+   and closes the silent-failure hole. Then (a) behind the uniqueness guard if
+   the measured cost justifies it.
+
+   HOW IT WAS FOUND, recorded because it generalizes: only by running the two
+   tools TOGETHER on the same corpus. Neither tool alone shows it — each emits
+   perfectly valid paths. Per-tool testing cannot surface cross-tool interface
+   defects, and this is the second such defect this session (the first being
+   ingest reading the wrong rule-metadata fields, also invisible per-tool).
+
 1. [UNBLOCKED 2026-07-26 — the blocker DISSOLVED, it did not resolve] README
    honesty. Scoped
    claim-by-claim against the PUBLIC README in

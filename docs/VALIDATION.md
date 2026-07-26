@@ -1447,6 +1447,20 @@ corpus would have resolved 0 of 1,909. That fix was written and verified against
 semgrep's C rules; this is an independent confirmation on a completely different
 rule set, where it turns out to be not merely helpful but load-bearing.
 
+### CORRECTION (2026-07-26, same day): these figures were the HARNESS's, not ingest's
+The per-tool resolution numbers in this section and the SpotBugs one below
+(97% / 1,848 for semgrep; 15% / 3,155 for SpotBugs) were computed by an
+ANALYSIS HARNESS that read `fullDescription`. `ingest_sarif` did NOT read that
+field, nor `relationships`. **What ingest actually resolved for SpotBugs was
+ZERO**, which is why the first merge computation returned zero merges.
+
+So these figures describe what the metadata COULD support, not what the shipped
+code did with it. They are retained because the underlying finding — that Java
+resolution comes essentially entirely from rule metadata rather than result
+text — is unaffected and was independently reconfirmed after the fix. But any
+claim of the form "the tool resolves N%" must be recomputed through
+`ingest_sarif`, not through an analysis script.
+
 ### Class distribution, and which classes are silent
 ```
 xss 456 · sqli 388 · crypto 301 · path 288 · cmdi 221 · hash 113 · ldapi 54 · xpathi 27
@@ -1695,25 +1709,66 @@ WEAK_MESSAGE_DIGEST_MD5   taxa=328 -> hash   (correct AND specific)
 INFORMATION_EXPOSURE_...  taxa=209 -> None   (correct; 22/89 were prose noise)
 SQL_INJECTION_JDBC        taxa=89  -> sqli
 ```
-**This supersedes prose-scraping for tools that emit taxa (55 of SpotBugs' 77
-rules), and it RECOVERS the 113 `hash` findings** the multi-class guard had
-silenced. The guard remains for the prose fallback path.
+**This SUPERSEDES prose-scraping — it does not supplement it.** Prose was the
+WRONG SOURCE, and the distinction matters for how the multi-class guard should
+be read:
 
-### Merge result
+- Taxa answered BOTH problem cases **correctly**: `WEAK_MESSAGE_DIGEST_MD5` ->
+  328 -> `hash` (the precise, right answer) and `INFORMATION_EXPOSURE` -> 209 ->
+  correctly unmapped.
+- The multi-class guard answered them only **safely**: None for both, right for
+  the second and merely lossy for the first.
+
+So **the guard was CORRECT given prose input and UNNECESSARY given structured
+input.** A later session must NOT read it as the principled answer to
+multi-CWE rules — it was a workaround for a PARSING DEFICIENCY (reading prose
+when the file carried a structured taxon). Keep it strictly for the prose
+FALLBACK path, where it remains correct; do not extend it, and prefer fixing
+the input source wherever a structured one exists.
+
+It also RECOVERS the 113 `hash` findings the guard had silenced (55 of SpotBugs'
+77 rules emit taxa).
+
+### THE HEADLINE RESULT — enrichment against external labels
+```
+merges on files labelled REAL VULNERABILITY : 814
+merges on files labelled PLANTED FALSE POS  : 342
+precision of merges vs labels               : 70.4%
+benchmark base rate (real vulns)            : 51.6%
+                                    ENRICHMENT: +18.8pp
+```
+
+**This is the first time this IMPLEMENTATION has demonstrated the signal it is
+built on, on any corpus.** Everything before it was either design-grounding
+(literature), principle-validation on someone else's derived table (Lipp's
+`found_by` counts, where audit.py was a pass-through), or self-test. Here the
+premise reproduces THROUGH THE ACTUAL CODE PATH: real scanners -> real SARIF ->
+`ingest_sarif` -> merges -> compared to human labels the tool never saw.
+Where the tool says two independent engines agree, a real vulnerability is
+substantially more likely to be present.
+
+**TIER: `[standard-checked]`.** Validated against a published, human-labelled
+reference artifact, with non-Claude engines (SpotBugs, semgrep) on non-Claude
+input. It does NOT reach `[externally-verified]`: the harness that computes the
+enrichment and the judgement that it is meaningful are both Claude's — no
+external judge assessed the ranking.
+
+**BOUND, and it is severe:** this is measured on a corpus THIS PROJECT HAS
+ALREADY RECORDED AS UNREPRESENTATIVE — synthetic, structurally uniform, and
+deliberately seeded with plausible fakes (the same objection recorded against
+Juliet). The enrichment is real on this corpus and is NOT evidence that the
+signal holds on production Java. It is the strongest result the implementation
+has, and it is still a synthetic-corpus result.
+
+### Merge rate — corpus-specific plumbing, reported second on purpose
 ```
 raw 23,074 -> same-tool dedup 23,064 -> cross-tool merges 1,156 -> final 21,908
 merge rate 5.01%     n_tools {1: 20,752, 2: 1,156}
 classes: xss 302 · path 221 · crypto 171 · cmdi 146 · sqli 126 · hash 113 · ldapi 50 · xpathi 27
 ```
-
-### Against the answer key — merges concentrate on real vulnerabilities
-```
-merges on files labelled REAL VULNERABILITY : 814
-merges on files labelled PLANTED FALSE POS  : 342
-precision of merges vs labels               : 70.4%
-benchmark base rate                         : 51.6%
-```
-Agreement is enriched for true vulnerabilities, +18.8pp over base rate.
+The RATE says how often two tools happened to co-locate on this generated code.
+The ENRICHMENT says whether that agreement MEANS anything. They are different
+kinds of claim; the rate is the weaker one and must not overshadow the other.
 
 ### 7a FALSE-MERGE AUDIT — result: ZERO false merges found
 ```
