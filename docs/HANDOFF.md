@@ -197,11 +197,36 @@ so `_result_key` returns `fp:…`; cppcheck emits none so it returns `rk:…`; t
 two can never collide. The headline consensus signal is structurally inert in
 the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
 
-0. [Mac, small — HIGHEST PRIORITY, LIVE IN SHIPPED CODE] Engine-lineage guard.
-   PROMOTED 2026-07-26 from item 6b. This is the ONLY defect found in this
-   session that INFLATES n_tools. By the asymmetric-error-cost rule that makes
-   it the most serious thing outstanding: every other defect costs recall;
-   this one CORRUPTS THE HEADLINE SIGNAL that every published number rests on.
+0. [IMPLEMENTED 2026-07-26 — one OPEN DECISION remains, see 0a] Engine-lineage
+   guard. The merge guard now intersects ENGINE LINEAGE, not driver name;
+   n_tools counts distinct ENGINES; quality weighting takes one representative
+   driver per engine; unknown tools default to their own name so nothing
+   regresses. 25-check harness passing; real zlib ingest unchanged (2 merges).
+   Full record: VALIDATION.md 2026-07-26 "Engine-lineage guard implemented".
+
+0a. [OPEN DECISION — inventor's call, do NOT resolve unilaterally] The SonarQube
+   case is DISCLOSED but NOT PREVENTED. SonarQube's lineage (`sonarqube`)
+   differs from SpotBugs' (`findbugs`), and the guard only blocks IDENTICAL
+   lineages — so in the documented exploit (SpotBugs imported into SonarQube,
+   both SARIFs ingested) the warning fires loudly and the finding STILL scores
+   n_tools=2. Verified through the real CLI.
+   The two options item 0 originally listed:
+     (a) DISCLOSE ONLY (current). Keeps the legitimate configuration working —
+         SonarJava analysing independently alongside a separate SpotBugs run is
+         genuinely two engines — at the cost of leaving the ambiguous case
+         inflated.
+     (b) CONSERVATIVE DEFAULT. Do not count SonarQube agreement with an
+         importable tool (findbugs/pmd/checkstyle) as consensus unless the
+         operator declares independence. Follows the asymmetric-cost rule, at
+         the cost of under-counting real consensus for correctly-configured
+         deployments.
+   A third path: an operator declaration mechanism (flag or env var) with (a) as
+   the default. Not built — it expands the CLI surface and the default question
+   still has to be answered first.
+
+0b. [small] `lineage_warnings` is in the JSON output but
+   `audit_html_report.build()` does not render it — same shape as the
+   display-dedup gap. Action users see the finding and not the caveat.
 
    CONCRETE, in shipped code. Phase 2's diversity guard in ingest_sarif is:
        if recs[a]["tools"] & recs[b]["tools"]: continue

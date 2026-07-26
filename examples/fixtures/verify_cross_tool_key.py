@@ -155,7 +155,53 @@ agg = ingest(meta_doc, sarif("Other", [res("nullDeref", "src/a.c", 10, "null der
 check(max(f["n_tools"] for f in agg["ranked"]) == 2,
       "CWE found in rule metadata enables cross-tool merge")
 
-# ── 8. Determinism and order-independence ───────────────────────────────────
+# ── 8. ENGINE LINEAGE: two names for one engine must not fake consensus ─────
+# The exploit needs no adversary: run SpotBugs, import the report into SonarQube
+# via sonar.java.spotbugs.reportPaths, feed BOTH SARIFs to --ingest. Same
+# findings, two driver names. Pre-fix that scored n_tools=2 on self-agreement.
+same_engine = ingest(
+    sarif("SpotBugs", [res("CWE-476", "src/a.c", 10, "null deref")]),
+    sarif("FindBugs", [res("nullDeref", "src/a.c", 10, "null deref CWE-476")]))
+check(max(f["n_tools"] for f in same_engine["ranked"]) == 1,
+      "SpotBugs + FindBugs (one engine) do NOT inflate n_tools",
+      f"n_tools max={max(f['n_tools'] for f in same_engine['ranked'])}")
+
+plugin = ingest(
+    sarif("SpotBugs", [res("CWE-476", "src/a.c", 10, "null deref")]),
+    sarif("Find Security Bugs", [res("nullDeref", "src/a.c", 10, "null deref CWE-476")]))
+check(max(f["n_tools"] for f in plugin["ranked"]) == 1,
+      "SpotBugs + its FindSecBugs PLUGIN do NOT inflate n_tools")
+
+# Genuinely different engines must still merge exactly as before.
+diff_engine = ingest(
+    sarif("Cppcheck", [res("CWE-476", "src/a.c", 10, "null deref")]),
+    sarif("Flawfinder", [res("FF9", "src/a.c", 10, "null deref CWE-476")]))
+check(max(f["n_tools"] for f in diff_engine["ranked"]) == 2,
+      "different engines still merge (no regression)")
+
+# Unknown tools default to their own name -> behave exactly as before.
+unknown = ingest(sarif("MyCustomScanner", [res("CWE-476", "src/a.c", 10, "null")]),
+                 sarif("OtherScanner", [res("CWE-476", "src/a.c", 10, "null")]))
+check(max(f["n_tools"] for f in unknown["ranked"]) == 2,
+      "unknown tools keep prior behaviour (default lineage = own name)")
+
+# Transitive case: A/engine1 merges with B/engine2 merges with C/engine1.
+# The chain can put two same-engine drivers in ONE record, so n_tools must be
+# counted by engine, not just guarded at merge time.
+trans = ingest(sarif("SpotBugs", [res("CWE-476", "src/a.c", 10, "null deref")]),
+               sarif("Cppcheck", [res("CWE-476", "src/a.c", 10, "null deref")]),
+               sarif("FindBugs", [res("CWE-476", "src/a.c", 10, "null deref")]))
+top = max(f["n_tools"] for f in trans["ranked"])
+check(top == 2, "transitive chain counts ENGINES not names", f"n_tools={top} (expect 2, not 3)")
+
+# The independence caveat must be disclosed, not silently assumed.
+sonar = ingest(sarif("SonarQube", [res("CWE-476", "src/a.c", 10, "null")]),
+               sarif("SpotBugs", [res("CWE-476", "src/b.c", 20, "null")]))
+check(any("SonarQube" in w and "import" in w.lower() for w in sonar.get("lineage_warnings", [])),
+      "SonarQube + an importable tool triggers an independence disclosure",
+      f"{len(sonar.get('lineage_warnings', []))} warning(s)")
+
+# ── 9. Determinism and order-independence ───────────────────────────────────
 a1 = audit.ingest_sarif([FF, CC])
 a2 = audit.ingest_sarif([CC, FF])
 strip = lambda a: [(r["score"], r["uri"], r["line"], r["ruleId"], r["n_tools"])

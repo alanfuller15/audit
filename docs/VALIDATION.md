@@ -1109,3 +1109,70 @@ BOUND: reasoned from CWE definitions plus two fetched entries, not from observed
 merge behaviour on Java data. It predicts lower false-merge risk; it does not
 demonstrate it. A false-merge audit on real Java output must follow the first
 extension.
+
+## Engine-lineage guard implemented (2026-07-26) — HANDOFF item 0
+
+Closes the only defect found in this session that INFLATES `n_tools`. Every
+other defect cost recall; this one corrupted the headline signal.
+
+### The defect
+Phase 2's diversity guard was `recs[a]["tools"] & recs[b]["tools"]` — a set
+intersection on driver NAME. Two drivers of ONE engine passed it. The
+diversity-aware merge was name-aware, not diversity-aware.
+
+### What changed (src/audit.py only)
+- `_TOOL_LINEAGE`: engine lineage per known driver. SpotBugs / FindBugs /
+  Find Security Bugs -> `findbugs`; Semgrep* -> `semgrep`; SonarQube /
+  SonarJava / SonarCloud -> `sonarqube`; plus cppcheck, flawfinder, codeql,
+  pmd, checkstyle, errorprone.
+- `_lineage_of()` falls back to the driver's own lowercased name, with prefix
+  tolerance for version/edition suffixes (verified: "Semgrep OSS" -> `semgrep`).
+  **Unknown tools therefore behave exactly as before. Nothing regresses.**
+- The merge guard now intersects LINEAGE.
+- `n_tools` counts DISTINCT ENGINES, not driver names. Needed independently of
+  the guard: a transitive chain (A/engine1 - B/engine2 - C/engine1) can place
+  two same-engine drivers in one record. Regression-tested.
+- Quality weighting takes one representative driver per engine, so an engine
+  cannot be weighted twice.
+- Output gains `tool_lineages`, `distinct_engines`, `lineage_warnings`; the CLI
+  prints the engine count when it differs from the tool count, and prints each
+  independence caveat.
+
+### Verified
+25-check harness, all passing. New checks: SpotBugs+FindBugs do not inflate
+n_tools; SpotBugs+FindSecBugs plugin likewise; different engines still merge
+(no regression); unknown tools keep prior behaviour; transitive chains count
+engines not names; the SonarQube caveat is disclosed. Real-data non-regression:
+the 3-tool zlib ingest is unchanged at 2 merges, all three engines distinct.
+
+### HONEST LIMIT — the SonarQube case is DISCLOSED, not PREVENTED
+Running the documented exploit through the real CLI:
+
+```
+$ audit.py --ingest sb.sarif sq.sarif
+  tools: SonarQube, SpotBugs
+  ⚠ independence: SonarQube is present alongside findbugs. SonarQube can IMPORT
+    those tools' reports (sonar.java.*.reportPaths), so its findings may not be
+    independent ... verify the scanner configuration ...
+  #1  score=7.7  SQL_INJECTION  src/Login.java:42  [SonarQube+SpotBugs] 2tools
+```
+
+The warning fires, but **the finding still scores `n_tools=2`.** SonarQube's
+lineage (`sonarqube`) differs from SpotBugs' (`findbugs`), and the guard only
+blocks IDENTICAL lineages. So in the exact exploit scenario the signal is still
+inflated — loudly, but inflated.
+
+This is deliberate and is NOT resolved here. Blocking the merge outright would
+penalize the legitimate configuration, where SonarJava analyses independently
+and SpotBugs runs separately — genuinely two engines. Whether the ambiguous case
+should default to counting (disclose only) or to not counting (conservative, per
+the asymmetric-cost rule) is a design decision with real cost either way, and
+HANDOFF item 0 explicitly left it open with two options. **Not picked
+unilaterally.** See the open decision recorded in item 0.
+
+Second gap, same shape as the display-dedup one: `lineage_warnings` is in the
+JSON but `audit_html_report.build()` does not render it, so Action users see
+the finding and not the caveat.
+
+Tier: `[self-tested]` for the implementation. The LINEAGE FACTS are `[fetched]`
+(docs/SPEC_java_admission.md §2 sources).

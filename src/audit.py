@@ -611,6 +611,83 @@ def _cwe_class_of(rule_id, message, uri=""):
             return _CWE_CLASS[n]
     return None
 
+# ── ENGINE LINEAGE (diversity-aware consensus must be ENGINE-aware) ─────────
+# Consensus counts agreement across DIFFERENT tools. "Different" must mean a
+# different ANALYSIS ENGINE, not a different product name. Several widely-used
+# tools are forks, plugins, or re-exporters of another tool: counting them
+# separately turns SELF-agreement into apparent consensus and INFLATES n_tools —
+# the one error direction the asymmetric-cost rule forbids, since n_tools is the
+# signal every published number rests on.
+#
+# Lineage facts are [fetched] (docs/SPEC_java_admission.md §2):
+#   - SpotBugs IS FindBugs: a fork, source still under edu/umd/cs/findbugs/.
+#   - Find Security Bugs is a SpotBugs PLUGIN, not a separate analyzer.
+#   - SonarQube can IMPORT SpotBugs/FindBugs/FindSecBugs/PMD/Checkstyle reports
+#     (sonar.java.*.reportPaths), so its independence depends on DEPLOYMENT
+#     CONFIGURATION and cannot be certified from SARIF. Handled by disclosure
+#     below, not by silently assuming independence.
+#
+# UNKNOWN TOOLS DEFAULT TO THEIR OWN NAME, so anything not listed here behaves
+# exactly as before this registry existed. Nothing regresses.
+_TOOL_LINEAGE = {
+    "spotbugs": "findbugs",
+    "findbugs": "findbugs",
+    "find security bugs": "findbugs",
+    "findsecbugs": "findbugs",
+    "cppcheck": "cppcheck",
+    "flawfinder": "flawfinder",
+    "semgrep": "semgrep",
+    "semgrep oss": "semgrep",
+    "semgrep ce": "semgrep",
+    "codeql": "codeql",
+    "pmd": "pmd",
+    "checkstyle": "checkstyle",
+    "error prone": "errorprone",
+    "errorprone": "errorprone",
+    "sonarqube": "sonarqube",
+    "sonarjava": "sonarqube",
+    "sonarcloud": "sonarqube",
+}
+# Lineages a SonarQube deployment may be RE-EMITTING rather than independently
+# finding. Co-occurrence is disclosed, never silently trusted.
+_SONAR_IMPORTABLE = {"findbugs", "pmd", "checkstyle"}
+
+def _lineage_of(tool):
+    """Analysis-engine lineage for a SARIF driver name. Unknown -> its own name."""
+    t = (tool or "").strip().lower()
+    if t in _TOOL_LINEAGE:
+        return _TOOL_LINEAGE[t]
+    # Tolerate version/edition suffixes ("Semgrep OSS 1.2", "CodeQL CLI").
+    for known, lineage in sorted(_TOOL_LINEAGE.items(), key=lambda kv: -len(kv[0])):
+        if t.startswith(known):
+            return lineage
+    return t or "unknown-tool"
+
+def _lineage_warnings(tools):
+    """Independence caveats we can detect from the driver names alone."""
+    out = []
+    lin = {t: _lineage_of(t) for t in tools}
+    # Two drivers, one engine: now prevented from inflating n_tools, but the
+    # operator should know their "two tools" are one.
+    byl = {}
+    for t, l in lin.items():
+        byl.setdefault(l, []).append(t)
+    for l, ts in sorted(byl.items()):
+        if len(ts) > 1:
+            out.append(f"{', '.join(sorted(ts))} share one analysis engine "
+                       f"({l}); counted ONCE for consensus, not {len(ts)} times.")
+    # SonarQube may be re-emitting a co-present tool's findings.
+    if "sonarqube" in byl:
+        overlap = sorted(_SONAR_IMPORTABLE & set(byl))
+        if overlap:
+            out.append(
+                "SonarQube is present alongside " + ", ".join(overlap) +
+                ". SonarQube can IMPORT those tools' reports (sonar.java.*.reportPaths), "
+                "so its findings may not be independent. Independence cannot be "
+                "determined from SARIF — verify the scanner configuration before "
+                "treating agreement with these tools as consensus.")
+    return out
+
 def _fingerprint_value(res):
     """The tool's own stable identity for a result, or None."""
     for field in ("partialFingerprints", "fingerprints"):
@@ -804,6 +881,9 @@ def ingest_sarif(paths):
     same_tool_count = len(findings)
     order = sorted(findings.keys())            # deterministic, input-order-independent
     recs = [findings[k] for k in order]
+
+    def _lineages(rec):
+        return {_lineage_of(t) for t in rec["tools"]}
     parent = list(range(len(recs)))
 
     def _find(x):
@@ -824,11 +904,14 @@ def ingest_sarif(paths):
     for ck in sorted(by_key):
         idxs = by_key[ck]
         for a, b in zip(idxs, idxs[1:]):
-            # DIVERSITY-AWARE: only merge across DIFFERENT tools. Two findings
+            # DIVERSITY-AWARE: only merge across DIFFERENT ENGINES. Two findings
             # from the same tool at one location are that tool's business and
             # were already handled in phase 1; merging them here would let a
             # single tool inflate its own consensus.
-            if recs[a]["tools"] & recs[b]["tools"]:
+            # Compared by ENGINE LINEAGE, not driver name — SpotBugs and FindBugs
+            # are one engine under two names, and merging them would manufacture
+            # consensus out of self-agreement. See _TOOL_LINEAGE.
+            if _lineages(recs[a]) & _lineages(recs[b]):
                 continue
             _union(a, b)
 
@@ -885,7 +968,18 @@ def ingest_sarif(paths):
                         "per_tool_multiplier": {}}, (lambda t: 1.0)
 
     for rec in findings.values():
-        rec["n_tools"] = len(rec["tools"])                 # diversity-aware: distinct tools only
+        # DIVERSITY-AWARE: distinct ENGINES, not distinct driver names. A record
+        # can acquire two same-lineage drivers transitively (A/engine1 merges
+        # with B/engine2, which merges with C/engine1), so this is counted here
+        # as well as guarded at merge time.
+        rec["lineages"] = sorted({_lineage_of(t) for t in rec["tools"]})
+        rec["n_tools"] = len(rec["lineages"])
+        # One representative driver per engine, so quality-weighting also counts
+        # each engine once rather than once per name.
+        _byl = {}
+        for _t in sorted(rec["tools"]):
+            _byl.setdefault(_lineage_of(_t), _t)
+        rec["consensus_tools"] = set(_byl.values())
         rec["sev_n"] = SEV.get(rec["level"], 1)
         rec["noisy_loc"] = bool(FIXTURE_DIR.search(rec["uri"]) or is_packaging(rec["uri"])
                                 or TEST_DIR.search(rec["uri"]))
@@ -894,7 +988,7 @@ def ingest_sarif(paths):
         # finding (was: flat 1.6 * n_tools). weighted_consensus_term reduces to
         # 1.6 * n_tools exactly when every multiplier is 1.0.
         if _QUALITY_WEIGHTING:
-            consensus = weighted_consensus_term(rec["tools"], qmult)
+            consensus = weighted_consensus_term(rec["consensus_tools"], qmult)
         else:
             consensus = 1.6 * rec["n_tools"]
         # review-worthiness score (validated signal combination; NOT exploitability)
@@ -916,6 +1010,11 @@ def ingest_sarif(paths):
         "parse_errors": parse_errors,
         "empty_inputs": empty_inputs,
         "tools": sorted(tools_seen),
+        # Engine lineage per driver, plus any independence caveats we can detect
+        # from the names alone. Consensus counts ENGINES, not product names.
+        "tool_lineages": {t: _lineage_of(t) for t in sorted(tools_seen)},
+        "distinct_engines": len({_lineage_of(t) for t in tools_seen}),
+        "lineage_warnings": _lineage_warnings(tools_seen),
         "raw_result_count": total_raw,
         # Two-stage dedup is now visible, so a reader can tell which stage did
         # the work: same-tool (fingerprint) vs cross-tool (location + CWE class).
@@ -1037,6 +1136,11 @@ def main():
             for ei in agg["empty_inputs"]:
                 print(f"  · {ei}: empty (no findings) — skipped")
         print(f"  tools: {', '.join(agg['tools']) or '(none)'}")
+        if agg.get("distinct_engines", 0) and agg["distinct_engines"] != len(agg["tools"]):
+            print(f"  distinct ANALYSIS ENGINES: {agg['distinct_engines']} "
+                  f"(consensus counts engines, not product names)")
+        for w in agg.get("lineage_warnings", []):
+            print(f"  ⚠ independence: {w}")
         print(f"  {agg['raw_result_count']} raw results → {agg['deduplicated_count']} unique after dedup")
         sa = agg["signal_assessment"]
         print(f"  signal check: informative here = {sa['informative_signals'] or 'NONE'}; "
