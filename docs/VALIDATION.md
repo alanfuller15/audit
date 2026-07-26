@@ -2428,3 +2428,99 @@ Direction B on OWASP Benchmark, SpotBugs+FindSecBugs x semgrep:
 figure.** The decision is robust to the unit: 427/1,156 = 36.9%, 427/1,156 =
 36.9% absorbed, 271/1,156 = 23.4% components — all clear 10%.
 Do NOT quote "282" (or the former "351") as the yield; it is a tag count.
+
+## OPEN ITEM 2 — is a principled ENTITY-LEVEL match reachable? **NOT REACHABLE.**
+
+Checked in order of cost, against tools and data on disk.
+
+### Check 1 — can semgrep be made to emit method context? NO.
+semgrep's NATIVE JSON (richer than its SARIF) carries only:
+```
+check_id · path · start · end
+extra{engine_kind, fingerprint, lines, message, metadata, severity, validation_state}
+```
+**No enclosing function, method, or symbol field in any output format.** The
+`metadata` block is RULE metadata (cwe, owasp, source-rule-url), not location
+context. No flag adds it.
+
+A pattern METAVARIABLE could bind an enclosing function (`function $F(...) {...}`),
+but only by REWRITING EVERY RULE in `p/java`. That is a rule-authoring project
+of the same order as writing a parser, not a cheap route.
+
+INCIDENTAL FINDING, relevant to independence: semgrep's unvalidated-redirect
+rule carries `source-rule-url: find-sec-bugs.github.io/bugs.htm#UNVALIDATED_REDIRECT`.
+**semgrep's rule is DERIVED FROM FindSecBugs' rule.** The one cross-tool
+agreement found on real Java is between a rule and its own descendant — which is
+shared-lineage agreement at the RULE level, a layer below the engine-lineage
+guard (item 0). Not pursued here; recorded because it bears on what that
+agreement was worth.
+
+### Check 2 — bucket semgrep's points by SpotBugs' logicalLocations? FAILS WHERE NEEDED.
+Sized on both corpora:
+```
+OWASP   8,169 method buckets across 2,751 files
+        1,662 of 1,848 semgrep findings (89.9%) fall inside a bucket
+        0 ambiguous · bucket spans: median 0, p90 50, max 104
+Struts    365 buckets across 203 files
+        0 of 1 semgrep findings fall inside a bucket
+```
+
+**It fails on the one case that motivates entity matching.** The bucket is
+derived from SpotBugs' FINDINGS, not the method's real extent, so it cannot
+extend ABOVE the first SpotBugs finding:
+```
+sendRedirect(HttpServletResponse, String)
+  SpotBugs findings at 247, 250  ->  derived bucket [247, 250]
+  semgrep finding at 244 (the method SIGNATURE)  ->  OUTSIDE the bucket
+```
+Since semgrep systematically anchors at the taint SOURCE and SpotBugs at the
+SINK, and a source precedes its sink, the derived bucket **systematically
+excludes exactly the anchoring mismatch it was meant to bridge.**
+
+Three further objections, any one sufficient:
+1. **Coverage is defined by one tool.** Only methods SpotBugs already flagged
+   become buckets, so agreement in methods only semgrep saw is unreachable.
+2. **The boundary is INFERRED, not DECLARED.** Direction B was adopted because a
+   tool-declared range is principled where an invented window is not. A bucket
+   spanning findings is invented — it is a tolerance window with extra steps and
+   a wider span (p90 50, max 104 lines vs the adopted cap of 21).
+3. **It cannot be validated.** Same-bug checking on OWASP rests on
+   one-bug-per-file labels, which cannot distinguish a correct pairing from two
+   genuine same-class findings in one 104-line method.
+
+### Check 3 — a parser. OUT OF SCOPE.
+Recovering semgrep's enclosing method needs Java (and C) parsing. Stated as the
+answer, not worked around.
+
+### VERDICT: NOT REACHABLE
+No route to a principled entity-level match exists from the data and tools on
+disk. The one route with real yield on OWASP (bucketing, 1,662 candidates) is
+unprincipled by this project's own adopted standard, and fails on the motivating
+case.
+
+## ITEMS 1 AND 2 ARE EXHAUSTED. ITEM 3 IS WHAT REMAINS.
+
+Of the three open questions recorded under HANDOFF §6.2:
+```
+1. Direction B, point-in-range        -> EVALUATED, ADOPTED. Recovers line
+                                         jitter (median span 2). Does NOT
+                                         address cross-methodology anchoring.
+2. Principled entity-level match      -> NOT REACHABLE (this section).
+3. Is the honest description
+   SAME-METHODOLOGY agreement?        -> REMAINS.
+```
+
+**ITEM 3 IS NOT A MEASUREMENT. IT IS A DECISION ABOUT WHAT THE TOOL CLAIMS.**
+
+No further experiment settles it. The measurements are already in: pattern and
+dataflow tools do not co-locate (measured twice, two ecosystems, two
+mechanisms); the mechanism requires co-location; neither reachable fix changes
+that. What remains is a choice about how the tool describes itself, and it is
+the inventor's to make, not a result to be computed.
+
+Stated before going near it, so it is not mistaken for further analysis:
+- The README's premise is that DIFFERENT tools agreeing is the signal.
+- Adopting item 3 means that premise is not what the tool measures.
+- That is a HEADLINE rewrite, a re-examination of the 0.755 provenance (Lipp
+  used six methodologically diverse tools), and a materially smaller claim —
+  from "independent evidence" to "corroboration within a method".
