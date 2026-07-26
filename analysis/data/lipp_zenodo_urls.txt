@@ -1,0 +1,15 @@
+fig4.pdf https://zenodo.org/api/records/6515687/files/fig4.pdf/content
+README.md https://zenodo.org/api/records/6515687/files/README.md/content
+sca_eval.ipynb https://zenodo.org/api/records/6515687/files/sca_eval.ipynb/content
+fig5.pdf https://zenodo.org/api/records/6515687/files/fig5.pdf/content
+sca_data_2.csv https://zenodo.org/api/records/6515687/files/sca_data_2.csv/content
+fig3.pdf https://zenodo.org/api/records/6515687/files/fig3.pdf/content
+fig6.pdf https://zenodo.org/api/records/6515687/files/fig6.pdf/content
+fig2.pdf https://zenodo.org/api/records/6515687/files/fig2.pdf/content
+cwe_distr.csv https://zenodo.org/api/records/6515687/files/cwe_distr.csv/content
+fig1.pdf https://zenodo.org/api/records/6515687/files/fig1.pdf/content
+fct_stats_2.csv https://zenodo.org/api/records/6515687/files/fct_stats_2.csv/content
+fct_stats_1.csv https://zenodo.org/api/records/6515687/files/fct_stats_1.csv/content
+cwe_mapping.zip https://zenodo.org/api/records/6515687/files/cwe_mapping.zip/content
+sca_data_1.csv https://zenodo.org/api/records/6515687/files/sca_data_1.csv/content
+dataset.zip https://zenodo.org/api/records/6515687/files/dataset.zip/content

@@ -1,0 +1,43 @@
+FUNCTION-level units: 14656, vulnerable 135 (0.92%)
+
+==============================================================================
+ADDITION 1 — REGRESSION DIAGNOSTICS
+==============================================================================
+
+  n_tools alone
+    int          b= -5.5263  se= 0.1882  z=-29.36  p=0 ***
+    n_tools      b= +0.5249  se= 0.0928  z= +5.66  p=1.56e-08 ***
+
+  log(LOC) alone [FLOOR]
+    int          b= -8.5923  se= 0.3512  z=-24.46  p=0 ***
+    log(LOC)     b= +1.0546  se= 0.0789  z=+13.37  p=0 ***
+
+  n_tools + log(LOC)
+    int          b= -8.6253  se= 0.3560  z=-24.23  p=0 ***
+    n_tools      b= +0.0573  se= 0.1040  z= +0.55  p=0.582 
+    log(LOC)     b= +1.0388  se= 0.0840  z=+12.36  p=0 ***
+
+  n_tools + log + log^2
+    int          b=-10.4051  se= 1.1063  z= -9.40  p=0 ***
+    n_tools      b= +0.0598  se= 0.1034  z= +0.58  p=0.563 
+    log(LOC)     b= +1.8851  se= 0.4972  z= +3.79  p=0.00015 ***
+    log(LOC)^2   b= -0.0950  se= 0.0548  z= -1.74  p=0.0826 
+
+  Pearson(n_tools, log(LOC)) = +0.305   VIF = 1.10   (tolerable)
+
+==============================================================================
+ADDITION 2 — RANKING EVALUATION (function level)
+==============================================================================
+  ranker                          PofB@20     IFA   PMI@20
+  A logistic n_tools+log(LOC)       0.185       2    0.022
+  B size-residualized               0.185     142    0.161
+  C density n_tools/LOC             0.170    1334    0.571
+  SIZE-ONLY [FLOOR]                 0.185       2    0.022
+  raw consensus                     0.185     142    0.161
+
+  vs SIZE-MATCHED random (400 draws, matched on within-budget size deciles):
+    A logistic n_tools+log(LOC)    PofB 0.185 vs 0.098+/-0.022  P(rand>=)=0.000  IFA 2 vs 24   BEATS
+    B size-residualized            PofB 0.185 vs 0.179+/-0.031  P(rand>=)=0.468  IFA 142 vs 98   does NOT beat
+    C density n_tools/LOC          PofB 0.170 vs 0.173+/-0.023  P(rand>=)=0.603  IFA 1334 vs 1966   does NOT beat
+    SIZE-ONLY [FLOOR]              PofB 0.185 vs 0.096+/-0.023  P(rand>=)=0.000  IFA 2 vs 22   BEATS
+    raw consensus                  PofB 0.185 vs 0.177+/-0.032  P(rand>=)=0.443  IFA 142 vs 95   does NOT beat
