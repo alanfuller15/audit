@@ -646,3 +646,92 @@ it does not survive contact with a real library and must not be quoted as a
 rate. Measuring it properly (HANDOFF §7 item 4) is a prerequisite for deciding
 how prominent the badge should be; the render must not be designed around an
 assumed frequency.
+
+## _result_key two-algorithm fix (2026-07-26) — implemented, tested, real-library result
+
+Closes the structural defect recorded above: the shipped scanner pair could not
+produce `n_tools > 1` on any input. HANDOFF §7 item 2.
+
+### What changed (src/audit.py only; no action.yml, no README)
+1. **Dedup split by purpose.** Phase 1 SAME-tool dedup keeps the fingerprint
+   branch, now scoped by tool so one tool's fingerprint cannot collide with
+   another's key. Phase 2 CROSS-tool consensus unions records from DIFFERENT
+   tools by normalized location + CWE class (or identical ruleId, which
+   preserves pre-fix behaviour so the change cannot REGRESS a working merge).
+   Union-find with lowest-index-wins, so the result is order-independent.
+2. **`_norm_uri` given real path normalization.** Was backslashes + leading
+   slash only, so `./src/x.c` and `src/x.c` were different keys. Now handles
+   `file://`, percent-encoding, `./`, `../`, and duplicate slashes. Lexical
+   only — ingest must work on SARIF produced on another machine.
+3. **`_CWE_CLASS` extended conservatively**, +8 entries: 131/786 (buf),
+   590/762 (uaf), 771 (leak), 128/195/197 (int). Only existing classes were
+   extended; no new class was created without frequency evidence, because a
+   class with one member can never produce a merge. `_CWE_DENY` gains 664 and
+   758 (junk-drawer, 20 checks each). 252/467/362/833/686 deliberately left
+   unmapped pending measurement.
+   Rationale, stated because it governs future edits: a FALSE merge inflates
+   `n_tools`, the signal every published number rests on; a MISSED merge only
+   costs recall. Unmapped (no merge) is the safe default.
+4. Display module now imports the canonical map from audit.py with a
+   standalone fallback, so the two cannot drift.
+
+### Verification
+- `examples/fixtures/verify_cross_tool_key.py` — 16 checks, all pass: merge
+  occurs on real captured fixtures; same-tool dedup does not regress; same-tool
+  findings never inflate `n_tools`; fingerprints no longer block cross-tool
+  agreement; three path-form cases unify; different classes, off-by-one lines,
+  and denied CWEs all correctly decline to merge; order-independence and
+  determinism hold.
+- Fixtures REBUILT from captured real output (`regen_fixtures.sh`). The prior
+  hand-authored pair modelled a tool combination that does not exist. The new
+  flawfinder fixture carries real `fingerprints` on 3/3 results and real
+  `FF####` ruleIds — i.e. it actually exercises the defect.
+- Earlier CLI fixes re-checked and intact: `--help`, empty-SARIF graceful,
+  malformed-SARIF still a real error, flag-only invocation.
+
+### Real-library result — zlib 1.3.1, and it is a NEGATIVE worth reading
+Real flawfinder + real cppcheck (with `-I`), 15 C files, 9,539 lines:
+
+```
+raw findings      712
+same-tool dedup   601   (111 collapsed)
+cross-tool merges   0
+n_tools            {1: 601}
+```
+
+**Zero cross-tool merges — and the mechanism is behaving correctly.** Diagnosis:
+- 14 exact file+line co-locations between the tools
+- 10 of those had a resolvable class on both sides
+- **0 of those 10 had MATCHING classes**
+
+All 10 are `fprintf` debug lines in `trees.c`. flawfinder reports a format-string
+risk (`fmt`); cppcheck reports a null-deref-on-allocation-failure (`null`). Those
+are different bugs that happen to share a line. Declining to merge them is right,
+and a location-only key would have manufactured 10 false merges on debug code —
+direct empirical support for the asymmetric-error-cost design above.
+
+### HONEST FINDING — the structural blocker is gone, a SEMANTIC one remains
+Class profiles for this tool pair are near-disjoint on real code:
+- flawfinder: `fmt` 260, `buf` 235, `int` 7, unresolved 86
+- cppcheck: unresolved 111, `null` 10, `int` 2, `uninit` 1
+
+Only 13 of 124 cppcheck findings resolve to a class at all; its bulk output is
+CWE-398 (68, correctly denied) and `missingIncludeSystem` (23, an analysis
+diagnostic). flawfinder pattern-matches dangerous functions; cppcheck does
+dataflow. They look for different things, so they rarely agree.
+
+So the fix was necessary but is NOT sufficient for the shipped default to
+demonstrate consensus. Do not report "the fix restores the headline signal" —
+on one real library it produced zero merges for legitimate reasons. Whether
+this generalizes is exactly item 3's transfer question (§7 of the item-4 spec),
+and it now has a concrete prior: expect low merge rates for flawfinder+cppcheck
+and check whether the Lipp envelope's ~5.9% multi-tool rate is reachable with
+real scanners at all, or whether it was an artifact of the reconstruction.
+
+### Tier
+`[self-tested]` for the implementation — Claude's harness, Claude's assertions.
+The zlib observation is stronger: non-Claude engines (real flawfinder, real
+cppcheck) on non-Claude input (real zlib), so the DATA is externally grounded.
+The judgment that declining those 10 merges is correct is Claude's analysis, not
+an external verdict. NO implementation tier moves to `[externally-verified]`:
+no external judge has confirmed the ranking is right on real data.

@@ -221,10 +221,28 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    the line exists in the STALE LOCAL copy; the PUBLIC README uses the correct
    `2>` + XML-converter path. Provenance failure recorded in SCOPE §4a.
 
-2. [Mac, medium] THE REAL WORK: `_result_key` two-algorithm fix. Fingerprint for
-   SAME-tool dedup; location+class for CROSS-tool. audit.py currently uses the
-   same-tool algorithm for both, which is a category error — it cites the
-   DefectDojo model, which uses two algorithms precisely to avoid this.
+2. [DONE 2026-07-26] `_result_key` two-algorithm fix. Fingerprint for SAME-tool
+   dedup; location+class for CROSS-tool. Implemented, tested (16-check harness
+   examples/fixtures/verify_cross_tool_key.py, all pass), fixtures rebuilt from
+   captured real output. `_norm_uri` given real path normalization. `_CWE_CLASS`
+   extended conservatively (+8), `_CWE_DENY` +664/+758. Full record in
+   VALIDATION.md 2026-07-26.
+   CARRY FORWARD — THE NEGATIVE: on real zlib 1.3.1 (real flawfinder + real
+   cppcheck, 712 raw findings) the fix produced **ZERO cross-tool merges**, and
+   correctly so: of 14 exact co-locations, 10 had classes resolved on both
+   sides and 0 matched — all 10 were trees.c fprintf debug lines where
+   flawfinder says format-string and cppcheck says null-deref. The STRUCTURAL
+   blocker is gone; a SEMANTIC one remains — the pair's class profiles are
+   near-disjoint (flawfinder fmt 260/buf 235; cppcheck null 10/int 2/uninit 1,
+   with only 13 of 124 findings resolving to any class). DO NOT report "the fix
+   restores the headline signal." It removes the impediment; whether the shipped
+   pair can demonstrate consensus at all is now item 3's question, with a
+   concrete prior: expect low merge rates, and check whether the Lipp envelope's
+   ~5.9% multi-tool rate is reachable with real scanners or was a reconstruction
+   artifact.
+   [historical] audit.py used the same-tool algorithm for both, a category error
+   — it cites the DefectDojo model, which uses two algorithms precisely to
+   avoid this.
    CRITICAL FRAMING (do not lose it): this fix does NOT risk ROC-AUC 0.755. That
    result was measured on reconstructed envelopes that DID merge (1,318 overlaps
    recovered, hand-count exact). The shipped path cannot merge. So the fix moves

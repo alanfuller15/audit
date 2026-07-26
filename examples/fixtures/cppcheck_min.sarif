@@ -3,23 +3,125 @@
   "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
   "runs": [
     {
-      "tool": { "driver": { "name": "Cppcheck" } },
+      "tool": {
+        "driver": {
+          "name": "Cppcheck"
+        }
+      },
       "results": [
         {
-          "ruleId": "bufferAccessOutOfBounds",
-          "level": "error",
-          "message": { "text": "Buffer is accessed out of bounds (CWE-787)" },
-          "locations": [{ "physicalLocation": {
-            "artifactLocation": { "uri": "src/parse.c" },
-            "region": { "startLine": 42 } } }]
+          "ruleId": "missingIncludeSystem",
+          "level": "note",
+          "message": {
+            "text": "Include file: <string.h> not found. Please note: Standard library headers do not need to be provided to get proper results."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "examples/fixtures/overlap.c"
+                },
+                "region": {
+                  "startLine": 10
+                }
+              }
+            }
+          ]
         },
         {
-          "ruleId": "nullPointer",
+          "ruleId": "missingIncludeSystem",
+          "level": "note",
+          "message": {
+            "text": "Include file: <stdio.h> not found. Please note: Standard library headers do not need to be provided to get proper results."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "examples/fixtures/overlap.c"
+                },
+                "region": {
+                  "startLine": 11
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "CWE-788",
           "level": "error",
-          "message": { "text": "Null pointer dereference (CWE-476)" },
-          "locations": [{ "physicalLocation": {
-            "artifactLocation": { "uri": "src/net.c" },
-            "region": { "startLine": 88 } } }]
+          "message": {
+            "text": "Buffer is accessed out of bounds: buf"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "examples/fixtures/overlap.c"
+                },
+                "region": {
+                  "startLine": 15
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "CWE-398",
+          "level": "note",
+          "message": {
+            "text": "Parameter 's' can be declared as pointer to const"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "examples/fixtures/overlap.c"
+                },
+                "region": {
+                  "startLine": 18
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "CWE-561",
+          "level": "note",
+          "message": {
+            "text": "The function 'overflow_fixed' is never used."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "examples/fixtures/overlap.c"
+                },
+                "region": {
+                  "startLine": 13
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "CWE-561",
+          "level": "note",
+          "message": {
+            "text": "The function 'fmt' is never used."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "examples/fixtures/overlap.c"
+                },
+                "region": {
+                  "startLine": 18
+                }
+              }
+            }
+          ]
         }
       ]
     }

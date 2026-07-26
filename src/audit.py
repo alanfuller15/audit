@@ -22,7 +22,7 @@ Usage:
   DEFAULT = inspection only (walk/read/regex, ZERO code execution).
   --run-tests = ALSO execute the project's test command (runs author-chosen code; opt-in).
 """
-import sys, os, re, json, subprocess
+import sys, os, re, json, subprocess, posixpath, urllib.parse
 
 # Tool-quality weighting for the ingest consensus term (restricted-2b).
 # Graceful degradation (charter F-EXT8): if the module is absent, fall back to
@@ -515,12 +515,115 @@ def to_sarif(inv, tool_version="5.1"):
     }
 
 def _norm_uri(u):
-    if not isinstance(u, str): return ""
-    return u.replace("\\", "/").lstrip("/")
+    """Normalize a SARIF artifact URI for CROSS-TOOL comparison.
+
+    Different scanners emit the same file differently: 'src/x.c', './src/x.c',
+    'a/../src/x.c', 'src//x.c', 'file:///abs/src/x.c', backslashes on Windows.
+    The old implementation only handled backslashes and a leading '/', so
+    './src/x.c' and 'src/x.c' were DIFFERENT keys — a silent cross-tool
+    merge-blocker. Cross-tool matching needs real path normalization.
+
+    Deliberately NOT resolved against the filesystem: ingest must work on SARIF
+    produced elsewhere (CI, another machine), where the paths may not exist
+    locally. This is pure lexical normalization.
+    """
+    if not isinstance(u, str) or not u:
+        return ""
+    s = u.replace("\\", "/")
+    if s.lower().startswith("file://"):          # file:///abs/path -> /abs/path
+        s = s[7:]
+        if len(s) > 2 and s[0] == "/" and s[2] == ":":   # file:///C:/x -> C:/x
+            s = s[1:]
+    try:
+        s = urllib.parse.unquote(s)              # %20 -> space
+    except Exception:
+        pass
+    s = posixpath.normpath(s)                    # collapses ./ , // , and a/../b
+    # normpath leaves leading '../' alone (correct — can't resolve above root).
+    s = s.lstrip("/")
+    if s in (".", ""):
+        return ""
+    return s
+
+# ── CWE class map (cross-tool consensus) ────────────────────────────────────
+# A CWE-class match is what lets two DIFFERENT tools agree on the same finding
+# when their ruleIds disagree. Coverage of this map therefore sets the ceiling
+# on how often the cross-tool key can match at all.
+#
+# ASYMMETRIC ERROR COST — the reason this map is extended conservatively:
+# a FALSE merge inflates n_tools, the signal every published number rests on
+# (ROC-AUC 0.755 et al). A MISSED merge only costs recall. These are not
+# symmetric, so an unmapped CWE (-> no merge) is the safe default and mapping
+# is the change that needs justification.
+_CWE_CLASS = {
+    # buffer
+    119: "buf", 120: "buf", 121: "buf", 122: "buf", 125: "buf", 126: "buf",
+    127: "buf", 787: "buf", 788: "buf", 805: "buf",
+    131: "buf",   # added: incorrect calculation of buffer size
+    786: "buf",   # added: access of memory location before start of buffer
+    # null deref
+    476: "null",
+    # use-after-free / free-correctness
+    415: "uaf", 416: "uaf", 825: "uaf",
+    590: "uaf",   # added: free of memory not on the heap
+    762: "uaf",   # added: mismatched memory management routines
+    # uninitialized
+    457: "uninit", 456: "uninit", 824: "uninit", 908: "uninit", 665: "uninit",
+    # resource leak
+    401: "leak", 404: "leak", 772: "leak", 775: "leak",
+    771: "leak",  # added: missing reference to active allocated resource
+    # format string
+    134: "fmt",
+    # integer
+    190: "int", 191: "int", 369: "int",
+    128: "int",   # added: wrap-around error
+    195: "int",   # added: signed-to-unsigned conversion error
+    197: "int",   # added: numeric truncation error
+}
+# Junk-drawer / too-generic CWEs. Matching on these would merge unrelated
+# findings that happen to share a vague parent category.
+_CWE_DENY = {
+    398, 561, 563, 570, 571, 682, 704,
+    664,  # added: improper control of a resource through its lifetime (20 checks)
+    758,  # added: reliance on undefined/unspecified behaviour (20 checks)
+}
+# DELIBERATELY LEFT UNMAPPED (no merge) pending frequency evidence — each would
+# need its own class, and a class with one member can never produce a merge:
+#   252 unchecked return value · 467 sizeof on pointer · 362 race condition
+#   833 deadlock · 686 wrong argument type
+# Adding a class is only useful once >=2 tools are observed emitting it.
+# Measure first: docs/SPEC_item4_groupability_measurement.md.
+
+_CWE_RE = re.compile(r"cwe[-_/:=\"'\s]{0,4}(\d+)", re.I)
+
+def _cwe_class_of(rule_id, message, uri=""):
+    """Resolve a coarse vulnerability class from any CWE number appearing in the
+    ruleId / message / uri. Returns None when nothing maps — and None NEVER
+    merges, which is the conservative default."""
+    for m in _CWE_RE.finditer(f"{rule_id} {message} {uri}"):
+        try:
+            n = int(m.group(1))
+        except (TypeError, ValueError):
+            continue
+        if n in _CWE_DENY:
+            continue
+        if n in _CWE_CLASS:
+            return _CWE_CLASS[n]
+    return None
 
 def _result_key(res):
-    """Dedup key: prefer the tool's own fingerprint (DefectDojo model); fall back
-    to ruleId + normalized location. This is the spec-sanctioned stable identity."""
+    """SAME-TOOL dedup key. Prefers the tool's own fingerprint — that is exactly
+    what fingerprints are for, and within one tool it is the most reliable
+    identity available. Falls back to ruleId + normalized location.
+
+    NOT a cross-tool key. See _cross_keys(): a fingerprint is tool-private, so
+    using it to decide cross-tool agreement makes agreement impossible between
+    any tool that emits fingerprints and any tool that does not. That was the
+    structural defect recorded in docs/SCOPE_shipped_consensus_defect.md — real
+    flawfinder emits fingerprints on every result and cppcheck emits none, so
+    n_tools could never exceed 1 in the shipped action. DefectDojo, which this
+    model cites, uses TWO algorithms precisely to avoid that.
+    """
     pf = res.get("partialFingerprints") or {}
     if pf:
         # use the first stable fingerprint value
@@ -533,6 +636,35 @@ def _result_key(res):
     uri = _norm_uri((loc.get("artifactLocation") or {}).get("uri", ""))
     line = (loc.get("region") or {}).get("startLine", "")
     return f"rk:{rid}|{uri}|{line}"
+
+def _cross_keys(rec):
+    """CROSS-TOOL consensus keys for a same-tool-deduped record. Two records from
+    DIFFERENT tools that share any of these keys describe the same finding.
+
+    Never derived from a tool's own fingerprint (see _result_key).
+
+    Two independent grounds for agreement, both requiring identical normalized
+    location:
+      cls| — same CWE class. The DefectDojo cross-tool algorithm, and the case
+             the fix exists for: different tools name the same bug differently
+             (flawfinder 'FF1001', cppcheck 'CWE-120') but agree on the class.
+      rid| — literally the same ruleId. Preserves the pre-fix behaviour for
+             fingerprint-free tool pairs, so this change cannot REGRESS a merge
+             that already worked.
+
+    Line is matched EXACTLY, not within a tolerance. Conservative on purpose:
+    a tolerance window makes merging depend on which findings are compared
+    first, and a false merge inflates n_tools. Near-miss line offsets remain the
+    display layer's job (audit_dedup_display.py, TOL=3), where the consequence
+    is a cosmetic grouping rather than a corrupted signal.
+    """
+    uri, line = rec["uri"], rec["line"]
+    keys = [f"rid|{uri}|{line}|{rec['ruleId']}"]
+    cls = _cwe_class_of(rec["ruleId"], rec["message"], uri)
+    if cls:
+        keys.append(f"cls|{uri}|{line}|{cls}")
+    rec["cwe_class"] = cls
+    return keys
 
 def ingest_sarif(paths):
     """DETERMINISTIC backbone (no LLM, no network). Parse >=1 SARIF files from any
@@ -586,7 +718,9 @@ def ingest_sarif(paths):
                         " ".join(str(t) for t in (((r.get("properties") or {}).get("tags")) or []))]).lower()
                     rulemeta[rid] = txt
             for res in (run.get("results") or []):
-                key = _result_key(res)
+                # PHASE 1 — SAME-TOOL dedup. Scoped by tool so one tool's
+                # fingerprint can never collide with another tool's key.
+                key = (tool, _result_key(res))
                 loc = (((res.get("locations") or [{}])[0].get("physicalLocation") or {}))
                 uri = _norm_uri((loc.get("artifactLocation") or {}).get("uri", ""))
                 line = (loc.get("region") or {}).get("startLine", 1)
@@ -608,6 +742,63 @@ def ingest_sarif(paths):
                     rec["level"] = lvl  # keep the most severe claim across tools
                 if rid in rulemeta and not rec["rulemeta"]:
                     rec["rulemeta"] = rulemeta[rid]
+
+    # ── PHASE 2 — CROSS-TOOL consensus merge ────────────────────────────────
+    # Union same-tool-deduped records that DIFFERENT tools agree on, keyed by
+    # normalized location + CWE class (or identical ruleId). This is the second
+    # of DefectDojo's two algorithms; phase 1 was the first. Using phase 1's
+    # fingerprint key for this purpose is what made n_tools>1 impossible in the
+    # shipped scanner pair (docs/SCOPE_shipped_consensus_defect.md).
+    same_tool_count = len(findings)
+    order = sorted(findings.keys())            # deterministic, input-order-independent
+    recs = [findings[k] for k in order]
+    parent = list(range(len(recs)))
+
+    def _find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def _union(a, b):
+        ra, rb = _find(a), _find(b)
+        if ra != rb:
+            parent[max(ra, rb)] = min(ra, rb)   # lowest index wins -> deterministic
+
+    by_key = {}
+    for i, rec in enumerate(recs):
+        for ck in _cross_keys(rec):
+            by_key.setdefault(ck, []).append(i)
+    for ck in sorted(by_key):
+        idxs = by_key[ck]
+        for a, b in zip(idxs, idxs[1:]):
+            # DIVERSITY-AWARE: only merge across DIFFERENT tools. Two findings
+            # from the same tool at one location are that tool's business and
+            # were already handled in phase 1; merging them here would let a
+            # single tool inflate its own consensus.
+            if recs[a]["tools"] & recs[b]["tools"]:
+                continue
+            _union(a, b)
+
+    groups = {}
+    for i in range(len(recs)):
+        groups.setdefault(_find(i), []).append(i)
+    merged = {}
+    for root in sorted(groups):
+        members = [recs[i] for i in groups[root]]
+        base = members[0]                       # lowest index — deterministic
+        for m in members[1:]:
+            base["tools"] |= m["tools"]
+            base["levels"] |= m["levels"]
+            base["all_rule_ids"] |= m["all_rule_ids"]
+            base["all_msgs"].update(m["all_msgs"])
+            if SEV.get(m["level"], 1) > SEV.get(base["level"], 1):
+                base["level"] = m["level"]      # most severe claim across tools
+            if m["rulemeta"] and not base["rulemeta"]:
+                base["rulemeta"] = m["rulemeta"]
+        merged[base["key"]] = base
+    findings = merged
+
     # Deterministic identity: regardless of input order, a merged finding adopts
     # the lexicographically-smallest ruleId among agreeing tools (and its message).
     # This makes the whole ranking order-independent.
@@ -674,6 +865,10 @@ def ingest_sarif(paths):
         "empty_inputs": empty_inputs,
         "tools": sorted(tools_seen),
         "raw_result_count": total_raw,
+        # Two-stage dedup is now visible, so a reader can tell which stage did
+        # the work: same-tool (fingerprint) vs cross-tool (location + CWE class).
+        "same_tool_deduplicated_count": same_tool_count,
+        "cross_tool_merges": same_tool_count - len(findings),
         "deduplicated_count": len(findings),
         "ranking_basis": "review-worthiness (location + diversity-aware consensus + "
                          "severity + kind). NOT exploitability — no external threat feeds.",

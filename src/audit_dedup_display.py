@@ -11,13 +11,24 @@ Grounding: DefectDojo two-algorithm model (same-tool dedup stays; cross-tool is 
 location+class); bounded hand-verifiable CWE->class map; junk-drawer CWEs denylisted;
 unknown CWE -> no grouping (graceful, never a false merge).
 """
-import json, sys, re
+import json, sys, re, os
 
-_CWE_CLASS = {119:"buf",120:"buf",121:"buf",122:"buf",125:"buf",126:"buf",127:"buf",
-              787:"buf",788:"buf",805:"buf",476:"null",415:"uaf",416:"uaf",825:"uaf",
-              457:"uninit",456:"uninit",824:"uninit",908:"uninit",665:"uninit",
-              401:"leak",404:"leak",772:"leak",775:"leak",134:"fmt",190:"int",191:"int",369:"int"}
-_CWE_DENY = {398,561,563,570,571,682,704}
+# CANONICAL SOURCE: audit.py owns the CWE class map, because the CROSS-TOOL
+# consensus key in ingest_sarif() now depends on it — a divergence between the
+# two would mean the display grouped findings the scorer did not, or vice versa.
+# Imported with a fallback so this module stays standalone-runnable (its whole
+# point) if audit.py is not importable.
+try:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from audit import _CWE_CLASS, _CWE_DENY          # noqa: F401
+except Exception:                                     # standalone fallback
+    _CWE_CLASS = {119:"buf",120:"buf",121:"buf",122:"buf",125:"buf",126:"buf",127:"buf",
+                  787:"buf",788:"buf",805:"buf",131:"buf",786:"buf",476:"null",
+                  415:"uaf",416:"uaf",825:"uaf",590:"uaf",762:"uaf",
+                  457:"uninit",456:"uninit",824:"uninit",908:"uninit",665:"uninit",
+                  401:"leak",404:"leak",772:"leak",775:"leak",771:"leak",134:"fmt",
+                  190:"int",191:"int",369:"int",128:"int",195:"int",197:"int"}
+    _CWE_DENY = {398,561,563,570,571,682,704,664,758}
 # CodeQL C/C++ security queries carry a rule NAME (cpp/...), not always a CWE number, once
 # past ingestion. Bounded, hand-verifiable name->class map (mirrors the CWE classes above).
 _CODEQL_RULE_CLASS = {
