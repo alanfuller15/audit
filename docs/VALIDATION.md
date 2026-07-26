@@ -431,6 +431,15 @@ needed a root fix. This is itself evidence for why external execution matters �
 the flaw was invisible to prior sandbox self-testing.
 UPDATE (2026-07-11) — Ranking now tested on REAL C/C++ CVE data
 
+> **[SUPERSEDED 2026-07-26 — READ THIS BEFORE THE FIGURES BELOW.]**
+> Every performance figure in this section (ROC-AUC 0.755, PofB@20% 0.655,
+> 0.9%->11.6% monotonicity, and the `[externally-verified]` tier) has been
+> RETIRED. They are not effort-aware, and ManualDown — ranking files by
+> descending size while reading no tool output — scores 0.845 on the same data.
+> The later effort-aware and size-matched controls are in "0g CONCLUSION" at the
+> end of this file. This section is retained as the historical record of what
+> was claimed and when, NOT as a current result. Do not cite these numbers.
+
 The tier map above listed "Re-ranking puts review-worthy findings first" as
 [self-tested] — passed only on Claude-built synthetic findings. That has now been
 tested against real ground truth. Updated status:

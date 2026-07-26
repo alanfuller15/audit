@@ -77,7 +77,7 @@ The top of `out.json` is your review queue, ordered by review-worthiness.
 
 ## Honest scope (what it is and isn't)
 
-- **The premise is validated; this implementation's ranking is not.** The figures above measure
+- **The premise is validated; this implementation's ranking is not.** The figure above measures
   tool agreement in a published CVE dataset. How well `audit` reproduces that on live scanner
   output has not been measured against CVE ground truth — it implements an externally validated
   premise, and how well it implements it is a separate, open question. See `docs/VALIDATION.md`.

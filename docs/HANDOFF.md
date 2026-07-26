@@ -133,13 +133,19 @@ Validated (see VALIDATION.md for full provenance + cross-checks):
   (1) no --help handler; (2) empty SARIF raised a false parse alarm;
   (3) --run-tests (same class) — root-caused: PROJECT_DIR now resolved as first
   non-flag arg. All verified across 5 invocation shapes; real ingest byte-stable.
-- Consensus RE-RANKING at FILE level: [externally-verified] (2026-07-11). Real
-  Lipp C/C++ CVE data, 9 projects, 2,559 files, 5 diverse SASTs, real
-  CVE-to-function ground truth. ROC-AUC 0.755 vs 0.596 best single tool vs 0.501
-  random; PofB@20% = 0.655; vulnerable-rate monotonic in agreement (1 tool 0.9%
-  -> 4 tools 11.6%). Corroborated by an independent study on the same data shape
-  (arXiv:2407.12241, ~17pp lift from tool combination). Leak sanity check passed
-  (no metric >0.85). Supersedes the older "[self-tested] ranking" row.
+- Consensus RE-RANKING at FILE level: **RETIRED 2026-07-26 — DO NOT CITE AS
+  CURRENT STATE.** This row formerly read "[externally-verified] (2026-07-11) …
+  ROC-AUC 0.755 vs 0.596 best single tool … PofB@20% = 0.655 … 1 tool 0.9% ->
+  4 tools 11.6%". Every one of those figures has been withdrawn:
+    * 0.755 is NOT effort-aware, and ManualDown — ranking files by DESCENDING
+      SIZE, reading no tool output — scores 0.845 on the same data.
+    * The effort-aware "win" was measured against ManualDown, which is the
+      NON-effort-aware baseline. Against ManualUp it is not significant.
+    * The remaining IFA/PMI advantage does not survive a SIZE-MATCHED control.
+  See item 0g and VALIDATION.md "0g CONCLUSION". The README no longer quotes any
+  of these. WHAT SURVIVES: multi-tool functions are ~1.5x more likely to contain
+  a real CVE than SIZE-MATCHED single-tool functions (p<0.0001) — a precision
+  finding, NOT a ranking claim.
 
 Tested and REJECTED (do not re-attempt as pending work):
 - Tool-quality WEIGHTING layer. Tested on real data and it does NOT beat plain
@@ -150,8 +156,13 @@ Tested and REJECTED (do not re-attempt as pending work):
   per-tool weights do not transfer across projects; only a coarse tier prior
   does. CONCLUSION: the tool's value is the SIMPLE consensus signal. This was
   formerly PENDING item 2(b); it is closed by evidence, not deferred.
-- FUNCTION-level ranking. Out of scope: 0.9% base rate too sparse (consensus
-  ROC-AUC 0.628, IFA 130). The proven value is FILE-level triage only.
+- FUNCTION-level ranking. Out of scope, and CONFIRMED so 2026-07-26 by a
+  stronger route: at function level consensus scores PofB@20 = 0.185 against
+  random's 0.199, i.e. at-or-below chance once effort is priced (Mende &
+  Koschke's documented phenomenon). The older rationale (0.9% base rate,
+  ROC-AUC 0.628) stands but the phrase "the proven value is FILE-level triage
+  only" is WITHDRAWN — file-level ranking is no longer a proven value either.
+  See 0g.
 
 ## 6.1 STRUCTURAL DEFECT FOUND 2026-07-26 — the headline signal is inert in the
 ##     shipped product. [self-tested], deductive from the code, verified on real
