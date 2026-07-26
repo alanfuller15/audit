@@ -461,6 +461,27 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    ACTION REQUIRED before the README is touched again: decide whether to
    re-headline on an effort-aware metric. This supersedes item 1's status.
 
+0h. [SMALL, orthogonal — take it] Disclose size-correlation per run. The tool
+   already discloses when a signal is uninformative (the signal gate) and when
+   independence is doubtful (0a/0b). Add the same for the size confound:
+   compute Spearman(n_tools, unit size) per ingest and disclose when agreement
+   is substantially size-correlated. On the Lipp corpus that value is +0.629,
+   which is the single number that explains why the ranking claims collapsed.
+   Cheap, consistent with existing behaviour, and it puts the caveat in the
+   OUTPUT rather than only in a document. Scoped, not built.
+
+0i. [THE ONLY ROUTE TO A FUTURE POSITIVE CLAIM — work, not a blocker]
+   Size-controlled formulation of the consensus signal. Raw agreement COUNT is
+   substantially a size proxy (Spearman +0.629), which is why every ranking
+   claim built on it failed a size-matched control. Candidate: consensus DENSITY
+   — agreement per LOC, or agreement normalised by the unit's own finding count
+   — so a large file is not favoured merely for being large. UNMEASURED.
+   STANDING RULE attached: nothing gets headlined until it survives a
+   SIZE-MATCHED CONTROL, not merely ManualUp or ManualDown. Three claims have
+   now died between "beats a named baseline" and "beats a size-matched
+   control"; that gap is where this project's claims go to fail.
+   Do NOT treat this item as a reason to delay the README correction.
+
 0f. [STRUCTURAL GAP in the 0a guard — record stands regardless of counts]
    LINEAGE EXISTS AT THE RULE LEVEL, BELOW THE ENGINE LEVEL 0a GUARDS.
    Found 2026-07-26 while sizing open item 2. semgrep's
