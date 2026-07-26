@@ -2200,3 +2200,37 @@ So adopting the third direction would mean:
 **This is a claim change, not a caveat.** It must not be adopted as a quiet
 fallback, and any session that reaches for it should treat rewriting the
 README's premise as part of the work, not a follow-up.
+
+## DIRECTION B PRE-REGISTRATION (2026-07-26) — decision rule fixed before computing
+
+Bounded evaluation of point-in-range matching: when one tool reports a RANGE
+(startLine..endLine) and another reports a POINT inside it, treat as co-located.
+Evaluated on OWASP Benchmark and Struts using SARIF already on disk.
+
+### IMPLEMENT only if ALL of:
+- **(a) Material yield.** New cross-tool pairs >= 10% of current merges on OWASP
+  (>= 116), OR >= 3 on Struts (where current merges = 0, so any recovered real
+  agreement is materially informative).
+- **(b) Correctness.** Same-bug rate among NEW matches >= 80% — on OWASP judged
+  by the answer key (new match's class == planted category), on Struts by direct
+  inspection of every case if few enough to enumerate.
+- **(c) Bounded false-merge risk.** Median span of the ranges that ACTUALLY
+  PRODUCE new matches <= 25 lines, AND < 10% of producing ranges exceed 100
+  lines. (The failure mode is a 200-line method whose range happens to contain
+  an unrelated finding.)
+- **(d) Determinism.** Order-independent, or made so at trivial cost.
+
+### RECOMMEND AGAINST if ANY of:
+- New matches < 5% of merges on OWASP AND < 3 on Struts
+- Same-bug rate among new matches < 60%
+- Median producing span > 50 lines, OR > 25% of producing ranges exceed 100 lines
+- Order dependence requiring a non-trivial fix
+
+### Anything between the two -> report as AMBIGUOUS, make no recommendation.
+
+### Prior being tested (not accommodated)
+The inventor's prior: coverage is low enough (SpotBugs emits `endLine` on
+11-30% of results; semgrep's spans average ~0.7 lines) that this adds few
+matches and cannot address the structural source-vs-sink mismatch. This
+evaluation is designed to be capable of refuting that, and a negative is
+recorded as a result rather than as a reason to keep the option open.
