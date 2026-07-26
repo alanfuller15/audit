@@ -338,17 +338,17 @@ contained = ingest(sarif("ToolA", [res_range("CWE-89", "src/A.java", 10, 20, "sq
                    sarif("ToolB", [res("CWE-89", "src/A.java", 14, "sqli CWE-89")]))
 check(max(f["n_tools"] for f in contained["ranked"]) == 2,
       "point inside a declared range merges")
-check("range-containment" in contained.get("merges_by_rule", {}),
+check("range-containment" in contained.get("findings_by_merge_rule", {}),
       "the merge is REPORTED as range-containment, not exact-line",
-      str(contained.get("merges_by_rule")))
+      str(contained.get("findings_by_merge_rule")))
 
 # Exact-line merges must still be labelled as such, so the two populations
 # stay separable for future measurement.
 ex = ingest(sarif("ToolA", [res("CWE-89", "src/A.java", 10, "sqli CWE-89")]),
             sarif("ToolB", [res("CWE-89", "src/A.java", 10, "sqli CWE-89")]))
-check(ex.get("merges_by_rule", {}).get("exact-line") == 1
-      and "range-containment" not in ex.get("merges_by_rule", {}),
-      "exact-line merges are labelled separately", str(ex.get("merges_by_rule")))
+check(ex.get("findings_by_merge_rule", {}).get("exact-line") == 1
+      and "range-containment" not in ex.get("findings_by_merge_rule", {}),
+      "exact-line merges are labelled separately", str(ex.get("findings_by_merge_rule")))
 
 # SPAN CAP: a range wider than the cap is a tolerance window with extra steps.
 wide = ingest(sarif("ToolA", [res_range("CWE-89", "src/A.java", 10, 400, "sqli CWE-89")]),
@@ -371,6 +371,28 @@ sameeng = ingest(sarif("SpotBugs", [res_range("CWE-89", "src/A.java", 10, 20, "s
                  sarif("FindBugs", [res("CWE-89", "src/A.java", 14, "sqli CWE-89")]))
 check(max(f["n_tools"] for f in sameeng["ranked"]) == 1,
       "containment does NOT bypass the engine-lineage guard")
+
+# Exact-line and containment populations must stay SEPARABLE: a merge that
+# would have happened on the exact line is never labelled range-containment.
+both = ingest(sarif("ToolA", [res_range("CWE-89", "src/A.java", 10, 20, "sqli CWE-89")]),
+              sarif("ToolB", [res("CWE-89", "src/A.java", 10, "sqli CWE-89")]))
+check(both.get("findings_by_merge_rule", {}).get("exact-line") == 1
+      and "range-containment" not in both.get("findings_by_merge_rule", {}),
+      "same-line inside a range is EXACT-LINE, not containment",
+      str(both.get("findings_by_merge_rule")))
+
+# UNIT CONSISTENCY. Three counts, three units; a future change must not let
+# them silently desynchronize. This is the invariant that would have caught
+# "351 vs 427" being read as a shortfall.
+for _lbl, _agg in [("range case", contained), ("exact case", ex),
+                   ("no-range case", noranges), ("real fixtures",
+                                                 audit.ingest_sarif([FF, CC]))]:
+    _e = sum((_agg.get("cross_tool_edges_by_rule") or {}).values())
+    _m = _agg.get("cross_tool_merged_findings", 0)
+    _a = _agg.get("cross_tool_absorbed_records", 0)
+    check(_e >= _m and _a >= _m,
+          f"unit invariant holds ({_lbl}): edges>=merged, absorbed>=merged",
+          f"edges={_e} merged={_m} absorbed={_a}")
 
 # ── 14. Determinism and order-independence ──────────────────────────────────
 a1 = audit.ingest_sarif([FF, CC])

@@ -1137,6 +1137,10 @@ def ingest_sarif(paths):
     declared_independent = _declared_independent()
     suppressed = _suppressed_pairs(tools_seen, declared_independent)
     parent = list(range(len(recs)))
+    # Graph EDGES per rule, deduped to unordered pairs. Emitted because it is
+    # the unit an evaluation compares against, and was previously derivable
+    # only by re-running with the containment cap disabled.
+    edges_by_rule = {"exact-line": set(), "range-containment": set()}
 
     def _find(x):
         while parent[x] != x:
@@ -1174,6 +1178,7 @@ def ingest_sarif(paths):
                 continue
             recs[a]["merge_rules"].add("exact-line")
             recs[b]["merge_rules"].add("exact-line")
+            edges_by_rule["exact-line"].add(frozenset((a, b)))
             _union(a, b)
 
     # ── PHASE 2b — POINT-IN-RANGE containment (Direction B) ─────────────────
@@ -1205,6 +1210,12 @@ def ingest_sarif(paths):
             b_start = b_rec.get("line")
             if not isinstance(b_start, int) or not (a_start <= b_start <= a_end):
                 continue
+            # b_start == a_start is EXACT-LINE territory, already handled above.
+            # Excluding it keeps "range-containment" meaning strictly "matched
+            # only because of the range", so the two populations stay separable
+            # and an exact merge is never mislabelled as a containment one.
+            if b_start == a_start:
+                continue
             if b_rec.get("uri") != a_rec.get("uri") or b_rec.get("cwe_class") != a_cls:
                 continue
             la, lb = _lineages(a_rec), _lineages(b_rec)
@@ -1215,6 +1226,7 @@ def ingest_sarif(paths):
                 continue
             a_rec["merge_rules"].add("range-containment")
             b_rec["merge_rules"].add("range-containment")
+            edges_by_rule["range-containment"].add(frozenset((i, j)))
             _union(i, j)
 
     groups = {}
@@ -1330,8 +1342,18 @@ def ingest_sarif(paths):
         # Two-stage dedup is now visible, so a reader can tell which stage did
         # the work: same-tool (fingerprint) vs cross-tool (location + CWE class).
         "same_tool_deduplicated_count": same_tool_count,
-        "cross_tool_merges": same_tool_count - len(findings),
-        "merges_by_rule": dict(sorted(Counter(
+        # ── CROSS-TOOL MERGE COUNTS. THREE DIFFERENT UNITS — the names say
+        # which, because a field that reads as one unit and carries another is
+        # how "351" was once mistaken for a shortfall against "427".
+        #   ABSORBED  records that disappeared INTO a merge (same_tool - final)
+        #   MERGED    surviving findings that now carry n_tools > 1 (components)
+        #   EDGES     pairs the matcher actually joined (graph edges)
+        # Invariant: edges >= merged_findings and absorbed >= merged_findings.
+        "cross_tool_absorbed_records": same_tool_count - len(findings),
+        "cross_tool_merged_findings": sum(
+            1 for r in findings.values() if r["n_tools"] > 1),
+        "cross_tool_edges_by_rule": {k: len(v) for k, v in sorted(edges_by_rule.items())},
+        "findings_by_merge_rule": dict(sorted(Counter(
             rule for r in findings.values() if r["n_tools"] > 1
             for rule in (r.get("merge_rules") or ["?"])).items())),
         "deduplicated_count": len(findings),

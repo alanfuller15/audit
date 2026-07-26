@@ -2331,8 +2331,8 @@ the LOCATION test only.
   21 is the largest span observed to produce a verified same-bug match.
   **Coverage cost of the cap:** OWASP loses 0 of 442 ranges and retains all 427
   matches; Struts keeps 1 of 3, the 2 excluded being the 463/524-line ranges.
-- Output gains `merge_rules` per finding and `merges_by_rule` per run, so
-  range-derived merges stay distinguishable from exact-line ones.
+- Output gains `merge_rules` per finding, plus per-run counts in three
+  explicitly-named units (see the reconciliation section below).
 
 ### Effect
 ```
@@ -2368,3 +2368,63 @@ Phase 2b recovers line-jitter (median producing span 2 lines) and, in one
 observed case, a short source-to-sink gap. It does NOT address cross-function
 source/sink separation, because neither tool emits a range spanning functions.
 **HANDOFF §6.2 stands, and the acquisition freeze with it.**
+
+## RECONCILIATION: 427 vs 351 (2026-07-26) — three units, one renamed API
+
+A discrepancy was raised between the evaluation's **427** new matches and the
+implementation's reported **351**. Diagnosed rather than assumed. **No matches
+were being dropped** — but the investigation found a real labelling defect and a
+reporting hazard, both now fixed.
+
+### The diagnosis
+The two figures counted different things, and a third existed as well:
+```
+427   containment EDGES (unordered pairs the matcher joined)
++427  increase in ABSORBED RECORDS (verified by re-running with the cap at 0:
+      1,156 -> 1,583)
++271  increase in MERGED FINDINGS (surviving records with n_tools > 1)
+```
+Union-find collapses many edges into fewer components, so edges > merged
+findings by construction. Neither the span cap (0 of 442 OWASP ranges lost) nor
+double-counting of exact-line matches accounted for it.
+
+### A REAL DEFECT found on the way: exact-line merges mislabelled as containment
+Phase 2b tested `a_start <= b_start <= a_end`, which INCLUDES `b_start ==
+a_start` — i.e. exact-line coincidences were also being counted and TAGGED as
+range-containment. That inflated containment edges to 497 and tagged 351
+findings. **Fixed** by excluding `b_start == a_start`, which is exact-line
+territory already handled. After the fix containment edges are **427**, exactly
+matching the evaluation, and 69 findings are correctly relabelled exact-line.
+Without this the two populations could not have been measured separately —
+which was the whole point of tagging them.
+
+### The reporting hazard, fixed by RENAMING not documenting
+`cross_tool_merges` counted absorbed records; `merges_by_rule` counted tagged
+findings. Two fields both named "merges", carrying different units, with nothing
+in the name to say so. That is the same failure mode as the 96% denominator,
+the base-rate comparator and the average over the wrong population: **a figure
+that reads as one thing and is another.** A doc comment does not reach someone
+reading the JSON or the HTML report, so the fields were renamed:
+```
+cross_tool_merges   -> cross_tool_absorbed_records
+merges_by_rule      -> findings_by_merge_rule
+(new)               -> cross_tool_merged_findings
+(new)               -> cross_tool_edges_by_rule      <- the evaluation's unit,
+                       previously derivable only by re-running with the cap off
+```
+Regression-tested invariant, so the units cannot silently desynchronise:
+**edges >= merged_findings** and **absorbed >= merged_findings**, checked on
+four configurations.
+
+### THE YIELD, stated in every unit
+Direction B on OWASP Benchmark, SpotBugs+FindSecBugs x semgrep:
+```
++427  containment EDGES            <- the unit the 36.9% refers to (427/1,156)
++427  ABSORBED RECORDS             (1,156 -> 1,583)
++271  MERGED FINDINGS              (1,156 -> 1,427)
+ 282  findings TAGGED range-containment (211 range-only + 71 also exact-line)
+```
+**The pre-registered 10% threshold was assessed on EDGES, and 36.9% is the edge
+figure.** The decision is robust to the unit: 427/1,156 = 36.9%, 427/1,156 =
+36.9% absorbed, 271/1,156 = 23.4% components — all clear 10%.
+Do NOT quote "282" (or the former "351") as the yield; it is a tag count.
