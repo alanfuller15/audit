@@ -2106,3 +2106,97 @@ a HYPOTHESIS. Directions worth considering, none evaluated:
     the ensemble literature says is the LESS informative kind.
 The last is not a fix; it is the honest fallback if the others fail, and it
 would require amending what the tool claims.
+
+## Sizing the two structural directions (2026-07-26) — measured on SARIF on disk
+
+Not implemented. Reachability assessed against the files we already have, not
+against what the SARIF spec permits.
+
+### DIRECTION A — match on enclosing code entity. **NOT REACHABLE.**
+```
+SpotBugs+FindSecBugs : logicalLocations on 1,548/1,548 results (100%)
+                       kinds: function 513 · member 558 · type 122 · variable 355
+                       FQN example, and it is exactly what A needs:
+                       org.apache.struts2.result.ServletRedirectResult
+                         .sendRedirect(HttpServletResponse, String)
+                       — carried by BOTH near-miss findings (lines 247 and 250)
+semgrep CE           : logicalLocations on 0/1 results. `properties` is EMPTY.
+```
+**One side supplies the enclosing entity structurally; the other supplies
+nothing.** Matching needs both sides, so this direction is blocked.
+
+The near-miss is misleading here: semgrep's SNIPPET happens to begin
+`protected void sendRedirect(...)` because that rule matched at the method
+signature. That is incidental. A semgrep rule matching a single expression
+mid-method yields a snippet with no method name in it, so the enclosing entity
+is NOT recoverable from semgrep output in general — it needs a Java parser.
+**That is a different project.**
+
+CAVEAT on the SpotBugs side even so: only 513 of 1,548 (33%) have
+`kind: function`. The rest name a member, type or variable, so "enclosing
+method" is not uniformly available even from the tool that emits the field.
+
+### DIRECTION B — point-in-range matching. **REACHABLE, BUT LOW COVERAGE.**
+```
+                       endLine present        span (lines)
+SpotBugs Struts          167/1,548  (11%)     mean 83.5  max 738
+SpotBugs OWASP         6,374/21,165 (30%)     mean 23.6  max 141
+semgrep  Struts              1/1   (100%)     mean 21.0
+semgrep  OWASP           1,909/1,909 (100%)   mean  0.7  max 16
+```
+It WOULD have caught the near-miss — SpotBugs' points 247 and 250 both fall
+inside semgrep's range 244-265, and a point-in-range test is principled in a way
+a tolerance window is not (it uses a boundary the TOOL declared, not one we
+invented).
+
+But coverage is thin, and for two independent reasons:
+1. **SpotBugs omits `endLine` in 70-89% of results**, so on most findings there
+   is no range on that side.
+2. **semgrep's range is usually a POINT** — mean span 0.7 lines on OWASP. It
+   reports the matched expression, not the enclosing construct. The Struts case
+   had span 21 only because that particular rule matches a whole method.
+So point-in-range degenerates to exact matching in the common case. It is a
+real improvement on a minority of findings, not a fix for the structural
+mismatch.
+
+### A PARTIAL HYBRID, noted not endorsed
+SpotBugs' `logicalLocations` + line effectively yield a partial method->line map
+derived from SpotBugs' OWN findings, which could bucket semgrep's points. It
+only covers methods SpotBugs already flagged, so it cannot find agreement in
+methods only semgrep saw — the coverage is defined by one tool, which is an
+odd property for a consensus mechanism. Recorded for completeness.
+
+### Verdict
+- **Reachable with current data:** Direction B, on the minority of findings
+  where a genuine multi-line range exists. Worth evaluating; not a fix.
+- **Needs tooling we do not have:** Direction A. It requires parsing Java to
+  recover semgrep's enclosing method. Out of scope as a side-quest.
+- **Out of scope:** anything requiring tool changes we do not control (e.g.
+  asking semgrep CE to emit logicalLocations).
+
+## THE THIRD DIRECTION CHANGES WHAT THE TOOL CLAIMS — not what it caveats
+
+If A and B both fail, the fallback is to accept that only SAME-METHODOLOGY pairs
+co-locate, and describe the tool as measuring agreement WITHIN a methodology.
+
+**Recorded explicitly so nobody adopts this quietly as a footnote:**
+
+The README's premise is that DIFFERENT tools agreeing is the signal —
+"rank findings higher where *independent tools agree*", justified by tools with
+different methods having different blind spots. Same-methodology agreement is a
+DIFFERENT AND WEAKER claim, and it is one the ensemble literature specifically
+distinguishes: correlated errors provide no ensemble benefit, and this project
+already recorded that redundant-tool overlap amplifies shared false positives
+(framing sweep, claim 4).
+
+So adopting the third direction would mean:
+- the HEADLINE needs rewriting, not annotating;
+- the ROC-AUC 0.755 provenance needs re-examining, since Lipp's result came from
+  6 methodologically diverse tools — the configuration the fallback concedes we
+  cannot reproduce;
+- the tool's central justification changes from "independent evidence" to
+  "corroboration within a method", which is a materially smaller claim.
+
+**This is a claim change, not a caveat.** It must not be adopted as a quiet
+fallback, and any session that reaches for it should treat rewriting the
+README's premise as part of the work, not a follow-up.
