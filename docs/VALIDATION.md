@@ -1176,3 +1176,44 @@ the finding and not the caveat.
 
 Tier: `[self-tested]` for the implementation. The LINEAGE FACTS are `[fetched]`
 (docs/SPEC_java_admission.md §2 sources).
+
+### DECISION 0a (2026-07-26, inventor): conservative default + operator escape hatch
+
+The SonarQube ambiguity — disclosed but not prevented in the shipped code — is
+resolved as **option (b)**: do not count SonarQube agreement with an importable
+tool as consensus unless the operator declares independence. Explicitly NOT a
+declaration flag with a permissive default; the DEFAULT is conservative.
+
+**The reasoning generalizes and should govern future ambiguities.** Everywhere
+else in this codebase, uncertainty resolves to NO-MERGE:
+
+| uncertainty | current resolution |
+|---|---|
+| CWE class unresolvable | no merge |
+| CWE in `_CWE_DENY` | no merge |
+| tool lineage unknown | own name, no self-merge |
+| fingerprint degenerate | fall back to location key |
+| line offset beyond exact match | no merge at scoring |
+
+Option (a) would have been the ONLY place uncertainty resolved to
+merge-with-a-note. **The asymmetric-cost rule does not get an exception because
+the ambiguous case is uncommon** — rarity changes how often the cost is paid,
+not which direction the error runs.
+
+**Counter-argument, recorded because it is genuine.** SonarJava analysing
+independently IS SonarQube's default configuration; report-importing is opt-in.
+So (b) under-counts the COMMON case, and that is a real cost, not a hypothetical
+one. What makes it acceptable is the escape hatch specifically: the operator who
+configured the import is precisely the person able to declare the relationship.
+The cost falls on the party holding the knowledge required to remove it — which
+is the right place for it to fall, and is why the hatch is not decoration.
+
+**0b is a PRECONDITION, not a sibling.** `lineage_warnings` never reaches the
+HTML report, so on the Action path the caveat informs nobody. That killed option
+(a)'s justification outright — it rested on the operator being informed. It
+matters equally under (b), in the opposite direction: consensus silently
+WITHHELD, with no rendered explanation, trades an inflated signal for an
+unexplained one. Withholding without disclosure is its own honesty failure.
+Render first, then implement 0a.
+
+Status: DECIDED, NOT IMPLEMENTED. Neither is scheduled work yet.

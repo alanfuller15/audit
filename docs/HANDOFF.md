@@ -204,29 +204,45 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    regresses. 25-check harness passing; real zlib ingest unchanged (2 merges).
    Full record: VALIDATION.md 2026-07-26 "Engine-lineage guard implemented".
 
-0a. [OPEN DECISION — inventor's call, do NOT resolve unilaterally] The SonarQube
-   case is DISCLOSED but NOT PREVENTED. SonarQube's lineage (`sonarqube`)
-   differs from SpotBugs' (`findbugs`), and the guard only blocks IDENTICAL
-   lineages — so in the documented exploit (SpotBugs imported into SonarQube,
-   both SARIFs ingested) the warning fires loudly and the finding STILL scores
-   n_tools=2. Verified through the real CLI.
-   The two options item 0 originally listed:
-     (a) DISCLOSE ONLY (current). Keeps the legitimate configuration working —
-         SonarJava analysing independently alongside a separate SpotBugs run is
-         genuinely two engines — at the cost of leaving the ambiguous case
-         inflated.
-     (b) CONSERVATIVE DEFAULT. Do not count SonarQube agreement with an
-         importable tool (findbugs/pmd/checkstyle) as consensus unless the
-         operator declares independence. Follows the asymmetric-cost rule, at
-         the cost of under-counting real consensus for correctly-configured
-         deployments.
-   A third path: an operator declaration mechanism (flag or env var) with (a) as
-   the default. Not built — it expands the CLI surface and the default question
-   still has to be answered first.
+0a. [DECIDED 2026-07-26 by inventor — NOT YET IMPLEMENTED] The SonarQube case.
+   Current shipped behaviour DISCLOSES but does not PREVENT: SonarQube's lineage
+   (`sonarqube`) differs from SpotBugs' (`findbugs`), the guard only blocks
+   IDENTICAL lineages, so the documented exploit still scores n_tools=2 with a
+   loud warning. Verified through the real CLI.
 
-0b. [small] `lineage_warnings` is in the JSON output but
-   `audit_html_report.build()` does not render it — same shape as the
-   display-dedup gap. Action users see the finding and not the caveat.
+   DECISION: **option (b) — conservative default, with an operator declaration
+   as the escape hatch.** Do NOT count SonarQube agreement with an importable
+   tool (findbugs/pmd/checkstyle) as consensus unless the operator declares
+   independence. NOT the "declaration flag with permissive default" framing —
+   the DEFAULT must be conservative, not permissive.
+
+   REASONING (inventor's, recorded because it generalizes to future cases):
+   everywhere else in this codebase uncertainty resolves to NO-MERGE —
+   unresolvable CWE class, denied CWE, unknown tool lineage, degenerate
+   fingerprint. Option (a) would be the ONLY place uncertainty resolves to
+   merge-with-a-note. The asymmetric-cost rule does not get an exception because
+   the ambiguous case happens to be uncommon.
+
+   GENUINE COUNTER-ARGUMENT, recorded because it is real and a later session
+   should not think it was overlooked: SonarJava analysing independently IS the
+   default SonarQube configuration and report-importing is OPT-IN, so (b)
+   under-counts the COMMON case. What makes that acceptable is the escape hatch
+   specifically: the operator who set up the import is exactly the person in a
+   position to declare the relationship. The cost lands on the party with the
+   knowledge to remove it.
+
+   BLOCKED ON 0b — see below. Do not implement 0a first.
+
+0b. [PRECONDITION of 0a, not a sibling] `lineage_warnings` is in the JSON output
+   but `audit_html_report.build()` does not render it — same shape as the
+   display-dedup gap. On the Action path the caveat informs NOBODY.
+   WHY THIS GATES 0a: option (a)'s entire justification was "the operator is
+   informed," which is false on the Action path today. And under the chosen
+   option (b) it matters just as much in the other direction — if consensus is
+   silently WITHHELD, the operator needs to see WHY, or the tool has traded an
+   inflated signal for an unexplained one. Withholding without disclosure would
+   be its own honesty failure.
+   Fix the render REGARDLESS of which way 0a goes.
 
    CONCRETE, in shipped code. Phase 2's diversity guard in ingest_sarif is:
        if recs[a]["tools"] & recs[b]["tools"]: continue
