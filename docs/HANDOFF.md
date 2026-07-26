@@ -396,7 +396,37 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    STUDIED (ensemble/weighting literature) before IMPLEMENT.
    [Former 2(b), tool-quality weighting, is CLOSED — tested and rejected, §6.]
 
-7. [standing] Other specified-not-coded paths: scope+offset dedup hashing;
+6b. [NEW, affects C/C++ TOO — found while scoping Java] The supported-tool
+   registry records tool NAME, not ENGINE LINEAGE. Diversity-aware consensus
+   counts distinct driver names, so two SARIF drivers sharing an engine both
+   contribute to n_tools — self-agreement counted as consensus. Concrete cases:
+   SpotBugs IS FindBugs (fork; source still under edu/umd/cs/findbugs/);
+   FindSecBugs is a SpotBugs PLUGIN; and SonarQube can IMPORT SpotBugs/FindBugs/
+   FindSecBugs/PMD/Checkstyle reports via sonar.java.*.reportPaths, so its
+   independence is a property of the DEPLOYMENT, not the tool. All [fetched].
+   Fix direction: record engine lineage per supported tool; do not let two
+   drivers of one engine both raise n_tools. Details docs/SPEC_java_admission.md §2.
+
+7. [Java, doc-only DONE] docs/SPEC_java_admission.md written 2026-07-26.
+   Verdict: Java PASSES A3 (real labels — OWASP Benchmark v1.2, 2,740 labeled
+   cases, ahead of C/C++ whose corpus is not on this machine); CAN satisfy A1
+   but the obvious candidate list collapses (see 6b); and FAILS in practice
+   today for a reason that is OURS — _CWE_CLASS contains only memory-safety
+   classes (buf/null/uaf/uninit/leak/fmt/int) and NOT ONE Java class (SQLi 89,
+   cmdi 78, XSS 79, path-traversal 22, deserialization 502, XXE 611, crypto
+   327/328, SSRF 918). Class resolution for Java is ~0, so no Java cross-tool
+   merge can occur at all until the map is extended. Any Java overlap
+   measurement taken first would be a false negative from our parser.
+   DO NOT FLATTEN INTO THE NEGATIVE: the OWASP work paired SonarQube+FindBugs —
+   two genuinely distinct engines — and found real within-category signal
+   (74% TP when a tool flags vs 38% when none). That is MORE than any C/C++
+   pair has managed against real scanners. Java's gap is a missing overlap
+   measurement, not demonstrated absence of signal.
+   New gate A4 added to the admission test: MEASURED partial overlap per
+   candidate pair. Independence is necessary, not sufficient — C/C++ proved two
+   independent engines can produce zero merges.
+
+8. [standing] Other specified-not-coded paths: scope+offset dedup hashing;
    Good-Turing missing-mass coverage-confidence; mutual-information/permutation
    signal gating; learned (LETOR) ranking weights vs fixed.
    [LETOR: note §6's rejection of hand-crafted per-warning weighting is evidence
