@@ -3094,3 +3094,101 @@ claim collapsed — not an inconsistency between the two results.
 attributed to size.** This is the first performance-adjacent number in the
 project to be published with its control already applied rather than applied
 afterwards by a reviewer.
+
+## 0i STUDY (2026-07-26) — consensus-density is the WRONG construction. Searched
+## before proposing, and the proposal did not survive the search.
+
+### 1. Ratio variables with a common denominator — Kronmal `[snippet]`
+Kronmal (1993, JRSS-A, "Spurious Correlation and the Fallacy of the Ratio
+Standard Revisited"): dividing by a common denominator **induces correlation
+between the ratio and its denominator** even when the numerators are
+independent. "If the relationship between a ratio's numerator and denominator is
+not zero, then the use of a ratio variable will create a spurious correlation
+between the ratio and its denominator." Using a ratio as a variable in
+regression "can lead to incorrect or misleading inferences."
+
+**The standard remedy is to use the denominator as a COVARIATE IN REGRESSION,
+not to form a ratio.**
+
+=> `consensus / LOC` is precisely the construction this literature warns
+against. It would not remove the size confound; it would replace a positive size
+correlation with an induced negative one.
+
+### 2. What the defect-prediction field actually does `[snippet]`
+- Zhou et al. model size as a CONFOUNDER on a causal diagram (paths m->s->d and
+  m->d) and adjust for it; an improved model exists (MDPI Appl. Sci. 13(6):3459).
+- **Zhou et al. (2014): "After controlling for size, none of the
+  object-oriented metrics were associated with fault-proneness anymore."**
+  That is the same result SHAPE this project just produced, from a different
+  field, a decade earlier.
+- Methods used: covariate adjustment, causal diagrams, stratification, and
+  half-sibling regression for unobserved confounding.
+- **Ratio normalization is NOT the field's answer.** Nothing found recommends it.
+
+### 3. Defect density specifically — a contested measure `[snippet]`
+- Rosenberg argued the observed DECREASE in defect density with module size may
+  be an ARTIFACT of how the metrics are analysed — i.e. Kronmal's problem showing
+  up in this exact measure. Malaiya & Denton evaluated the argument and called
+  the observation misleading.
+- Hatton reports a U-shaped size/density curve (a ~200-400 LLOC minimum), so
+  density is not monotone in size and a density ranker has no single expected
+  behaviour.
+- General critique: density is sensitive to language and author verbosity, and
+  a count does not reflect severity.
+
+=> Density-based prioritization is not new, is contested, and its interaction
+with size is exactly the thing under dispute. **Do not rediscover it.**
+
+### PREDICTION, recorded before any computation
+A per-LOC density ranker will favour SMALL units, which is ManualUp — the
+baseline this project already fails to beat and which the literature reports as
+strong on skewed data. **Expect density to reproduce ManualUp, not to beat it.**
+
+## 0i PRE-REGISTRATION — candidate formulations and how each will be judged
+
+### The question is now sharper than "control for size"
+The 1.5x size-matched precision result already shows `n_tools` carries
+information beyond size at FUNCTION level (p<0.0001). What has never worked is
+converting that into a RANKING advantage under effort-aware evaluation. So 0i
+asks: **can any formulation convert a size-independent precision signal into a
+size-independent ranking advantage?**
+
+### Candidate A — logistic regression with size as a covariate  [the Kronmal remedy]
+`P(vulnerable) ~ n_tools + log(LOC)`; rank by fitted probability.
+- CONTROLS FOR: size, directly and without forming a ratio.
+- DOES NOT CONTROL FOR: complexity, churn, language; non-linear size effects
+  unless explicitly modelled (Hatton's U-curve suggests they exist).
+- JUDGED BY: (i) is the `n_tools` coefficient significant with `log(LOC)` in the
+  model? (ii) does the fitted ranker beat a size-only model (`~ log(LOC)` alone)
+  on PofB@20 and IFA? (iii) does it beat SIZE-MATCHED random?
+
+### Candidate B — size-residualized consensus
+Regress `n_tools` on `log(LOC)`, rank by the RESIDUAL.
+- CONTROLS FOR: size by construction; avoids the ratio entirely.
+- DOES NOT CONTROL FOR: anything else; residuals are noisy where size is extreme.
+- JUDGED BY: same three tests as A.
+
+### Candidate C — consensus density per LOC  [the ORIGINAL proposal, retained to be TESTED not assumed]
+`n_tools / LOC`.
+- CONTROLS FOR: nominally size.
+- DOES NOT CONTROL FOR: it INTRODUCES a spurious negative size correlation
+  (Kronmal), and is predicted to behave like ManualUp.
+- JUDGED BY: same three tests. **Predicted to fail; recorded so the prediction
+  is falsifiable rather than a post-hoc excuse.**
+
+### Candidate D — THE NULL: no formulation adds ranking information beyond size
+- ESTABLISHED IF: A, B and C all fail to beat size-matched random on PofB@20 and
+  IFA, AND the `n_tools` coefficient in A is not significant once `log(LOC)` is
+  included.
+- **NOTE: the null is NOT already established.** The 1.5x size-matched precision
+  result is evidence against it. If the null holds for RANKING while precision
+  survives, that is itself the finding: the signal is real but not orderable
+  under an effort budget — which would be an honest terminal answer for this
+  direction rather than a failure to find one.
+
+### Standing rule, unchanged
+Nothing gets headlined until it survives a SIZE-MATCHED CONTROL — not merely
+ManualUp, not merely ManualDown. Three claims have already died in the gap
+between "beats a named baseline" and "beats a size-matched control".
+
+### Not implemented. No computation performed in this pass.
