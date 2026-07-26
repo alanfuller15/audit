@@ -66,6 +66,28 @@ def build(data):
     conf = esc(sig.get("ranking_confidence", "—"))
     informative = ", ".join(esc(s) for s in sig.get("informative_signals", [])) or "none"
 
+    # INDEPENDENCE CAVEATS. These were previously present in the JSON and dropped
+    # on the floor here, so on the Action path — the only path most users see —
+    # the caveat informed nobody. Consensus is the tool's headline claim, so a
+    # reason to doubt a particular consensus count belongs next to it, not in a
+    # file nobody opens. Rendered above the table, not below it.
+    warnings = data.get("lineage_warnings") or []
+    engines = data.get("distinct_engines")
+    warn_html = ""
+    if warnings:
+        items = "".join(f"<li>{esc(w)}</li>" for w in warnings)
+        warn_html = (f'<div class="warnbox"><b>⚠ Scanner independence</b>'
+                     f'<ul>{items}</ul>'
+                     f'<div class="warnfoot">Consensus counts distinct analysis '
+                     f'ENGINES, not product names. Agreement between two names for '
+                     f'one engine is self-agreement, not corroboration.</div></div>')
+    # Show the engine count alongside the scanner count whenever they disagree —
+    # that difference IS the finding.
+    engines_stat = ""
+    if isinstance(engines, int) and engines and engines != len(tools):
+        engines_stat = (f'<div class="stat"><div class="n warn">{engines}</div>'
+                        f'<div class="l">distinct engines</div></div>')
+
     return f'''<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -94,6 +116,13 @@ def build(data):
   .stat .n.accent {{ color:var(--accent); }}
   .band {{ display:flex; gap:14px; flex-wrap:wrap; margin:16px 0 4px;
     font-size:11.5px; color:var(--ink2); }}
+  .warnbox {{ border:1px solid #b7791f; border-left:4px solid #b7791f;
+    background:rgba(183,121,31,.10); padding:12px 14px; margin:14px 0;
+    border-radius:4px; font-size:14px; }}
+  .warnbox ul {{ margin:8px 0 6px 20px; padding:0; }}
+  .warnbox li {{ margin:4px 0; }}
+  .warnfoot {{ opacity:.85; font-size:13px; margin-top:6px; }}
+  .stat .n.warn {{ color:#b7791f; }}
   .band .pill {{ border:1px solid var(--line); padding:7px 11px; background:var(--panel); }}
   .band .pill b {{ color:var(--ink); font-weight:700; }}
   .modebar {{ margin:14px 0 26px; padding:12px 15px; border-left:3px solid var(--accent);
@@ -143,7 +172,9 @@ def build(data):
   <div class="stat"><div class="n">{raw}</div><div class="l">raw (pre-dedup)</div></div>
   <div class="stat"><div class="n accent">{multi}</div><div class="l">multi-tool consensus</div></div>
   <div class="stat"><div class="n">{len(tools)}</div><div class="l">scanners</div></div>
+  {engines_stat}
 </div>
+{warn_html}
 <div class="band">
   <span class="pill">scanners: <b>{tools_line}</b></span>
   <span class="pill">ranking confidence: <b>{conf}</b></span>

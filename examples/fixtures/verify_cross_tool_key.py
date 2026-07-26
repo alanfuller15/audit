@@ -201,7 +201,41 @@ check(any("SonarQube" in w and "import" in w.lower() for w in sonar.get("lineage
       "SonarQube + an importable tool triggers an independence disclosure",
       f"{len(sonar.get('lineage_warnings', []))} warning(s)")
 
-# ── 9. Determinism and order-independence ───────────────────────────────────
+# ── 9. Decision 0a: ambiguous independence resolves to NO-MERGE by default ──
+# SonarQube can import SpotBugs/PMD/Checkstyle reports, so SARIF cannot show
+# whether it analysed independently. Uncertainty resolves the same way it does
+# everywhere else in this pipeline: no merge.
+_saved = os.environ.pop("AUDIT_INDEPENDENT_TOOLS", None)
+amb = ingest(sarif("SonarQube", [res("java:S1", "src/A.java", 5, "null CWE-476")]),
+             sarif("SpotBugs", [res("NP_NULL", "src/A.java", 5, "null CWE-476")]))
+check(max(f["n_tools"] for f in amb["ranked"]) == 1,
+      "SonarQube + importable tool does NOT count as consensus by default",
+      f"n_tools max={max(f['n_tools'] for f in amb['ranked'])}")
+check(any("NOT counted as consensus" in w for w in amb.get("lineage_warnings", [])),
+      "suppression is DISCLOSED, not silent")
+check(any("AUDIT_INDEPENDENT_TOOLS" in w for w in amb.get("lineage_warnings", [])),
+      "the disclosure names the escape hatch")
+
+# SonarQube alongside a tool it CANNOT import is unaffected.
+unrelated = ingest(sarif("SonarQube", [res("java:S1", "src/A.java", 5, "null CWE-476")]),
+                   sarif("CodeQL", [res("java/npe", "src/A.java", 5, "null CWE-476")]))
+check(max(f["n_tools"] for f in unrelated["ranked"]) == 2,
+      "SonarQube + a non-importable tool still merges (no over-blocking)")
+
+# Escape hatch: the operator declares independence.
+os.environ["AUDIT_INDEPENDENT_TOOLS"] = "SonarQube"
+declared = ingest(sarif("SonarQube", [res("java:S1", "src/A.java", 5, "null CWE-476")]),
+                  sarif("SpotBugs", [res("NP_NULL", "src/A.java", 5, "null CWE-476")]))
+check(max(f["n_tools"] for f in declared["ranked"]) == 2,
+      "operator declaration re-enables the merge")
+check(any("DECLARED by the operator" in w for w in declared.get("lineage_warnings", [])),
+      "the declaration itself is disclosed as an operator assertion")
+if _saved is None:
+    os.environ.pop("AUDIT_INDEPENDENT_TOOLS", None)
+else:
+    os.environ["AUDIT_INDEPENDENT_TOOLS"] = _saved
+
+# ── 10. Determinism and order-independence ──────────────────────────────────
 a1 = audit.ingest_sarif([FF, CC])
 a2 = audit.ingest_sarif([CC, FF])
 strip = lambda a: [(r["score"], r["uri"], r["line"], r["ruleId"], r["n_tools"])

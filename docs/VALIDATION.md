@@ -1217,3 +1217,63 @@ unexplained one. Withholding without disclosure is its own honesty failure.
 Render first, then implement 0a.
 
 Status: DECIDED, NOT IMPLEMENTED. Neither is scheduled work yet.
+
+## 0b + 0a implemented (2026-07-26)
+
+### 0b — independence caveats now reach the report
+`lineage_warnings` was in the JSON and dropped on the floor by
+`audit_html_report.build()`, so on the Action path — the only path most users
+see — the caveat informed nobody. `build()` now renders a warning box ABOVE the
+findings table, plus a "distinct engines" stat whenever the engine count differs
+from the scanner count (that difference IS the finding). Verified across three
+cases: SonarQube+SpotBugs renders the caveat; SpotBugs+FindBugs renders both the
+caveat and `engines=1` against `scanners=2`; flawfinder+cppcheck renders neither
+(no empty box on the clean path).
+
+### 0a — ambiguous independence resolves to NO-MERGE, operator can override
+Implemented as decided: conservative DEFAULT, operator declaration as the escape
+hatch, NOT a permissive default with an opt-out.
+
+Behaviour, verified through the real CLI:
+
+```
+$ audit.py --ingest sb.sarif sq.sarif
+  ⚠ independence: ... NOT counted as consensus. If this deployment analyses
+    independently, declare it: AUDIT_INDEPENDENT_TOOLS="SonarQube"
+  2 raw results → 2 unique after dedup
+  #1  score=6.1  SQL_INJECTION  src/Login.java:42  [SpotBugs]
+
+$ AUDIT_INDEPENDENT_TOOLS="SonarQube" audit.py --ingest sb.sarif sq.sarif
+  ⚠ independence: ... IS being counted as consensus because independence was
+    DECLARED by the operator. This is an operator assertion, not something the
+    tool verified.
+  2 raw results → 1 unique after dedup
+  #1  score=7.7  SQL_INJECTION  src/Login.java:42  [SonarQube+SpotBugs] 2tools
+```
+
+Both directions are DISCLOSED. Suppression says why and names the hatch;
+declaration says the count rests on an operator assertion the tool did not
+verify. Neither silently changes the number.
+
+Scope kept narrow deliberately: only the SonarQube-import ambiguity is
+suppressed, and only against lineages SonarQube can actually import
+(findbugs/pmd/checkstyle). SonarQube + CodeQL still merges — regression-tested,
+so the conservative rule cannot quietly grow into blanket over-blocking.
+
+### Verified
+Harness at 31 checks, all passing. New: default suppression; suppression is
+disclosed; the disclosure names the hatch; non-importable pairs unaffected;
+declaration re-enables the merge; the declaration is itself disclosed. Real
+zlib 3-tool ingest unchanged (1,164 raw / 1,135 dedup / 2 merges / 3 engines /
+0 warnings) — the new rule is inert where it should be. `--help` and the render
+harness unaffected.
+
+### Honest note on the accepted cost
+This under-counts SonarQube's DEFAULT configuration, where SonarJava analyses
+independently and importing is opt-in. That cost was accepted knowingly: the
+operator who configured an import is the one able to declare the relationship,
+so the burden falls on the party with the knowledge to lift it. Recorded so a
+later session reading a low consensus count on a Sonar-based deployment
+recognizes it as a deliberate policy, not a bug.
+
+Tier: `[self-tested]`. Lineage facts remain `[fetched]`.

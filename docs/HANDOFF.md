@@ -204,7 +204,9 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    regresses. 25-check harness passing; real zlib ingest unchanged (2 merges).
    Full record: VALIDATION.md 2026-07-26 "Engine-lineage guard implemented".
 
-0a. [DECIDED 2026-07-26 by inventor — NOT YET IMPLEMENTED] The SonarQube case.
+0a. [IMPLEMENTED 2026-07-26] The SonarQube case. Conservative default +
+   operator escape hatch (AUDIT_INDEPENDENT_TOOLS). Both directions disclosed.
+   Record: VALIDATION.md "0b + 0a implemented". Original decision below.
    Current shipped behaviour DISCLOSES but does not PREVENT: SonarQube's lineage
    (`sonarqube`) differs from SpotBugs' (`findbugs`), the guard only blocks
    IDENTICAL lineages, so the documented exploit still scores n_tools=2 with a
@@ -231,10 +233,10 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    position to declare the relationship. The cost lands on the party with the
    knowledge to remove it.
 
-   BLOCKED ON 0b — see below. Do not implement 0a first.
+   DONE. 0b was implemented first, as required.
 
-0b. [PRECONDITION of 0a, not a sibling] `lineage_warnings` is in the JSON output
-   but `audit_html_report.build()` does not render it — same shape as the
+0b. [IMPLEMENTED 2026-07-26 — was a PRECONDITION of 0a] `lineage_warnings` was in
+   the JSON output but `audit_html_report.build()` did not render it — same shape as the
    display-dedup gap. On the Action path the caveat informs NOBODY.
    WHY THIS GATES 0a: option (a)'s entire justification was "the operator is
    informed," which is false on the Action path today. And under the chosen

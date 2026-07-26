@@ -649,8 +649,52 @@ _TOOL_LINEAGE = {
     "sonarcloud": "sonarqube",
 }
 # Lineages a SonarQube deployment may be RE-EMITTING rather than independently
-# finding. Co-occurrence is disclosed, never silently trusted.
+# finding (sonar.java.*.reportPaths). Co-occurrence is never silently trusted.
 _SONAR_IMPORTABLE = {"findbugs", "pmd", "checkstyle"}
+
+# ── Ambiguous-independence policy (decision 0a, 2026-07-26) ─────────────────
+# When SonarQube co-occurs with a tool it can IMPORT, we cannot tell from SARIF
+# whether it analysed independently or re-emitted that tool's findings. The
+# DEFAULT IS CONSERVATIVE: such a pair does not count as consensus.
+#
+# WHY conservative rather than disclose-and-count: everywhere else in this
+# codebase uncertainty resolves to NO-MERGE — unresolvable CWE class, denied
+# CWE, unknown lineage, degenerate fingerprint, inexact line. Counting here
+# would be the only place uncertainty resolved to merge-with-a-note, and the
+# asymmetric-cost rule (a false merge inflates n_tools, which every published
+# number rests on; a missed merge only costs recall) does not get an exception
+# because the ambiguous case happens to be uncommon.
+#
+# KNOWN COST, accepted: SonarJava analysing independently IS SonarQube's default
+# configuration and report-importing is OPT-IN, so this under-counts the COMMON
+# case. The escape hatch is what makes that acceptable — the operator who
+# configured the import is exactly the person able to declare the relationship,
+# so the cost falls on the party holding the knowledge to remove it.
+#
+# ESCAPE HATCH: declare independence explicitly.
+#   AUDIT_INDEPENDENT_TOOLS="SonarQube"            (comma-separated driver names)
+# Declaring a tool asserts it analysed independently of everything else in the
+# ingest. It is the operator's assertion, and it is DISCLOSED in the output so
+# the assertion travels with the result rather than silently changing it.
+def _declared_independent():
+    raw = os.environ.get("AUDIT_INDEPENDENT_TOOLS", "")
+    return {t.strip().lower() for t in raw.split(",") if t.strip()}
+
+def _suppressed_pairs(tools, declared):
+    """(lineage_a, lineage_b) pairs whose agreement must NOT count as consensus.
+
+    Currently only the SonarQube-import ambiguity. Returned as a set of frozen
+    pairs so the merge guard can consult it cheaply.
+    """
+    lin = {t: _lineage_of(t) for t in tools}
+    present = set(lin.values())
+    pairs = set()
+    if "sonarqube" in present:
+        sonar_drivers = [t for t, l in lin.items() if l == "sonarqube"]
+        if not all(d.strip().lower() in declared for d in sonar_drivers):
+            for other in (_SONAR_IMPORTABLE & present):
+                pairs.add(frozenset(("sonarqube", other)))
+    return pairs
 
 def _lineage_of(tool):
     """Analysis-engine lineage for a SARIF driver name. Unknown -> its own name."""
@@ -663,7 +707,7 @@ def _lineage_of(tool):
             return lineage
     return t or "unknown-tool"
 
-def _lineage_warnings(tools):
+def _lineage_warnings(tools, declared=frozenset()):
     """Independence caveats we can detect from the driver names alone."""
     out = []
     lin = {t: _lineage_of(t) for t in tools}
@@ -679,13 +723,22 @@ def _lineage_warnings(tools):
     # SonarQube may be re-emitting a co-present tool's findings.
     if "sonarqube" in byl:
         overlap = sorted(_SONAR_IMPORTABLE & set(byl))
-        if overlap:
+        sonar_drivers = byl["sonarqube"]
+        if overlap and all(d.strip().lower() in declared for d in sonar_drivers):
+            out.append(
+                "SonarQube agreement with " + ", ".join(overlap) + " IS being counted "
+                "as consensus because independence was DECLARED by the operator "
+                "(AUDIT_INDEPENDENT_TOOLS). This is an operator assertion, not "
+                "something the tool verified — SARIF cannot show whether SonarQube "
+                "analysed independently or re-emitted an imported report.")
+        elif overlap:
             out.append(
                 "SonarQube is present alongside " + ", ".join(overlap) +
                 ". SonarQube can IMPORT those tools' reports (sonar.java.*.reportPaths), "
                 "so its findings may not be independent. Independence cannot be "
-                "determined from SARIF — verify the scanner configuration before "
-                "treating agreement with these tools as consensus.")
+                "determined from SARIF, so agreement between them is NOT counted as "
+                "consensus. If this deployment analyses independently, declare it: "
+                "AUDIT_INDEPENDENT_TOOLS=\"" + ",".join(sorted(sonar_drivers)) + "\"")
     return out
 
 def _fingerprint_value(res):
@@ -884,6 +937,11 @@ def ingest_sarif(paths):
 
     def _lineages(rec):
         return {_lineage_of(t) for t in rec["tools"]}
+
+    # Decision 0a: pairs whose independence cannot be established do not count
+    # as consensus. Conservative by default; operator-declarable.
+    declared_independent = _declared_independent()
+    suppressed = _suppressed_pairs(tools_seen, declared_independent)
     parent = list(range(len(recs)))
 
     def _find(x):
@@ -911,7 +969,14 @@ def ingest_sarif(paths):
             # Compared by ENGINE LINEAGE, not driver name — SpotBugs and FindBugs
             # are one engine under two names, and merging them would manufacture
             # consensus out of self-agreement. See _TOOL_LINEAGE.
-            if _lineages(recs[a]) & _lineages(recs[b]):
+            la, lb = _lineages(recs[a]), _lineages(recs[b])
+            if la & lb:
+                continue
+            # Decision 0a: uncertainty resolves to NO-MERGE, as it does
+            # everywhere else in this pipeline. A SonarQube deployment may be
+            # re-emitting a co-present tool's report; SARIF cannot tell us.
+            if suppressed and any(frozenset((x, y)) in suppressed
+                                  for x in la for y in lb):
                 continue
             _union(a, b)
 
@@ -1014,7 +1079,8 @@ def ingest_sarif(paths):
         # from the names alone. Consensus counts ENGINES, not product names.
         "tool_lineages": {t: _lineage_of(t) for t in sorted(tools_seen)},
         "distinct_engines": len({_lineage_of(t) for t in tools_seen}),
-        "lineage_warnings": _lineage_warnings(tools_seen),
+        "lineage_warnings": _lineage_warnings(tools_seen, declared_independent),
+        "declared_independent": sorted(declared_independent),
         "raw_result_count": total_raw,
         # Two-stage dedup is now visible, so a reader can tell which stage did
         # the work: same-tool (fingerprint) vs cross-tool (location + CWE class).
