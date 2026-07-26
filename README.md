@@ -10,22 +10,53 @@ the noise by trusting **consensus**: it ingests findings from multiple scanners 
 SARIF format), merges the ones pointing at the same bug, and re-ranks so the agreed-upon,
 review-worthy findings rise to the top.
 
-## Does the idea actually work? (validated on real vulnerabilities, not synthetic benchmarks)
+## What's established, and what isn't
 
-The **premise** — that agreement between independent tools predicts real vulnerabilities — was
-tested against **135 real vulnerable functions across 9 real open-source C/C++ projects**
-(binutils, ffmpeg, libpng, openssl, sqlite, and more — using their known CVEs as ground truth).
-The figures below come from tool-agreement counts in that published dataset (Lipp et al.,
-ISSTA'22), and they validate the signal `audit` is built on:
+**The premise is validated — by others, on real data.** Lipp et al. (ISSTA'22) evaluated six
+static C analyzers against 192 validated CVEs across 27 real projects and found that combining
+tools detects substantially more vulnerabilities than the best single tool. That is *their*
+result on *their* data, and it is why this tool is built the way it is.
 
-- **ROC-AUC 0.755** — rank files by how many independent tools agree, and a vulnerable file
-  outranks a clean one ~3 times out of 4 (0.5 = coin flip).
-- **Catch ~65% of vulnerable files by reviewing just the top 20%** of ranked files.
-- **~13x concentration** — files flagged by 4 tools were ~13x more likely to be truly vulnerable
-  than files flagged by just 1.
+**One finding measured here, on that same corpus:** functions flagged by *multiple independent
+tools* are about **1.5x more likely to contain a real CVE** than comparable functions flagged by
+one (1.54% vs 1.02%, p < 0.0001, against real CVE ground truth). That figure is **size-matched** —
+larger functions attract both more tool attention and more bugs, so the comparison controls for
+size. Uncontrolled, the same gap looks like 2.7x; roughly 40% of it is size. The agreement signal
+is real, and it is smaller than it first appears.
 
-These line up with independent published research (combining tools beats the best single tool by
-~17 percentage points, arXiv:2407.12241).
+**What that does not establish — and this distinction is the point:** that a *ranker* built on
+that signal helps you triage. This implementation's ranking has **not** been shown to beat a
+size-matched baseline on the corpus where it was properly tested. At file level, agreement count
+correlates strongly with size (Spearman +0.63), and once size is controlled the ranking advantage
+is not statistically significant. Ranking files by size alone scores *higher* on ROC-AUC than the
+consensus signal does.
+
+So: the signal exists; turning it into a useful ordering is unproven. Earlier versions of this
+README quoted performance figures for the ranking. They did not survive controlled baselines and
+have been removed.
+
+## What has been checked
+
+The ranking is unproven; the machinery underneath it is tested. Each of these is covered by
+regression tests in `examples/fixtures/`, and every one was found by running real scanners on
+real code:
+
+- **Cross-tool deduplication** — two algorithms, as the DefectDojo model intends: a tool's own
+  fingerprint for same-tool dedup, location + CWE class for cross-tool. Using the former for both
+  made cross-tool agreement impossible for the shipped scanner pair.
+- **Engine-lineage guard** — SpotBugs and FindBugs are one engine under two names; counting them
+  as two would manufacture consensus out of self-agreement. Agreement is counted per *engine*.
+- **Degenerate-fingerprint detection** — semgrep run unauthenticated emits one constant
+  fingerprint for every result; flawfinder's context hash collides on repeated code. Trusting
+  either silently destroys findings. Both are detected and worked around.
+- **Path-root mismatch disclosure** — bytecode-based and source-based analyzers report paths
+  relative to different roots, which silently yields zero cross-tool matches. Detected and
+  reported rather than left as an unexplained zero.
+- **CWE resolution from structured SARIF taxa**, falling back to rule text only where a tool
+  declares no taxon.
+
+None of these are performance claims. They are things that were broken, are now not, and stay
+that way because tests hold them.
 
 ## Try it in ~2 minutes (C/C++)
 
@@ -64,14 +95,14 @@ The top of `out.json` is your review queue, ordered by review-worthiness.
   is language-agnostic (works on SARIF), but the consensus signal hasn't been validated elsewhere
   yet.
 - It's a **triage aid** — it surfaces review-worthy code. It does **not** prove exploitability.
-- **0.755 is useful, not magic.** It beats a coin flip and the best single tool; it's not an oracle.
 - The newest piece (cross-tool duplicate display) handles the case where tools agree on *location*.
   Harder cases (a bug whose source and sink are in different functions) are documented as an open
   problem, not solved.
 
-## Why trust the numbers
-Every claim here was measured against real CVEs and reported honestly — including results that
-weren't flattering. The methodology (external grounding, significance-testing surprising results,
-golden-master safety checks) is documented in the repo. Feedback and criticism very welcome.
+## Why trust this
+Because the record includes what failed, and you can check it. `docs/VALIDATION.md` carries every
+performance claim this project made, the baseline that broke it, and the numbers — including
+ManualUp/ManualDown from the defect-prediction literature and the size-matched controls that
+retired three separate headline figures. Feedback and criticism very welcome.
 
 *(License: see LICENSE. This is a research-grade tool / proof of concept.)*

@@ -3056,3 +3056,32 @@ of Lipp, or of the diversity premise.**
 ### Status
 The README leads with 0.755. No replacement claim is ready, and none should be
 manufactured. Decision pending (see HANDOFF 0g).
+
+## The function-level precision result SURVIVES size matching (2026-07-26)
+
+Checked before the 2.7x figure was allowed into the README — it would have been
+incoherent to ship an uncontrolled number immediately after retiring three
+others for being uncontrolled.
+
+```
+UNMATCHED      multi 1.54% (n=5,269)  vs single 0.58% (n=9,387)   = 2.67x
+SIZE-MATCHED   multi 1.54%            vs single 1.02% +/- 0.14    = 1.51x
+               (2,000 draws, single-tool controls matched by size decile)
+               P(size-matched control >= multi) = 0.0000   SURVIVES
+```
+**Roughly 40% of the apparent 2.67x effect is size.** The residual 1.51x is real
+and highly significant.
+
+### Why this survives when the ranking did not
+```
+Spearman(n_tools, size)   FILE level    +0.629
+                          FUNCTION level +0.304
+```
+The size confound is **less than half as strong at function level**. That is the
+mechanical reason the precision finding holds up while every file-level ranking
+claim collapsed — not an inconsistency between the two results.
+
+**README now quotes 1.5x, size-matched, with the uncontrolled 2.7x named and
+attributed to size.** This is the first performance-adjacent number in the
+project to be published with its control already applied rather than applied
+afterwards by a reviewer.
