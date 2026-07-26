@@ -2594,3 +2594,83 @@ It does not soften §6.2 — it sharpens it. The co-location finding stands, and
 the one apparent counter-example is removed. Acquisition remains not-the-lever,
 and the case that methodologically diverse tools produce observable independent
 agreement now has no supporting real-code instance at all.
+
+## GRANULARITY IS THE LEVER (2026-07-26) — §6.2's conclusion is OVERTURNED
+
+External corroboration was sought for §6.2 and it arrived with a correction
+attached. Both sources checked directly, not summarised.
+
+### Lenarduzzi et al., arXiv:2101.08832 `[fetched]` — 47 Java projects, 6 tools
+Verified from the PDF, not from an abstract:
+```
+Overlap at BOTH "class-level" and "line-level" is "always low".
+Best pair Findbugs-PMD  : 9.378%  (3,161 of 33,704 possible)
+Worst pair Checkstyle-PMD: 0.144%
+Total across pairs      : 18,004 of 4,430,023 = 0.4%
+"we did find no warnings pair ... considering more than two tools"
+Scale: 13,554,762 warning violations across 936 warning types.
+```
+NOTE ON COMPARABILITY: their metric is RULE-PAIR co-occurrence (occurrences /
+possible occurrences), NOT "fraction of code units flagged by >1 tool". It is
+not directly comparable to our merge rate — but it independently establishes
+that agreement is scarce at line AND class granularity, at industrial scale.
+§6.2's finding is NOT a corpus artifact or a tooling error.
+
+### But Lipp is not an outlier — it is measured at a DIFFERENT GRANULARITY
+Computed directly from the Lipp artifact on disk, same 6 tools, same real C code:
+```
+LINE level   (file, line, CWE) :  96,875 units,  1,507 multi-tool =  1.56%
+FUNCTION level                 :  14,656 units,  5,269 multi-tool = 35.95%
+                                                            a 23x increase
+```
+**Lipp's 1.56% at line level is consistent with Lenarduzzi.** The papers do not
+conflict. Lipp's headline results were computed at FUNCTION level all along —
+already recorded in this file as "Unit = FUNCTION (the paper's validated
+granularity choice; Section 3.2, FEC metric)". We had the fact and did not
+connect it to our key.
+
+### THE DECISIVE MEASUREMENT — cross-methodology agreement EXISTS at function level
+```
+TOOL PAIR                     line-lvl  func-lvl   methodologies
+CommSCA + Flawfinder                 2     1,191   commercial x PATTERN   (596x)
+CodeQL + Flawfinder                 37       669   dataflow x PATTERN      (18x)
+Flawfinder + Infer                   2       274   PATTERN x dataflow     (137x)
+CodeChecker + Flawfinder             0       136   dataflow x PATTERN    (0->136)
+Cppcheck + Flawfinder                0        66   dataflow-lite x PATTERN (0->66)
+
+CROSS-METHODOLOGY total:        1,169     7,514                          (6.4x)
+```
+
+**`Cppcheck + Flawfinder` is EXACTLY our zlib pair.** Line level: 0. Function
+level: 66. Our zlib zero was a GRANULARITY ARTIFACT, not a property of the tools.
+
+### §6.2 RESTATED
+The old claim — "pattern tools and dataflow tools do not produce co-located
+agreement" — is TRUE AT LINE LEVEL and FALSE AT FUNCTION LEVEL. The premise and
+the mechanism do not pull against each other; **the mechanism is simply matching
+at the wrong granularity.**
+
+- "Acquisition is not the lever" STILL HOLDS, and is now better explained: a
+  fourth tool would also have been matched at line level.
+- "Nothing purchasable resolves that" HOLDS.
+- **"Cross-methodology agreement may not be observable" IS WITHDRAWN.** It is
+  observable. We were not looking at the level where it occurs.
+
+### Consequences
+1. **Open item 2 (entity-level matching) changes from marginal to the main
+   event.** Its verdict "NOT REACHABLE without a parser" stands on the evidence
+   — but the payoff is now measured at 6.4x on cross-methodology pairs, not
+   speculative. A parser may be justified where it was not before.
+2. **Item 3's premise is FALSIFIED.** "Same-methodology agreement is the honest
+   description" is wrong: cross-methodology agreement is real and abundant at
+   function level. Item 3 should NOT proceed as framed.
+3. Direction B (point-in-range) is a partial, accidental approximation of
+   function-level matching — semgrep's method-spanning range in the Struts case
+   was a function boundary in disguise.
+
+### Honest bound
+Function sizes in Lipp: median 14 lines, p90 107, max 8,444. Function-level
+matching is coarser and its false-merge rate is UNMEASURED — the same question
+Direction B raised, now at larger scale and with a larger payoff. The 35.95%
+and 6.4x are agreement RATES, not correctness; nothing here shows those merges
+are the same bug.
