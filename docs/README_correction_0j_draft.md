@@ -2,10 +2,10 @@
 
 Produced by item 0j. Evidence: `docs/VALIDATION.md` "0j RESULT".
 
-**STATUS: APPLIED**, with two amendments directed by the inventor on review.
+**STATUS: APPLIED**, with three amendments directed by the inventor on review.
 This file is now the RECORD of correction #4, not a live proposal — do not
 re-apply it. The applied text is in README.md; the "PROPOSED" block below is
-superseded by the two amendments recorded at the end.
+SUPERSEDED by the three amendments recorded at the end of this file.
 
 ---
 
@@ -114,7 +114,7 @@ suffix-matching half of 0c is genuinely still open.
 
 ## AMENDMENTS ON REVIEW (inventor, 2026-07-26) — these define the APPLIED text
 
-The draft above was accepted with two changes. Both were corrections to the
+The draft above was accepted with three changes. Both were corrections to the
 draft, and both are recorded because they generalize.
 
 ### Amendment 1 — carry the uncertainty as an INTERVAL, not a p-range
