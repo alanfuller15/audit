@@ -301,13 +301,49 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    n_tools. That reasoning stands. But the measured cost on real code is now
    known and it is total — on generated code both tools point at the same line;
    on real code they anchor at different points of the same dataflow.
-   DO NOT simply widen the scoring key to TOL=3 on this evidence: n=1 agreement
-   is not a basis for changing the signal every published number rests on, and
-   the order-dependence objection is unaddressed. What IS warranted: treat this
-   as the motivating case for a proper evaluation of tolerant matching —
-   deterministic (e.g. union-find over a tolerance graph, as the display pass
-   already does), measured for false-merge rate on a labelled corpus BEFORE
-   adoption. File as its own experiment, not a patch.
+   THIS IS NOT LINE JITTER — IT IS STRUCTURAL. semgrep anchored at the taint
+   SOURCE (method signature); SpotBugs at the SINK (`response.sendRedirect`).
+   That is a property of PATTERN-vs-DATAFLOW analyzer pairs, not noise, and it
+   predicts the same miss RECURS SYSTEMATICALLY wherever those two kinds of tool
+   agree. The 3-line gap is not a small error to be absorbed; it is the distance
+   between two different — and each correct — answers to "where is this bug".
+
+   SO TOL=3 CAUGHT THIS CASE BY LUCK. Source-to-sink distance is ARBITRARY:
+   same function here, different functions elsewhere — which is already on
+   record as the open cross-function source/sink problem. A tolerance WINDOW is
+   the WRONG SHAPE OF FIX for a structural mismatch: it happens to work when the
+   sink is near the source and fails otherwise, with no principled cutoff.
+
+   REQUIREMENTS on any future evaluation of tolerant matching:
+     - It MUST measure SOURCE-SINK SEPARATION DISTANCES on real code, not sweep
+       a fixed window. The question is the distribution of that distance, not
+       "what is the best TOL".
+     - It MUST NOT treat TOL=3 as validated by this instance. One case that
+       happened to fall inside the window is not evidence the window is right;
+       it is one draw from an unmeasured distribution.
+     - Order-dependence and false-merge rate still have to be answered before
+       adoption. Deterministic construction (union-find over a tolerance graph,
+       as the display pass already does) is necessary but not sufficient.
+   File as its own experiment, not a patch.
+
+   SAME FINDING AS THE C/C++ RESULT, FROM THE OPPOSITE ANGLE:
+     zlib   — flawfinder vs cppcheck: classes ANTI-CORRELATED (fmt/buf vs
+              null/uninit/int). 14 co-locations, 0 class matches.
+     Struts — semgrep vs SpotBugs: classes MATCHED EXACTLY (redirect/redirect),
+              LOCATIONS did not (244 vs 247).
+   Two different mechanisms, ONE consequence: **pattern tools and dataflow tools
+   do not produce CO-LOCATED agreement, and the consensus premise AS IMPLEMENTED
+   requires co-location.** Measured twice, in two language ecosystems, on two
+   corpus types. That it generalizes as a structural law is a HYPOTHESIS; that
+   it happened both times is measured.
+
+   >>> THIS IS NOW THE CENTRAL OPEN QUESTION FOR THE PREMISE — above tool
+   >>> selection (0d/A4) and above class-map coverage (item 3). Those are
+   >>> questions about WHICH tools and WHETHER we can read them. This is a
+   >>> question about whether the agreement the premise depends on is
+   >>> OBSERVABLE AT ALL between methodologically different tools, which is
+   >>> exactly the pairing the diversity argument says is most valuable.
+   >>> Resolve or bound this before spending further on tool acquisition.
 
 0d. [FINDING — UNDERPOWERED TEST, NOT A MEASURED ABSENCE OF EFFECT]
    Consensus vs best single tool on OWASP Benchmark: the comparison DID NOT

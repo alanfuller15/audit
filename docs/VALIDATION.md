@@ -2050,3 +2050,59 @@ because one member is silent on it. Answering A4 needs either a tool pair where
 both members fire on real framework code (CodeQL is the obvious candidate and is
 Rosetta-blocked), or semgrep Pro's interprocedural engine, which is commercial.
 The ecosystem constraint recorded earlier now has a concrete instance.
+
+## THE CENTRAL OPEN QUESTION (2026-07-26): is cross-methodology agreement
+## OBSERVABLE AT ALL under a co-location requirement?
+
+Promoted above tool selection and class-map coverage. Two measurements, two
+language ecosystems, two corpus types, two DIFFERENT mechanisms, ONE consequence.
+
+```
+zlib (C/C++)    flawfinder (pattern)  vs  cppcheck (dataflow)
+                CLASSES anti-correlated: fmt/buf vs null/uninit/int
+                14 exact co-locations, 0 with matching class -> 0 merges
+
+Struts (Java)   semgrep (pattern)     vs  SpotBugs (dataflow)
+                CLASSES matched exactly: redirect / redirect
+                LOCATIONS differed: 244 (taint SOURCE) vs 247 (SINK) -> 0 merges
+```
+
+**Pattern tools and dataflow tools do not produce CO-LOCATED agreement. The
+consensus premise AS IMPLEMENTED requires co-location.**
+
+### Why this outranks the other open items
+- Tool selection (0d, A4) asks WHICH tools to pair. Irrelevant if no
+  methodologically-diverse pair can produce observable agreement.
+- Class-map coverage (item 3) asks whether we can READ what tools say. Struts
+  shows the classes can match perfectly and the merge still fails.
+- The diversity argument that motivates the whole tool says that
+  METHODOLOGICALLY DIFFERENT tools are the valuable ones — disjoint miss-sets,
+  independent evidence. This finding says that is exactly the pairing whose
+  agreement our mechanism cannot see. **The premise and the implementation
+  disagree about which pairs matter.**
+
+### The Struts miss is STRUCTURAL, not jitter
+semgrep anchors at the taint SOURCE; SpotBugs at the SINK. Both are correct
+answers to "where is this bug" — they are answers to different questions. The
+3-line gap is the distance between two correct answers, not an error. It
+therefore recurs systematically wherever such a pair agrees, and its magnitude
+is ARBITRARY: same function here, DIFFERENT FUNCTIONS elsewhere — already on
+record as the open cross-function source/sink problem.
+
+**Consequence: TOL=3 caught this by luck.** A tolerance window is the wrong
+SHAPE of fix for a structural mismatch — it works when the sink is near the
+source and fails otherwise, with no principled cutoff. Any evaluation of
+tolerant matching must measure the SOURCE-SINK SEPARATION DISTRIBUTION on real
+code rather than sweeping a window, and must not treat TOL=3 as validated by
+this single instance.
+
+### Status
+The consequence is MEASURED (twice). That it generalizes as a structural law is
+a HYPOTHESIS. Directions worth considering, none evaluated:
+  - match on a code ENTITY (enclosing method/function) rather than a line;
+  - match source-to-sink RANGES where a tool reports both;
+  - accept that same-methodology pairs are the only ones that co-locate, and
+    state plainly that the tool measures agreement-within-methodology — which
+    the ensemble literature says is the LESS informative kind.
+The last is not a fix; it is the honest fallback if the others fail, and it
+would require amending what the tool claims.
