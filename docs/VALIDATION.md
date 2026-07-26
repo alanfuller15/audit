@@ -1870,3 +1870,45 @@ cross-contamination, because the key requires same line AND same class.
    corpus labelling ONE bug per file — it cannot adjudicate merges on unlabelled
    second bugs beyond manual inspection, which is what was done for the 27.
 5. A real-Java A4 needs a REAL Java project.
+
+## 0c implemented — path-root mismatch is DETECTED and DISCLOSED (2026-07-26)
+
+Option (b) of the two scoped directions. Option (a), suffix matching, was NOT
+built: it can falsely unify same-named files across modules
+(`a/util/Config.java` vs `b/util/Config.java`), which is a false merge — the
+error direction the asymmetric-cost rule forbids.
+
+### What it detects
+Two tools whose path sets share filenames but have ZERO identical paths are
+reporting relative to DIFFERENT ROOTS. `_path_root_mismatch` reports the pair,
+the count of shared filenames, whether a suffix relationship holds, the likely
+cause, and the fix. Surfaced in JSON (`path_warnings`), the CLI, and the HTML
+report above the findings table — where the box retitles to "Scanner paths do
+not line up".
+
+### Verified on the case that motivated it
+```
+$ audit.py --ingest sb.sarif sg_java.sarif      (mismatched roots)
+  ⚠ PATH MISMATCH: Semgrep OSS and SpotBugs report the SAME 1515 filename(s)
+    but ZERO identical paths (one tool's paths are a SUFFIX of the other's) ...
+    any consensus count involving this pair will be ZERO for that reason alone
+    — NOT because the tools disagree.
+  23074 raw -> 23064 unique      (i.e. 0 merges, now explained)
+
+$ audit.py --ingest sb.sarif sg_java2.sarif     (roots aligned)
+  (no warning)
+  23074 raw -> 21908 unique      (1,156 merges)
+```
+
+Regression-tested: mismatched roots warn and name the cause; matched paths do
+NOT warn and still merge; disjoint filenames do not warn; the real captured
+cppcheck+flawfinder fixtures stay silent; and no suffix matching is attempted.
+Real zlib 3-tool ingest: 0 path warnings. Harness at 45 checks.
+
+### Why this matters beyond the bug
+It converts a SILENT ZERO into a STATED one. Before it, the honest reading of a
+zero consensus count was ambiguous between "the tools disagree" (a finding) and
+"the paths never compared equal" (an artifact). That ambiguity produced a wrong
+answer once already in this session, and would have produced one in the next A4
+run. This is the same preference recorded for 0a/0b: withholding a result
+without explanation is its own honesty failure.

@@ -71,12 +71,15 @@ def build(data):
     # the caveat informed nobody. Consensus is the tool's headline claim, so a
     # reason to doubt a particular consensus count belongs next to it, not in a
     # file nobody opens. Rendered above the table, not below it.
-    warnings = data.get("lineage_warnings") or []
+    warnings = list(data.get("path_warnings") or []) + list(data.get("lineage_warnings") or [])
     engines = data.get("distinct_engines")
     warn_html = ""
     if warnings:
         items = "".join(f"<li>{esc(w)}</li>" for w in warnings)
-        warn_html = (f'<div class="warnbox"><b>⚠ Scanner independence</b>'
+        _has_path = bool(data.get("path_warnings"))
+        _title = ("⚠ Scanner paths do not line up" if _has_path
+                  else "⚠ Scanner independence")
+        warn_html = (f'<div class="warnbox"><b>{_title}</b>'
                      f'<ul>{items}</ul>'
                      f'<div class="warnfoot">Consensus counts distinct analysis '
                      f'ENGINES, not product names. Agreement between two names for '

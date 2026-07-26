@@ -281,7 +281,44 @@ check(_cwe_class_of("R", "CWE-22 and also CWE-23 and CWE-36 path traversal", "")
 check(_cwe_class_of("R", "CWE-398 CWE-89 injection", "") == "sqli",
       "denied CWE alongside a mapped one does not block resolution")
 
-# ── 12. Determinism and order-independence ──────────────────────────────────
+# ── 12. PATH-ROOT MISMATCH must be DETECTED and DISCLOSED (item 0c) ─────────
+# SpotBugs derives paths from bytecode (package-relative); source tools emit
+# scan-root-relative. One is a suffix of the other, so merging silently yields
+# ZERO. Detect and warn — deliberately NOT suffix-matching, which could falsely
+# unify same-named files across modules.
+pkg_rel = sarif("SpotBugs", [res("CWE-89", "org/acme/Login.java", 42, "sqli CWE-89")])
+root_rel = sarif("Semgrep OSS", [res("sqli.rule", "src/main/java/org/acme/Login.java", 42,
+                                     "sql injection CWE-89")])
+mism = ingest(pkg_rel, root_rel)
+check(bool(mism.get("path_warnings")),
+      "different path ROOTS are detected and warned",
+      f"{len(mism.get('path_warnings', []))} warning(s)")
+check(any("DIFFERENT ROOTS" in w for w in mism.get("path_warnings", [])),
+      "the warning names the cause")
+check(any("ZERO for that reason alone" in w for w in mism.get("path_warnings", [])),
+      "the warning says a zero count is NOT tool disagreement")
+check(max(f["n_tools"] for f in mism["ranked"]) == 1,
+      "no suffix matching is attempted (that is option (a), not built)")
+
+# Matched paths must stay silent AND still merge.
+matched = ingest(sarif("SpotBugs", [res("CWE-89", "org/acme/Login.java", 42, "sqli CWE-89")]),
+                 sarif("Semgrep OSS", [res("sqli.rule", "org/acme/Login.java", 42,
+                                           "sql injection CWE-89")]))
+check(not matched.get("path_warnings"), "matched paths produce NO path warning")
+check(max(f["n_tools"] for f in matched["ranked"]) == 2,
+      "matched paths still merge (no regression)")
+
+# Genuinely different files must not warn — no shared basenames.
+diff = ingest(sarif("ToolA", [res("CWE-89", "src/a/One.java", 5, "sqli CWE-89")]),
+              sarif("ToolB", [res("CWE-89", "src/b/Two.java", 9, "sqli CWE-89")]))
+check(not diff.get("path_warnings"),
+      "disjoint filenames do not warn (not a root mismatch)")
+
+# Real captured C/C++ fixtures must stay silent.
+check(not audit.ingest_sarif([FF, CC]).get("path_warnings"),
+      "real cppcheck+flawfinder fixtures stay silent")
+
+# ── 13. Determinism and order-independence ──────────────────────────────────
 a1 = audit.ingest_sarif([FF, CC])
 a2 = audit.ingest_sarif([CC, FF])
 strip = lambda a: [(r["score"], r["uri"], r["line"], r["ruleId"], r["n_tools"])

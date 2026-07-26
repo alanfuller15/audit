@@ -830,6 +830,56 @@ def _lineage_warnings(tools, declared=frozenset()):
                 "AUDIT_INDEPENDENT_TOOLS=\"" + ",".join(sorted(sonar_drivers)) + "\"")
     return out
 
+def _path_root_mismatch(tool_paths):
+    """Detect tools that report the SAME files relative to DIFFERENT roots.
+
+    SpotBugs derives paths from bytecode and emits package-relative
+    (`org/owasp/benchmark/X.java`); source-level tools emit scan-root-relative
+    (`.../src/main/java/org/owasp/benchmark/X.java`). One is a SUFFIX of the
+    other, so the paths never compare equal and cross-tool merging silently
+    yields ZERO with no diagnostic — the same silent-degradation class as the
+    fingerprint defects.
+
+    `_norm_uri` cannot fix this: it is lexical normalization, and a suffix
+    relationship is not a malformed path. This function does NOT attempt to
+    reconcile them either — deliberately. Suffix matching can falsely unify
+    same-named files in different modules (`a/util/Config.java` vs
+    `b/util/Config.java`), which is a FALSE MERGE, the error direction the
+    asymmetric-cost rule forbids. Detect and disclose; do not silently guess.
+
+    `tool_paths` maps tool name -> set of normalized uris.
+    Returns a list of warning strings.
+    """
+    out = []
+    tools = sorted(t for t, p in tool_paths.items() if p)
+    for i in range(len(tools)):
+        for j in range(i + 1, len(tools)):
+            a, b = tools[i], tools[j]
+            pa, pb = tool_paths[a], tool_paths[b]
+            if pa & pb:
+                continue                      # they already agree somewhere
+            base_a = {p.rsplit("/", 1)[-1] for p in pa}
+            base_b = {p.rsplit("/", 1)[-1] for p in pb}
+            shared = base_a & base_b
+            if not shared:
+                continue                      # genuinely different files
+            # Same filenames, zero identical paths -> different roots.
+            suffix = any(x.endswith("/" + y) or y.endswith("/" + x)
+                         for x in list(pa)[:400] for y in list(pb)[:400])
+            out.append(
+                f"{a} and {b} report the SAME {len(shared)} filename(s) but ZERO "
+                f"identical paths"
+                + (" (one tool's paths are a SUFFIX of the other's)" if suffix else "")
+                + f". They are reporting paths relative to DIFFERENT ROOTS, so "
+                f"cross-tool merging between them CANNOT MATCH and any consensus "
+                f"count involving this pair will be ZERO for that reason alone — "
+                f"NOT because the tools disagree. Common cause: a bytecode-based "
+                f"analyzer (e.g. SpotBugs) emits package-relative paths while a "
+                f"source-based one emits scan-root-relative paths. FIX: run the "
+                f"source-based tool from the directory that makes its paths match "
+                f"(e.g. `src/main/java`), or post-process one tool's SARIF.")
+    return out
+
 def _fingerprint_value(res):
     """The tool's own stable identity for a result, or None."""
     for field in ("partialFingerprints", "fingerprints"):
@@ -968,6 +1018,12 @@ def ingest_sarif(paths):
                     _norm_uri((_loc.get("artifactLocation") or {}).get("uri", "")),
                     (_loc.get("region") or {}).get("startLine", 1)))
     degenerate_fps = _degenerate_fingerprints(_fp_scan)
+    # Per-tool path sets, for the different-roots check (item 0c).
+    _tool_paths = {}
+    for _t, _f, _u, _l in _fp_scan:
+        if _u:
+            _tool_paths.setdefault(_t, set()).add(_u)
+    path_warnings = _path_root_mismatch(_tool_paths)
 
     for path, doc in docs:
         if "_empty" in doc:
@@ -1201,6 +1257,10 @@ def ingest_sarif(paths):
         "tool_lineages": {t: _lineage_of(t) for t in sorted(tools_seen)},
         "distinct_engines": len({_lineage_of(t) for t in tools_seen}),
         "lineage_warnings": _lineage_warnings(tools_seen, declared_independent),
+        # Cross-tool path-root mismatch: a zero merge count caused by paths,
+        # not by tool disagreement. Kept separate so it is never read as a
+        # consensus result.
+        "path_warnings": path_warnings,
         "declared_independent": sorted(declared_independent),
         "raw_result_count": total_raw,
         # Two-stage dedup is now visible, so a reader can tell which stage did
@@ -1329,6 +1389,8 @@ def main():
         if agg.get("distinct_engines", 0) and agg["distinct_engines"] != len(agg["tools"]):
             print(f"  distinct ANALYSIS ENGINES: {agg['distinct_engines']} "
                   f"(consensus counts engines, not product names)")
+        for w in agg.get("path_warnings", []):
+            print(f"  ⚠ PATH MISMATCH: {w}")
         for w in agg.get("lineage_warnings", []):
             print(f"  ⚠ independence: {w}")
         print(f"  {agg['raw_result_count']} raw results → {agg['deduplicated_count']} unique after dedup")
