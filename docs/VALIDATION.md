@@ -3000,3 +3000,59 @@ qualification.
 
 **No README language drafted. On this evidence there is no claim worth
 promoting to a headline.**
+
+## 0g CONCLUSION (2026-07-26) — THE RANKER HAS NOT BEEN SHOWN TO ADD INFORMATION
+## BEYOND THE SIZE PROFILE IT SELECTS
+
+Recorded as one finding, not three, because the PATTERN is the finding.
+
+### The three collapses, in sequence
+```
+1. ROC-AUC 0.755 (the published headline)
+     -> ManualDown, ranking files by DESCENDING SIZE and reading no tool output,
+        scores 0.845 on the same data. The headline metric is not effort-aware,
+        and a trivial size baseline beats it.
+
+2. "Effort-aware, consensus beats the baseline +0.146, p=0.000"
+     -> measured against ManualDown, which is the NON-effort-aware baseline.
+        Against ManualUp (ascending size), the correct effort-aware baseline:
+        PofB@20 +0.033 p=0.323, Popt -0.013 p=0.603. Both NOT significant.
+
+3. "Same yield, 6.2% of files inspected instead of 70.6%, IFA 5 vs 614"
+     -> against a SIZE-MATCHED random control: PofB@20 0.228 vs 0.196
+        (P=0.184), IFA 5 vs 21.8 +/- 12.4. Neither significant. The inspection
+        advantage is largely mechanical — consensus selects files averaging
+        3.18x corpus mean LOC, so a LOC budget is spent on few of them.
+```
+**Each claim survived until a better-matched control was applied, and none
+survived the next one.** Three different metrics, three different baselines,
+same outcome. Spearman(n_tools, LOC) = +0.629: agreement count is substantially
+a size proxy on this corpus.
+
+**CONCLUSION: on this corpus, the ranker has not been shown to add information
+beyond the size profile it selects.** Consensus is not merely "pick the biggest"
+— pure descending size scores 0.081 against consensus's 0.228 — but within the
+size distribution consensus chooses, random selection performs comparably.
+
+### WHAT IS *NOT* REFUTED — state with equal force
+1. **Lipp's premise stands on Lipp's own data.** Their function-level detection
+   result, the +15pp lift from tool combination, and the diversity argument are
+   theirs and are untouched by any of this. We measured OUR ranker, not their
+   finding.
+2. **Consensus DOES carry signal at function level.** Multi-tool functions are
+   1.54% vulnerable vs 0.58% single-tool, **p=4.9e-09** on real CVE labels. That
+   result is unaffected by the effort-aware collapses — it is a statement about
+   PRECISION, and it is strongly significant. What fails is converting that into
+   a ranking advantage once inspection cost is priced.
+3. **A size-matched control is a HARD baseline.** Mende & Koschke document that
+   models can look good on traditional metrics while being worse than random
+   under effort-awareness; the literature reports ManualUp beating many
+   published models. Failing this control puts our ranker in large company, and
+   is not evidence of a defect unique to it.
+
+**This is a NULL RESULT ABOUT OUR RANKER. It is not a refutation of consensus,
+of Lipp, or of the diversity premise.**
+
+### Status
+The README leads with 0.755. No replacement claim is ready, and none should be
+manufactured. Decision pending (see HANDOFF 0g).
