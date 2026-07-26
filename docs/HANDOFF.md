@@ -480,6 +480,20 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
 6b. [PROMOTED TO ITEM 0 — see top of this list] Engine-lineage guard. Kept as a
    pointer so the number is not reused. It affects C/C++ as much as Java.
 
+7a. [BLOCKED on a Java corpus — OUTSTANDING, do NOT treat as done] Java
+   false-merge audit. The map WAS extended 2026-07-26 with 15 effect classes
+   (sqli/cmdi/xss/path/deser/xxe/ssrf/ldapi/xpathi/csrf/redirect/crypto/hash/
+   creds/random). The required false-merge audit has NOT been performed.
+   DO NOT read the zlib non-regression result as clearance. That check is
+   INERT, not passing: only 1 of the 23 new CWEs (327) appears anywhere in the
+   1,164-finding zlib corpus, on ONE finding from ONE tool, so no cross-tool
+   merge was possible whatever the classes look like. Absence guaranteed the
+   result; the classes were never exercised.
+   The risk — do the new classes merge findings that are not the same bug —
+   only materializes where those classes RESOLVE, i.e. on Java output.
+   Run it together with A4 on the same corpus: a merge rate is meaningless if
+   the merges are false.
+
 7. [Java, doc-only DONE] docs/SPEC_java_admission.md written 2026-07-26.
    Verdict: Java PASSES A3 (real labels — OWASP Benchmark v1.2, 2,740 labeled
    cases, ahead of C/C++ whose corpus is not on this machine); CAN satisfy A1

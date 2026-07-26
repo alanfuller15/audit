@@ -1335,10 +1335,32 @@ before extension:  1,164 raw / 1,135 dedup / 2 merges
 after  extension:  1,164 raw / 1,135 dedup / 2 merges
 ```
 
-Identical, and the same two findings. **No new C/C++ merges were manufactured.**
-This is the audit SPEC_java_admission.md required to follow the first extension;
-it is satisfied for C/C++ and remains OPEN for Java, where no real corpus has
-been ingested.
+Identical, and the same two findings. No new C/C++ merges were manufactured.
+
+**CORRECTION — this does NOT satisfy the required false-merge audit, and an
+earlier version of this section wrongly implied it did "for C/C++".** The check
+is INERT, not passing. Measured on the same corpus:
+
+```
+newly-added CWEs appearing anywhere in 1,164 zlib findings:  CWE-327 x3
+                                                             (1 of 23 entries)
+CWE-327 by tool: flawfinder 1, cppcheck 0, semgrep 0
+```
+
+22 of the 23 new CWEs never appear in that corpus at all, and the one that does
+appears on a SINGLE finding from a SINGLE tool — so it could not have produced a
+cross-tool merge under any outcome. The run exercised essentially none of the
+extension. "No new merges" was guaranteed by absence, not by the classes being
+correctly drawn.
+
+What the zlib run legitimately shows: the extension did not REGRESS existing
+C/C++ behaviour. That is worth having and is all it is.
+
+**THE FALSE-MERGE AUDIT IS OUTSTANDING.** It requires Java output, because the
+risk being audited — do the 15 new classes merge findings that are not the same
+bug — can only materialize where those classes actually resolve. Gated on the
+first real Java ingest. A later session must not read "no false merges on zlib"
+as clearance.
 
 ### Bound
 `[self-tested]`. The class assignments are reasoned from CWE definitions under

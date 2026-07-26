@@ -308,6 +308,26 @@ not from observed merge behaviour on Java data. It predicts lower false-merge
 risk; it does not demonstrate it. The first Java map extension should still be
 followed by a false-merge audit on real output.
 
+### STATUS 2026-07-26 — the map WAS extended; the audit is OUTSTANDING
+
+The 15 Java classes were added (VALIDATION.md, "Java class-map extension").
+The required false-merge audit has **NOT** been performed.
+
+A zlib run was checked and showed no new merges, but **that check is inert, not
+passing, and must not be read as clearance**: only 1 of the 23 newly-added CWEs
+(CWE-327) appears anywhere in that 1,164-finding corpus, on a single finding
+from a single tool — so no cross-tool merge was possible regardless of whether
+the classes are drawn correctly. Absence guaranteed the result.
+
+The risk being audited — do `sqli`/`xss`/`deser`/`path`/… merge findings that
+are not the same bug — can only materialize where those classes actually
+resolve, i.e. on Java output. **GATED ON THE FIRST REAL JAVA INGEST.**
+
+Consequence for §7's ladder: step 1 (extend the map) is done as a code change,
+but it does not clear until this audit runs. Step 4 (A4, measured overlap) and
+this audit should be performed on the same corpus in the same pass — a merge
+rate is meaningless if the merges are false.
+
 ### Extending it for Java — the constraint still applies
 The asymmetric-error-cost rule holds: a false merge inflates `n_tools`, which
 every published number rests on; a missed merge only costs recall. So each Java
