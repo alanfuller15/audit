@@ -121,7 +121,41 @@ for denied in ("CWE-398", "CWE-664", "CWE-758"):
     check(max(f["n_tools"] for f in agg["ranked"]) == 1,
           f"junk-drawer {denied} does not merge")
 
-# ── 6. Determinism and order-independence ───────────────────────────────────
+# ── 6. DEGENERATE FINGERPRINTS must not destroy findings ────────────────────
+# Real defect found on zlib: semgrep OSS run unauthenticated emits a CONSTANT
+# "matchBasedId/v1": "requires login" on every result. Trusting it as an
+# identity collapsed 33 findings into 1. flawfinder's contextHash/v1 hashes
+# surrounding code, so identical C idioms in different places also collided —
+# 588 raw findings were collapsing to 484 instead of 582.
+CONST = "requires login"
+agg = ingest(sarif("Placeholder", [
+    res("R1", "src/a.c", 10, "x", fingerprint=CONST),
+    res("R2", "src/b.c", 20, "y", fingerprint=CONST),
+    res("R3", "src/c.c", 30, "z", fingerprint=CONST)]))
+check(agg["deduplicated_count"] == 3,
+      "constant placeholder fingerprint does NOT collapse distinct findings",
+      f"{agg['deduplicated_count']}/3 survived")
+
+# A genuine per-finding fingerprint must still dedup normally.
+agg = ingest(sarif("Good", [res("R1", "src/a.c", 10, "x", fingerprint="uniq-1"),
+                            res("R1", "src/a.c", 10, "x", fingerprint="uniq-1"),
+                            res("R2", "src/b.c", 20, "y", fingerprint="uniq-2")]))
+check(agg["deduplicated_count"] == 2,
+      "genuine per-finding fingerprints still dedup", f"{agg['deduplicated_count']}/2")
+
+# ── 7. Rule METADATA is searched for CWE, not just the result ───────────────
+# semgrep puts its CWE only in rule.properties.tags (["CWE-415: Double Free"]);
+# scanning result text alone resolved 0 of 33 findings — a false negative from
+# our parser rather than from the tools disagreeing.
+meta_doc = {"version": "2.1.0", "runs": [{
+    "tool": {"driver": {"name": "MetaTool", "rules": [
+        {"id": "some.rule.id", "properties": {"tags": ["CWE-476: NULL Pointer Dereference"]}}]}},
+    "results": [res("some.rule.id", "src/a.c", 10, "no cwe in this message")]}]}
+agg = ingest(meta_doc, sarif("Other", [res("nullDeref", "src/a.c", 10, "null deref CWE-476")]))
+check(max(f["n_tools"] for f in agg["ranked"]) == 2,
+      "CWE found in rule metadata enables cross-tool merge")
+
+# ── 8. Determinism and order-independence ───────────────────────────────────
 a1 = audit.ingest_sarif([FF, CC])
 a2 = audit.ingest_sarif([CC, FF])
 strip = lambda a: [(r["score"], r["uri"], r["line"], r["ruleId"], r["n_tools"])

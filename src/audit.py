@@ -611,7 +611,38 @@ def _cwe_class_of(rule_id, message, uri=""):
             return _CWE_CLASS[n]
     return None
 
-def _result_key(res):
+def _fingerprint_value(res):
+    """The tool's own stable identity for a result, or None."""
+    for field in ("partialFingerprints", "fingerprints"):
+        d = res.get(field) or {}
+        if d:
+            return sorted(f"{k}={v}" for k, v in d.items())[0]
+    return None
+
+def _degenerate_fingerprints(items):
+    """Fingerprints that are NOT identities and must not be used as dedup keys.
+
+    A fingerprint is supposed to identify ONE finding. Some tools emit a
+    constant placeholder instead: semgrep OSS, run unauthenticated, sets
+    `"matchBasedId/v1": "requires login"` on EVERY result. Trusting that as an
+    identity collapses every finding from that tool into one — on real zlib it
+    destroyed 32 of 33 findings silently.
+
+    Detected from the data rather than by pattern-matching known strings: if one
+    (tool, fingerprint) pair appears at more than one distinct location, it is
+    not identifying anything and we fall back to the location key. Deterministic
+    — depends only on input content.
+
+    `items` is an iterable of (tool, fingerprint_value, uri, line).
+    """
+    seen = {}
+    for tool, fpv, uri, line in items:
+        if fpv is None:
+            continue
+        seen.setdefault((tool, fpv), set()).add((uri, line))
+    return {k for k, locs in seen.items() if len(locs) > 1}
+
+def _result_key(res, tool=None, degenerate=frozenset()):
     """SAME-TOOL dedup key. Prefers the tool's own fingerprint — that is exactly
     what fingerprints are for, and within one tool it is the most reliable
     identity available. Falls back to ruleId + normalized location.
@@ -624,13 +655,9 @@ def _result_key(res):
     n_tools could never exceed 1 in the shipped action. DefectDojo, which this
     model cites, uses TWO algorithms precisely to avoid that.
     """
-    pf = res.get("partialFingerprints") or {}
-    if pf:
-        # use the first stable fingerprint value
-        return "fp:" + sorted(f"{k}={v}" for k, v in pf.items())[0]
-    fp = res.get("fingerprints") or {}
-    if fp:
-        return "fp:" + sorted(f"{k}={v}" for k, v in fp.items())[0]
+    fpv = _fingerprint_value(res)
+    if fpv is not None and (tool, fpv) not in degenerate:
+        return "fp:" + fpv
     rid = res.get("ruleId", "?")
     loc = (((res.get("locations") or [{}])[0].get("physicalLocation") or {}))
     uri = _norm_uri((loc.get("artifactLocation") or {}).get("uri", ""))
@@ -660,7 +687,15 @@ def _cross_keys(rec):
     """
     uri, line = rec["uri"], rec["line"]
     keys = [f"rid|{uri}|{line}|{rec['ruleId']}"]
-    cls = _cwe_class_of(rec["ruleId"], rec["message"], uri)
+    # RULE METADATA IS PART OF THE SEARCH SPACE. Several tools put their CWE
+    # mapping ONLY in the driver's rule definitions, never in the result:
+    # semgrep uses rule.properties.tags (["CWE-415: Double Free", ...]) and
+    # emits no CWE in the result at all. Scanning result-only text resolved
+    # 0 of 33 semgrep findings on real code — a false negative produced by our
+    # parser, not by the tools disagreeing. ingest_sarif already collects this
+    # as rec["rulemeta"]; it just was not being consulted.
+    cls = _cwe_class_of(rec["ruleId"], rec["message"], uri) \
+        or _cwe_class_of(rec["ruleId"], rec.get("rulemeta") or "", "")
     if cls:
         keys.append(f"cls|{uri}|{line}|{cls}")
     rec["cwe_class"] = cls
@@ -696,6 +731,23 @@ def ingest_sarif(paths):
     tools_seen = set()
     parse_errors = []
     empty_inputs = []
+    # PRE-SCAN: find fingerprints that are not identities (constant placeholders
+    # emitted on every result). Must happen before keying — see
+    # _degenerate_fingerprints for why trusting them destroys findings.
+    _fp_scan = []
+    for _p, _d in docs:
+        if "_empty" in _d or "_parse_error" in _d:
+            continue
+        for _run in (_d.get("runs") or []):
+            _tool = (((_run.get("tool") or {}).get("driver") or {})).get("name", "unknown-tool")
+            for _res in (_run.get("results") or []):
+                _loc = (((_res.get("locations") or [{}])[0].get("physicalLocation") or {}))
+                _fp_scan.append((
+                    _tool, _fingerprint_value(_res),
+                    _norm_uri((_loc.get("artifactLocation") or {}).get("uri", "")),
+                    (_loc.get("region") or {}).get("startLine", 1)))
+    degenerate_fps = _degenerate_fingerprints(_fp_scan)
+
     for path, doc in docs:
         if "_empty" in doc:
             empty_inputs.append(path)
@@ -720,7 +772,7 @@ def ingest_sarif(paths):
             for res in (run.get("results") or []):
                 # PHASE 1 — SAME-TOOL dedup. Scoped by tool so one tool's
                 # fingerprint can never collide with another tool's key.
-                key = (tool, _result_key(res))
+                key = (tool, _result_key(res, tool, degenerate_fps))
                 loc = (((res.get("locations") or [{}])[0].get("physicalLocation") or {}))
                 uri = _norm_uri((loc.get("artifactLocation") or {}).get("uri", ""))
                 line = (loc.get("region") or {}).get("startLine", 1)

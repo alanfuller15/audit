@@ -735,3 +735,99 @@ cppcheck) on non-Claude input (real zlib), so the DATA is externally grounded.
 The judgment that declining those 10 merges is correct is Claude's analysis, not
 an external verdict. NO implementation tier moves to `[externally-verified]`:
 no external judge has confirmed the ranking is right on real data.
+
+## The overlap constraint: consensus needs PARTIAL overlap, not maximal diversity
+(2026-07-26; surfaced by the zlib negative, independent of any tool-set outcome)
+
+The framing sweep (claim 4) already recorded one failure mode of the consensus
+premise: tools with CORRELATED blind spots produce merges that carry little
+signal, because agreement between near-duplicates is not independent evidence.
+That is the "bad diversity" half of the ensemble decomposition.
+
+The zlib result exposes the INVERSE failure, which was not previously named:
+
+> Tools with ANTI-correlated coverage produce no merges at all.
+
+flawfinder and cppcheck on zlib had 14 exact co-locations, 10 with classes
+resolved on both sides, and ZERO class matches. Their profiles barely intersect
+(flawfinder `fmt` 260 / `buf` 235; cppcheck `null` 10 / `int` 2 / `uninit` 1).
+One pattern-matches dangerous functions; the other does dataflow. Maximally
+diverse — and therefore mute.
+
+**The premise requires an overlap sweet spot.** Consensus is only informative
+when tools have DIFFERENT enough methods that agreement is independent evidence,
+but SIMILAR enough coverage that they can agree at all. Both extremes break it:
+
+| overlap | outcome |
+|---|---|
+| near-total (redundant tools, shared engine) | merges are plentiful but carry little signal — shared FPs amplify |
+| partial | the premise works — this is the regime the Lipp validation measured |
+| near-zero (anti-correlated coverage) | no merges; consensus signal is absent, not weak |
+
+This is a real constraint on WHICH TOOL SETS the premise can hold for, and it is
+not fixable by any change to the dedup key — the zlib merges were correctly
+declined, since the tools genuinely disagreed about what the bug was.
+
+Consequences to carry:
+1. **Tool-set selection is a first-class design parameter**, not a packaging
+   detail. "Add more diverse tools" is NOT unconditionally good advice, which is
+   how the diversity literature is easy to misread.
+2. **The admission criteria for any new language must test for the sweet spot**,
+   not merely count tools or assert independence. Three tools that share an
+   engine fail on one side; three tools with disjoint specialities fail on the
+   other. See docs/SPEC_java_admission.md.
+3. **The Lipp validation's 6 tools evidently sat in the partial-overlap regime**
+   (1,318 real cross-tool overlaps). Whether any 2-tool subset of the shipped
+   Action reaches that regime is an open question, not an assumption.
+
+## TWO DATA-LOSS DEFECTS found while adding a third tool (2026-07-26)
+
+Both PREDATE the two-algorithm fix — `_result_key` has always preferred a
+tool's own fingerprint — and both silently DESTROYED real findings. Found only
+because a third scanner was added to a real-library run; no synthetic fixture
+would have surfaced either.
+
+### Defect 1 — a constant placeholder fingerprint collapses a whole tool
+semgrep OSS, run unauthenticated, emits the SAME fingerprint on every result:
+
+```json
+"fingerprints": {"matchBasedId/v1": "requires login"}
+```
+
+`_result_key` trusted it as a stable identity, so all 33 zlib findings received
+one key and collapsed to **1 finding — 32 destroyed**, with no warning.
+
+### Defect 2 — a context-hash fingerprint collides on repeated code
+flawfinder's `contextHash/v1` hashes the surrounding source, so identical C
+idioms at different locations hash the same. On zlib this collapsed
+**588 raw findings to 484** when the correct figure is 582 — ~98 distinct
+findings silently merged.
+
+### Fix — degeneracy detected from the data, not from a string blacklist
+A fingerprint is supposed to identify ONE finding. If a single
+(tool, fingerprint) pair appears at more than one distinct location, it is not
+identifying anything, so we fall back to the location key. Pre-scanned before
+keying; deterministic, content-only. Genuine per-finding fingerprints still
+dedup normally — both behaviours are regression-tested.
+
+Result on zlib: semgrep 33->33 (was 33->1), flawfinder 588->582 (was 588->484).
+
+### Defect 3 (same session) — CWE in rule METADATA was never read
+`_cwe_class_of` scanned ruleId + message + uri only. semgrep records its CWE
+ONLY in the driver's rule definitions (`properties.tags`:
+`["CWE-415: Double Free", ...]`) and emits no CWE in the result at all — so
+class resolution returned None for 33 of 33 semgrep findings. That would have
+produced a FALSE NEGATIVE in the three-tool overlap test: an apparent
+"tools don't agree" caused by our parser, not by the tools. `ingest_sarif`
+already collected this as `rec["rulemeta"]`; `_cross_keys` now consults it.
+
+### Why this matters beyond the bugs
+Trusting a tool's self-reported identity is not safe by default. The DefectDojo
+model says use the tool's fingerprint for same-tool dedup — correct in
+principle, but it assumes the fingerprint IS an identity. Two of the three real
+scanners tested violate that assumption in different ways. Any future tool
+added to the supported set must be checked for both failure modes.
+
+Tier: `[self-tested]` for the fixes (regression-tested, 19 checks). The DEFECTS
+themselves are externally grounded — real semgrep and real flawfinder output on
+real zlib, not constructed cases.
