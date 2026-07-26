@@ -831,3 +831,82 @@ added to the supported set must be checked for both failure modes.
 Tier: `[self-tested]` for the fixes (regression-tested, 19 checks). The DEFECTS
 themselves are externally grounded — real semgrep and real flawfinder output on
 real zlib, not constructed cases.
+
+## Three-tool overlap test on zlib (2026-07-26) — is the default tool SET the defect?
+
+Question: the shipped flawfinder+cppcheck pair produces no consensus. Is that a
+tool-SELECTION problem fixable by adding a third scanner, or something deeper?
+
+### Method and its bounds — READ BEFORE THE NUMBERS
+- **CodeQL could NOT be run.** `codeql` 2.26.0 is installed but C/C++ database
+  creation fails: the cask ships only an `osx64` tracer, this is an arm64 Mac,
+  and Rosetta is absent ("Bad CPU type in executable"). Needs
+  `softwareupdate --install-rosetta`. **semgrep 1.171.0 (`p/security-audit`) was
+  substituted.** semgrep is NOT CodeQL; this does not test the README's claim
+  that CodeQL is a validated tool for this pipeline.
+- All three run from ONE root with comparable paths. A first pass was DISCARDED:
+  semgrep's URIs carried a `lib/` prefix from a different working directory and
+  cppcheck had scanned 18 top-level files against flawfinder's 44 recursive, so
+  "0 files in common" was a harness artifact. Corrected: cppcheck 59 files,
+  flawfinder 44 (all shared with cppcheck), semgrep 5 (all shared with both).
+- One library. zlib 1.3.1 only.
+
+### Result
+```
+single tool     cppcheck 543 raw / 520 dedup · flawfinder 588/582 · semgrep 33/33
+
+cppcheck + flawfinder            merges = 0     (0.00%)
+cppcheck + semgrep               merges = 0     (0.00%)
+flawfinder + semgrep             merges = 2     (0.33%)
+all three                        merges = 2     (0.18%)
+```
+
+### The two merges are the LEAST informative kind of agreement
+Both are `printf` format-string flags at `contrib/testzlib/testzlib.c:169` and
+`:172` — flawfinder `FF1016` and semgrep, both **pattern-matchers on dangerous
+function names**, agreeing that a `printf` is a `printf`. This is the
+CORRELATED-tools case the framing sweep warns about ("bad diversity"): agreement
+between near-duplicate methods is not independent evidence. It is also in test
+code, not library code.
+
+Meanwhile cppcheck — the dataflow tool, the one offering genuine methodological
+diversity — overlaps with NOBODY.
+
+### The binding constraint is CLASS RESOLUTION, not tool selection
+```
+class profile (WITH rule metadata consulted)
+  cppcheck     521 of 543 UNRESOLVED (96%) · null 14 · uninit 5 · int 2 · leak 1
+  flawfinder    86 of 588 unresolved (15%) · fmt 260 · buf 235 · int 7
+  semgrep       31 of  33 UNRESOLVED (94%) · fmt 2
+
+co-location vs class agreement
+  cppcheck  vs flawfinder   co-located 43   both-classed 11   MATCH 0
+  cppcheck  vs semgrep      co-located  0   both-classed  0   MATCH 0
+  flawfinder vs semgrep     co-located 33   both-classed  2   MATCH 2
+```
+cppcheck and flawfinder co-locate 43 times, but only 11 of those have a class on
+both sides and none match. 96% of cppcheck's findings and 94% of semgrep's carry
+no resolvable class at all — so most co-locations can never be evaluated for
+agreement, whatever the tools actually think.
+
+**This is the U1/U2 map-coverage question (HANDOFF §7 item 2) showing up as the
+dominant term, exactly as predicted, and it sits UPSTREAM of tool selection.**
+The "unresolved" bulk mixes correctly-denied junk (CWE-398/561/563), unmapped
+CWEs (U2 — fixable), and findings with no CWE at all (U1 — not fixable by us).
+Splitting those three is now the highest-value measurement available.
+
+### Answer to the question asked
+**Adding a third tool did not rescue the default set.** 2 merges in 1,131
+findings (0.18%), between the two most methodologically SIMILAR tools, on test
+code. None of the three pre-registered outcomes fits cleanly: it is not "the
+tool set is the defect" (the added tool barely helped), not "all pairs merge"
+(one pair, barely), and not quite "deeper than tool selection" either — because
+a concrete, fixable cause is now visible, and it is class-map coverage.
+
+Do NOT conclude the consensus premise fails. Conclude that on this evidence it
+cannot be evaluated for these tools until class resolution improves, and that
+adding scanners is the wrong lever to pull first.
+
+Tier: `[self-tested]` analysis over `[externally-grounded]` data — three real
+scanners on real zlib. One library, and CodeQL untested. Not generalizable as
+a rate.

@@ -274,8 +274,20 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    silently inflates n_tools, the signal the whole tool rests on.
    Check types are not finding frequency; weight by observed findings.
 
-3. [Mac, small] RE-MEASURE — TWO distinct questions, both in
-   docs/SPEC_item4_groupability_measurement.md. RUN AFTER item 2.
+3. [Mac, small — NOW THE HIGHEST-VALUE ITEM] RE-MEASURE. TWO distinct questions,
+   both in docs/SPEC_item4_groupability_measurement.md. Item 2 is DONE.
+   PROMOTED by the 2026-07-26 three-tool test: class RESOLUTION, not tool
+   selection, is the dominant term. On zlib, 96% of cppcheck findings and 94% of
+   semgrep findings resolve to NO class, so most co-locations can never be
+   evaluated for agreement at all. cppcheck vs flawfinder: 43 co-located, 11
+   class-resolved on both sides, 0 matching. Adding a third tool yielded 2
+   merges in 1,131 findings (0.18%) — and both were flawfinder+semgrep agreeing
+   a printf is a printf, i.e. two pattern-matchers, the CORRELATED case that
+   carries least signal. Splitting the unresolved bulk into U1 (no CWE emitted —
+   not fixable by us) vs U2 (CWE present but unmapped — fixable) vs correctly
+   denied is now the single most valuable measurement in the project.
+   CodeQL remains UNTESTED: codeql 2.26.0 ships an osx64 tracer only, this Mac
+   is arm64, Rosetta absent. Needs `softwareupdate --install-rosetta`.
    (a) GROUPABILITY (§1-6, pre-registered): denominator cascade D0/D1/D2,
        decision rule, project set — i.e. how often the badge fires, given a
        settled map.
