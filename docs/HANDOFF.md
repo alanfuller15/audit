@@ -439,6 +439,28 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    comparator on any future corpus BEFORE claiming consensus adds value there.
    The comparator is cheap: scratchpad/single_vs_consensus.py.
 
+0g. [HIGHEST-VALUE OPEN QUESTION — supersedes the granularity work]
+   EFFORT-AWARE EVALUATION CHANGES THE ANSWERS. Measured 2026-07-26 on the Lipp
+   artifact with the review budget in LINES OF CODE rather than units:
+     FUNCTION level consensus PofB@20%LOC = 0.185, IDENTICAL to ranking by LOC
+       alone (p=0.522) and WORSE than counting findings (0.230).
+       => open item 2 is NOT justified as a parser project. The 6.4x merge gain
+          and +0.96pp precision gain do not survive effort-normalisation.
+     FILE level consensus = 0.228 vs LOC 0.081 (p=0.000) and findcount 0.114
+       (p=0.018) — beats trivial baselines, so it is NOT merely tracking size.
+       But loses to the best single tool (Infer 0.317).
+   THE FINDING THAT MATTERS MOST: ranking files by LINES OF CODE ALONE scores
+   ROC-AUC 0.845 on the same data where the published headline is 0.755
+   (reproduced here at 0.763). A ranker reading NO tool output beats the
+   consensus signal on the metric the README quotes. This is Rahman et al.
+   ICSE'14 reproducing on our corpus, and it is why non-effort-aware ROC-AUC is
+   the wrong metric to headline.
+   NOT a claim that consensus is worthless — effort-aware, file-level consensus
+   beats the LOC baseline decisively (0.228 vs 0.081), the inverse ordering. It
+   means 0.755 is the wrong number to LEAD WITH.
+   ACTION REQUIRED before the README is touched again: decide whether to
+   re-headline on an effort-aware metric. This supersedes item 1's status.
+
 0f. [STRUCTURAL GAP in the 0a guard — record stands regardless of counts]
    LINEAGE EXISTS AT THE RULE LEVEL, BELOW THE ENGINE LEVEL 0a GUARDS.
    Found 2026-07-26 while sizing open item 2. semgrep's

@@ -2769,3 +2769,82 @@ excluded on this data alone.
 Function-level matching is where the premise's signal actually lives. Line-level
 matching — what we implement — is measurably the wrong granularity: agreement
 there is uninformative and anti-monotonic. That is the actionable finding.
+
+## EFFORT-AWARE EVALUATION (2026-07-26) — the granularity question ANSWERED, and
+## a serious finding about the headline metric
+
+Prior comparisons were unit-normalised, which flatters coarse granularity
+mechanically: 20% of files is far more code than 20% of functions. Redone with
+the budget measured in LINES OF CODE. Motivated by the known
+prediction-vs-localization tradeoff (Koru & Liu 2005; Calikli et al. 2009, via
+the systematic review arXiv:2210.02236) and by Rahman et al. ICSE'14,
+"Comparing static bug finders and statistical prediction", which found ASATs and
+file-level defect predictors give **no statistically significant difference** in
+ranking performance `[snippet]` — corroborated across several secondary sources;
+the ICSE paper itself was not fetched.
+
+### PofB@20% of LOC reviewed (effort-aware), Lipp artifact, real CVE labels
+```
+FUNCTION level  (14,656 flagged units, 597,704 LOC, 135 vulnerable)
+  CONSENSUS (n_tools)        0.185      <- the tool's signal
+  baseline: LOC alone        0.185      <- IDENTICAL
+  baseline: finding count    0.230      <- BEATS consensus
+  best single (Flawfinder)   0.259      <- BEATS consensus
+    consensus vs LOC          +0.000  p=0.522  not significant
+    consensus vs findcount    -0.044  p=0.910  consensus WORSE
+    consensus vs best single  -0.074  p=0.955  consensus WORSE
+
+FILE level      (2,678 flagged units, 1,159,586 LOC, 123 vulnerable)
+  CONSENSUS (n_tools)        0.228
+  baseline: LOC alone        0.081
+  baseline: finding count    0.114
+  best single (Infer)        0.317
+    consensus vs LOC          +0.146  p=0.000  SIGNIFICANT
+    consensus vs findcount    +0.114  p=0.018  SIGNIFICANT
+    consensus vs best single  -0.089  p=0.953  consensus worse (n.s.)
+```
+
+### ANSWER: neither granularity change is justified
+- **FUNCTION level does NOT win once effort is priced.** Its consensus is
+  *indistinguishable from ranking by LOC alone* (delta +0.000, p=0.522) and is
+  beaten by simply counting findings. The 6.4x extra merges and the +0.96pp
+  unit-normalised precision gain do NOT survive effort-normalisation.
+  **=> Open item 2 is NOT justified as a parser project. The measured payoff
+  disappears when the metric prices localization cost.**
+- **FILE level consensus DOES beat both trivial baselines significantly**, so it
+  is not merely tracking size. But it loses to the best single tool, so it does
+  not support a "beats the best single tool" claim either.
+- Neither granularity's consensus beats the best single tool effort-aware.
+
+### THE SERIOUS FINDING — a trivial size baseline BEATS the headline number
+ROC-AUC, reported here **explicitly as NOT effort-aware**:
+```
+                    FUNCTION   FILE
+  CONSENSUS           0.628    0.763   <- file-level reproduces the published 0.755
+  baseline: LOC alone 0.803    0.845   <- HIGHER AT BOTH GRANULARITIES
+  finding count       0.694    0.783
+```
+**Ranking files by LINES OF CODE ALONE scores ROC-AUC 0.845 on the same data
+where this tool's published headline is 0.755.** A ranker that reads no tool
+output, no CWE, no agreement — only file size — outperforms the consensus signal
+on the metric the README quotes.
+
+This is Rahman's result reproducing on our own corpus, and it is why
+non-effort-aware ROC-AUC is the wrong metric to headline: bigger units are more
+likely to contain a bug, so any size-correlated score scores well without
+carrying information about WHERE the bug is.
+
+It does NOT mean consensus is worthless — effort-aware, file-level consensus
+beats the LOC baseline decisively (0.228 vs 0.081, p=0.000), which is the
+inverse ordering. It means **0.755 is the wrong number to lead with**, and the
+effort-aware comparison is the defensible one.
+
+### Bounds
+- 135 vulnerable functions / 123 vulnerable files — small positive counts, so
+  PofB estimates are noisy; bootstrap (400 resamples) is reported for the
+  key comparisons rather than eyeballed.
+- Single-tool PofB values are not coverage-matched: tools flag very different
+  numbers of units, and PofB does not penalise a tool for flagging little.
+- Ties broken by ascending LOC (review smaller units first), applied identically
+  to every ranker.
+- One corpus, C/C++, six tools.
