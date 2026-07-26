@@ -32,6 +32,16 @@ problem. Report the raw D0 rate too, but do not lead with it.
 
 ## 2. Ungroupable split — THREE causes, not two
 
+> **SCOPE CORRECTION (2026-07-26): this section is an INPUT TO THE `_result_key`
+> FIX, not a measurement that follows it.** The two-algorithm fix keys cross-tool
+> matching on location + CWE class, and the class comes from `_cwe_class` — so
+> map coverage determines how often the FIXED KEY can match at all, not merely
+> how often the display badge fires. Settling coverage is part of designing the
+> fix; deferring it to this measurement would mean shipping a key whose hit rate
+> was never measured. The U1/U2 split and the CWE-664/758 deny-vs-map judgment
+> below now belong to HANDOFF §7 item 2. They are retained here because the
+> measurement still has to report against them.
+
 Within D2, every ungroupable finding falls into exactly one of:
 
 - **U1 — no CWE available.** cppcheck emitted no `cwe` attribute, so the ruleId

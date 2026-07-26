@@ -229,13 +229,44 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    result was measured on reconstructed envelopes that DID merge (1,318 overlaps
    recovered, hand-count exact). The shipped path cannot merge. So the fix moves
    the SHIPPED config TOWARD the VALIDATED one. See VALIDATION.md 2026-07-26.
+   BUT read BOUND 2 there: direction is not a transfer guarantee.
+
+   _CWE_CLASS COVERAGE IS PART OF THIS ITEM'S DESIGN — NOT INHERITED FROM ITEM 3.
+   (Corrected 2026-07-26; the earlier ordering had this wrong.) The cross-tool
+   branch keys on location + CWE CLASS, and the class comes from `_cwe_class`.
+   So map coverage DIRECTLY determines how often the fixed key can match at all.
+   Scoping this fix without settling coverage means designing a key whose hit
+   rate has not been measured. Coverage is an input to the design, not a later
+   optimization of it.
+   What must be settled HERE, from `cppcheck --errorlist` (342 checks,
+   tool-authoritative):
+     - 14 CWEs map to a class ->  31 checks
+     -  7 CWEs correctly denied -> 149 checks
+     - 35 CWEs UNMAPPED         -> 116 checks   <- bites the FIX, not just the badge
+     - 46 checks emit no CWE    ->  46 checks
+   Carry the U1/U2 split into this item: U1 = no CWE available (cppcheck
+   limitation, not fixable by us); U2 = CWE present but absent from _CWE_CLASS
+   (OUR gap, fixable by editing a 28-entry dict). Candidate genuine omissions:
+   CWE-786, CWE-131, CWE-590, CWE-762, CWE-252, CWE-467.
+   COUNTER-NOTE, keep it: CWE-664 (improper resource lifetime, 20 checks) and
+   CWE-758 (undefined behaviour, 20 checks) are GENERIC junk-drawer categories
+   and are plausibly _CWE_DENY candidates rather than map candidates. Do NOT
+   assume every unmapped CWE should be mapped — a too-broad class map produces
+   false cross-tool merges, which is worse than a missed merge because it
+   silently inflates n_tools, the signal the whole tool rests on.
+   Check types are not finding frequency; weight by observed findings.
 
 3. [Mac, small] RE-MEASURE — TWO distinct questions, both in
    docs/SPEC_item4_groupability_measurement.md. RUN AFTER item 2.
    (a) GROUPABILITY (§1-6, pre-registered): denominator cascade D0/D1/D2,
-       U1-vs-U2 split, decision rule, project set. Watch U2: 35 unmapped CWEs
-       cover 116 cppcheck checks vs 14 mapped covering 31 — extending the
-       28-entry _CWE_CLASS map may beat the badge for far less work.
+       decision rule, project set — i.e. how often the badge fires, given a
+       settled map.
+       NOTE THE MOVE: the _CWE_CLASS coverage question (U1/U2 split, the 35
+       unmapped CWEs, the CWE-664/758 deny-vs-map judgment) has MOVED INTO
+       ITEM 2, where it belongs — the fix's cross-tool key depends on it, so it
+       cannot be deferred to a measurement that runs after the fix. This item
+       now MEASURES the consequences of item 2's coverage decision rather than
+       discovering the coverage problem.
    (b) TRANSFER (§7): does the FIXED shipped path reproduce the conditions
        0.755 was measured under? DIFFERENT QUESTION from (a). The "fix moves
        shipped toward validated" argument is about DIRECTION and is a
