@@ -11,7 +11,7 @@ Out of scope: `src/audit.py`, scoring, ranking, SARIF output
 `audit_dedup_display.py` exists in the repo but is not in any shipped path.
 
 > **CORRECTION (2026-07-26):** "not in any shipped path" is too strong. The
-> PUBLISHED README (`origin/main` c5f75d6 — the local checkout was one commit
+> PUBLISHED README (`origin/main` 1070558 — the local checkout was one commit
 > behind and did not have it) documents the pass as step 3 of its quickstart:
 > `python3 src/audit_dedup_display.py out.json out_display.json`. So it IS in
 > the documented CLI path. What remains true, and is what this spec is actually

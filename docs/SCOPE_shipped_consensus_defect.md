@@ -72,8 +72,8 @@ labelled it "PUBLIC and LIVE."
   `Checking <file> ...`, and feeding that to `audit.py --ingest` yields
   `⚠ parse error … tools: Flawfinder` — a single-tool run. Reproducible.
 - True: that command appears at line 6 of the README **in this local
-  working copy**, which is at commit `729e893`.
-- **FALSE: that this is the public README.** `origin/main` is `c5f75d6`, one
+  working copy**, which is at commit `af2336a`.
+- **FALSE: that this is the public README.** `origin/main` is `1070558`, one
   commit ahead ("Update README.md"). The local repo had never fetched. The
   PUBLISHED README is a 59-line rewrite whose quickstart uses the correct
   path:
@@ -121,7 +121,7 @@ covered an uploaded zip). Refusing to amend on assertion was right; the finding
 against the local tree WAS accurate. Both parties were right about different
 documents, which is exactly what an unstated provenance produces.
 
-## 5. Claim-by-claim status — against the PUBLIC README (`origin/main` c5f75d6)
+## 5. Claim-by-claim status — against the PUBLIC README (`origin/main` 1070558)
 
 Line numbers refer to the published 59-line README, verified via
 `git show origin/main:README.md`. The previously-tabulated claims were from the
@@ -211,12 +211,49 @@ would be the minimal honest disclosure.
 
 ## 9. Repo state note
 
-At the time this document was first written, the local working copy was one
-commit BEHIND `origin/main` (`729e893` vs `c5f75d6`), and the divergent file was
-the README — the exact file under analysis. That is what produced the §4a
-misattribution.
+### 9a. HISTORY REWRITE 2026-07-26 — old SHAs in outside copies will not resolve
 
-RESOLVED 2026-07-26: fast-forwarded to `c5f75d6`. The local README is now the
+A root history rewrite ran on 2026-07-26 to unify commit authorship under
+`alanfuller15 <alanfuller15@gmail.com>` (four commits had carried the
+auto-derived `Caitlin Fuller <caitlinfuller@Mac.home>`, which GitHub could not
+link to an account). **Content is byte-identical** — verified by
+`git diff backup-pre-rewrite main` returning empty. Only author/committer
+metadata changed. Every SHA changed regardless.
+
+This matters because copies of the OLD SHAs exist outside this repo: on the
+inventor's device (I.5 copies), inside `audit-main.zip` uploaded to a chat
+session, and in any clone taken before 2026-07-26. Anyone reconciling those
+against this repo needs the mapping:
+
+| old (dead) | new | commit |
+|---|---|---|
+| `09170b3` | `1692510` | Initial commit: audit review-worthiness re-ranker + CI action |
+| `543dbe3` | `1b4668f` | Disable SARIF upload in demo |
+| `c2b651e` | `a6384a6` | Update VALIDATION.md |
+| `729e893` | `af2336a` | Add standalone cross-tool display dedup |
+| `c5f75d6` | `1070558` | Update README.md |
+| `d3ad7e4` | `3c03a3b` | Record structural consensus defect |
+
+`git show 09170b3` and friends now fail. Substitute from the table.
+
+Recovery path retained: local branch `backup-pre-rewrite` and tag
+`pre-rewrite-2026-07-26`, both at the original `d3ad7e4`. Local only, not
+pushed. They are the only route back to the pre-rewrite SHAs.
+
+This is the same provenance discipline HANDOFF §8 rule 8 requires. The rewrite
+manufactured precisely the divergent world-state that rule is about: two
+internally-consistent sets of commit identifiers for identical content, where
+a claim citing one is unverifiable against the other. Name which side of the
+rewrite any SHA came from.
+
+### 9b. Repo state during the analysis
+
+At the time this document was first written, the local working copy was one
+commit BEHIND `origin/main` (`af2336a` vs `1070558`, pre-rewrite `729e893` vs
+`c5f75d6`), and the divergent file was the README — the exact file under
+analysis. That is what produced the §4a misattribution.
+
+RESOLVED 2026-07-26: fast-forwarded to `1070558`. The local README is now the
 published one; `grep -c 'output-format' README.md` → 0, and the quickstart uses
 `2> cppcheck.xml` + the converter. All §5 line numbers refer to this version and
 are now checkable directly in the working tree.

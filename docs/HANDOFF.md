@@ -200,7 +200,7 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
 1. [decision — DEMOTED, and coupled to item 2] README honesty. Scoped
    claim-by-claim against the PUBLIC README in
    docs/SCOPE_shipped_consensus_defect.md §5.
-   FIRST: THE LOCAL CHECKOUT IS BEHIND. Local HEAD 729e893; origin/main c5f75d6
+   FIRST: THE LOCAL CHECKOUT WAS BEHIND. Local HEAD af2336a; origin/main 1070558
    ("Update README.md"). The published README is a 59-line rewrite; the local
    one is the stale 162-line version. src/ and action.yml are BYTE-IDENTICAL
    between them, so all code findings hold — but ANY claim about "the README"
@@ -300,11 +300,11 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    THE INSTANCE: the inventor asserted `--output-format` appeared nowhere in the
    repo and that line 6 was blank, instructing that the finding be corrected in
    two artifacts. Verified against the committed blob: the string was present at
-   lines 6/61/64 of 729e893, worktree sha matched the commit, no `2>` anywhere.
+   lines 6/61/64 of af2336a, worktree sha matched the commit, no `2>` anywhere.
    The amendment was REFUSED and that refusal was correct — amending on
    assertion would have replaced a verified finding with an unverified
    retraction. But the inventor was ALSO right: their grep covered an uploaded
-   zip = the PUBLISHED README (origin/main c5f75d6), which the local repo, one
+   zip = the PUBLISHED README (origin/main 1070558), which the local repo, one
    commit behind, did not have. Both parties were right about different
    documents.
    THE OPERATIONAL LESSON: the failure was neither party's conclusion, it was
@@ -318,6 +318,15 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
      - When the inventor's claim and the tree disagree, the resolution is
        usually a provenance difference, not an error by either party. Locate the
        other document before concluding anyone was wrong.
+   HISTORY REWRITE 2026-07-26 — a live instance of exactly this rule. A root
+   rewrite unified commit authorship under alanfuller15; content is
+   byte-identical but EVERY SHA CHANGED. Old SHAs survive in outside copies
+   (inventor's device per I.5, an uploaded audit-main.zip, any pre-2026-07-26
+   clone) and no longer resolve here. Old->new mapping table:
+   docs/SCOPE_shipped_consensus_defect.md §9a. Always name which side of the
+   rewrite a SHA came from. Recovery: local branch backup-pre-rewrite / tag
+   pre-rewrite-2026-07-26 (not pushed; only route back).
+
    RULE 10.1-10.3 INTERACTION: refusing to amend on assertion is REQUIRED, and
    is not contradicted by the inventor turning out to be right. Holding was
    correct on the evidence available; the missing piece was found by SEARCHING
