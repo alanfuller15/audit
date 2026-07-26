@@ -2848,3 +2848,77 @@ effort-aware comparison is the defensible one.
 - Ties broken by ascending LOC (review smaller units first), applied identically
   to every ranker.
 - One corpus, C/C++, six tools.
+
+## AGAINST THE FIELD'S ESTABLISHED BASELINES (2026-07-26) — ManualUp / ManualDown
+
+Prior effort-aware comparison used DESCENDING LOC, which is **ManualDown — the
+NON-effort-aware baseline**. The correct effort-aware baseline is **ManualUp
+(ascending size)**. Definitions verified in arXiv:2302.00394 `[fetched]`:
+Zhou et al. 2018 advocated both, "separately for non-effort-aware evaluation and
+effort-aware evaluation"; ManualDown classifies the top 50% LARGEST modules as
+defective, ManualUp the top 20% SMALLEST. Metric definitions cross-checked
+against arXiv:2504.19181 `[fetched]` (Popt = 1 - delta_opt, Mende & Koschke).
+
+**So the earlier "+0.146 effort-aware win" was measured against the wrong
+baseline and is WITHDRAWN.**
+
+### Results — Lipp artifact, real CVE labels, bootstrap n=300
+```
+FUNCTION level (14,656 units, 597,704 LOC, 135 vulnerable = 0.92%)
+  ranker              PofB@5   @10   @20   @50    Popt    IFA   PMI@20
+  CONSENSUS            0.030  0.067 0.185 0.585   0.530    142    0.161
+  ManualUp (asc)       0.015  0.067 0.185 0.511   0.494  1,746    0.602
+  ManualDown (desc)    0.022  0.067 0.185 0.489   0.508      2    0.022
+  random               0.052  0.096 0.222 0.459   0.497    260    0.206
+
+FILE level (2,678 units, 1,159,586 LOC, 123 vulnerable = 4.59%)
+  CONSENSUS            0.033  0.122 0.228 0.577   0.535      5    0.062
+  ManualUp (asc)       0.049  0.098 0.195 0.577   0.547    614    0.706
+  ManualDown (desc)    0.000  0.016 0.081 0.423   0.453      3    0.013
+  random               0.065  0.073 0.146 0.455   0.475     16    0.171
+
+  consensus vs ManualUp, FILE level:
+    PofB@20  +0.033  p=0.323   not significant
+    Popt     -0.013  p=0.603   not significant
+    PMI@20   consensus inspects 6.2% of files vs 70.6%   p=0.000  SIGNIFICANT
+    IFA      5 vs 614
+```
+
+### What this establishes
+1. **On detection (PofB@20, Popt) consensus and ManualUp are STATISTICALLY
+   INDISTINGUISHABLE** at both granularities. Neither wins. The predicted
+   "consensus loses on PofB@20" did not occur — but neither did a win.
+2. **On inspection cost consensus wins decisively.** At file level it reaches
+   the same bug yield having inspected **6.2% of files with 5 initial false
+   alarms**, where ManualUp needs **70.6% of files and 614 false alarms**.
+3. **No baseline dominates, and that is the real result.** ManualDown has
+   excellent IFA (3) and terrible yield (PofB@20 = 0.081). ManualUp has
+   comparable yield and catastrophic IFA (614). **Consensus is the only ranker
+   that is good on BOTH** — the standard shape in this literature.
+
+### THE DAMAGING RESULT — function level fails against RANDOM
+At function level, **random ordering beats consensus on PofB@20 (0.222 vs
+0.185)**, and all three non-random rankers tie at 0.185. Function-level
+consensus does not merely fail to beat ManualUp; it fails to beat chance on the
+headline effort-aware metric. Combined with the earlier finding that it is
+indistinguishable from LOC-alone, **the function-level direction is dead, and
+open item 2 stays closed.** A parser would buy nothing measurable.
+
+### The defensible claim, if one is wanted
+Effort-aware, at FILE level, on real CVE ground truth:
+> Reviewing the same 20% of code, consensus ranking finds as many vulnerable
+> files as the standard effort-aware baseline while inspecting **6.2% of files
+> instead of 70.6%**, and hitting its first true positive after **5 false
+> alarms instead of 614**.
+
+That is narrower than "beats the best single tool" and narrower than 0.755. It
+is a claim about WASTED INSPECTION, not detection rate, and it is the one the
+evidence supports.
+
+### Bounds
+- Detection parity, not superiority. Consensus does NOT find more bugs.
+- 123-135 positives; PofB is noisy, hence bootstrap rather than eyeballing.
+- One corpus, C/C++, six tools; ManualUp is documented as strongest on highly
+  skewed data, and this corpus is highly skewed (0.92% at function level).
+- IFA is a single-run order statistic, not bootstrapped; it is stable here only
+  because the gap (5 vs 614) is enormous.
