@@ -1912,3 +1912,55 @@ zero consensus count was ambiguous between "the tools disagree" (a finding) and
 answer once already in this session, and would have produced one in the next A4
 run. This is the same preference recorded for 0a/0b: withholding a result
 without explanation is its own honesty failure.
+
+## A4 PRE-REGISTRATION (2026-07-26) — fixed BEFORE the Struts run
+
+Written before Apache Struts was fetched or built, so the synthetic-vs-real
+contrast is fixed in advance rather than selected after the fact (GENESIS Part 3
+method: pre-register before probing).
+
+### The OWASP Benchmark v1.2 baseline being compared against
+SpotBugs+FindSecBugs x semgrep, roots aligned:
+```
+raw findings                23,074
+same-tool dedup             23,064
+cross-tool merges            1,156
+MERGE RATE / finding          5.01%
+distinct files               2,755
+findings per file       mean  7.95   median 7   max 26
+files with >=1 merge         1,064   = 38.6% of files
+MERGE RATE / file            38.62%
+merges per merged file  mean  1.09   max 2
+concentration           top-10 files hold 20/1,156 merges (1.7%)
+class distribution      xss 302 · path 221 · crypto 171 · cmdi 146 ·
+                        sqli 126 · hash 113 · ldapi 50 · xpathi 27
+```
+
+### The confound to MEASURE, not narrate around
+OWASP is one planted bug per small generated file (mean 7.95 findings/file, max
+26, merges almost never repeat within a file — max 2). Struts is large real files
+with many findings each. **More findings per file means more chances for two
+tools to co-locate coincidentally, which could inflate the merge rate for a
+mechanically uninteresting reason.**
+
+Pre-registered discriminator: if Struts merges CLUSTER in its densest files,
+that is a co-location artifact rather than agreement. Specifically —
+- report merge rate per FINDING and per FILE;
+- report findings-per-file for both corpora;
+- report what share of merges the top-10 files hold (OWASP: 1.7%, i.e. spread).
+If Struts' top-10 share is high while its per-file merge rate is not
+correspondingly high, the per-finding rate is inflated by density and must be
+reported as such BEFORE it is quoted.
+
+### Bounds fixed in advance
+1. **No per-file answer key for Struts.** This measures merge RATE, not merge
+   CORRECTNESS.
+2. **7a's zero-false-merges does NOT transfer.** It was measured on generated
+   code with one planted bug per file, every divergent case hand-checked against
+   labels that will not exist here. Real code has multiple genuine issues per
+   file, deeper call graphs and framework indirection; its false-merge rate is
+   simply UNMEASURED.
+3. Path alignment is checked FIRST (item 0c). A zero must be diagnosed, not
+   quoted.
+4. If the 7-module Struts build fails or runs long, switch to Apache Shiro and
+   record why rather than sinking time into the build.
