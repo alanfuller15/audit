@@ -287,15 +287,34 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    Regression test to add: two drivers of one lineage must NOT produce
    n_tools>1; two drivers of different lineage must still merge as today.
 
-0d. [FINDING — affects a PUBLIC README claim] Consensus does NOT beat the best
-   single tool on OWASP Benchmark. Measured 2026-07-26 on the same corpus and
-   labels used for the 7a audit:
+0d. [FINDING — UNDERPOWERED TEST, NOT A MEASURED ABSENCE OF EFFECT]
+   Consensus vs best single tool on OWASP Benchmark: the comparison DID NOT
+   RESOLVE. Do NOT cite 0d as evidence consensus fails to beat the best tool —
+   the test cannot distinguish the observed effect from zero.
+   POWER, computed not assumed:
+     minimum detectable effect at n=1,156 merges vs n=1,848 semgrep: ~4.0pp
+     observed effect: +2.1pp  ->  BELOW the detection threshold
+     to resolve +2.1pp at p<0.05: ~7,562 per group (balanced), or ~107,000
+       merges holding the semgrep comparator at its actual 1,848
+   Both "consensus adds ~2pp" and "consensus adds nothing" are consistent with
+   this data. The file-level view reached p=0.063 with the SAME SIGN, which is
+   weak corroboration of a small positive effect, not of its absence.
+   Measured 2026-07-26 on the same corpus and labels used for the 7a audit:
        base rate 51.6% · SpotBugs+FSB 64.0% · semgrep 68.3% · CONSENSUS 70.4%
        consensus vs semgrep: +2.1pp, z=1.20, p=0.232   NOT significant
        file-level          : +3.5pp, z=1.86, p=0.063   NOT significant
        consensus vs SpotBugs: +6.4pp, p=7.9e-05        significant
-   Consensus beats the WEAKER tool and is indistinguishable from the STRONGER
-   one. It also surfaces 1,156 findings where semgrep alone surfaces 1,848.
+   Consensus beats the WEAKER tool significantly. Against the STRONGER one the
+   test is underpowered and returns no verdict. It also surfaces 1,156 findings
+   where semgrep alone surfaces 1,848.
+   THE SYNTHETIC BOUND APPLIES TO THE NEGATIVE TOO — HYPOTHESIS, NOT FINDING:
+   on a corpus where every file contains exactly one planted bug drawn from a
+   category BOTH tools cover, single tools should perform unusually well. That
+   is close to the condition LEAST favourable to consensus, whose value comes
+   from covering what one tool misses. So a null result here is weak evidence
+   about real code, in the same way and to the same degree that the positive
+   enrichment was. The negative generalizes no further than the positive did.
+   Stated as a hypothesis because it is not tested.
    WHY THIS MATTERS BEYOND THE NUMBER: the README says 0.755 "beats a coin flip
    and the best single tool". That phrasing is sourced from LIPP's C/C++ result
    (0.755 vs 0.596), which is real and is not challenged here. But this is the
@@ -314,6 +333,11 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
        <whatever>/src/main/java/org/owasp/benchmark/testcode/BenchmarkTest00001.java
    The first is a SUFFIX of the second.
 
+   BLOCKS A4. This is not only a user-facing bug: the next real measurement
+   needs a REAL Java project scanned by two tools, and that project will hit the
+   SAME package-relative vs scan-root-relative mismatch and produce a SILENT
+   ZERO. An A4 run attempted before 0c lands would report "no overlap" and the
+   number would be an artifact. 0c is a PREREQUISITE for A4, not a parallel task.
    FAILURE MODE: a Java user running SpotBugs + semgrep the obvious way gets
    ZERO cross-tool merges and NO diagnostic. The tool reports "consensus" as an
    informative signal and silently finds none. Same class as the fingerprint

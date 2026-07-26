@@ -1758,9 +1758,29 @@ TOOL. Measured on the same corpus and labels:
                   +6.4pp   z=3.95  p=7.9e-05  significant
 ```
 
-**VERDICT: consensus does NOT significantly beat the better single tool on this
-corpus.** It significantly beats the weaker one (SpotBugs) and is
-indistinguishable from the stronger one (semgrep). And it surfaces 1,156
+**VERDICT: the comparison against the better single tool DID NOT RESOLVE — the
+test is UNDERPOWERED, and this is NOT a measured absence of effect.**
+
+```
+minimum detectable effect at n=1,156 vs n=1,848 : ~4.0pp
+observed effect                                 : +2.1pp  (below threshold)
+n needed to resolve +2.1pp at p<0.05            : ~7,562 per group (balanced)
+                                                  ~107,000 merges holding the
+                                                  semgrep comparator at 1,848
+```
+
+Both "consensus adds ~2pp" and "consensus adds nothing" are consistent with this
+data. The file-level view reached p=0.063 with the SAME SIGN — weak corroboration
+of a small positive effect, not of its absence. Consensus DOES significantly beat
+the weaker tool (SpotBugs, p=7.9e-05).
+
+**THE SYNTHETIC BOUND APPLIES TO THIS NEGATIVE TOO — stated as HYPOTHESIS, not
+finding.** On a corpus where every file contains exactly one planted bug drawn
+from a category BOTH tools cover, single tools should perform unusually well.
+That is close to the condition LEAST favourable to consensus, whose value comes
+from covering what one tool misses. A null result here is therefore weak evidence
+about real code — in the same way, and to the same degree, that the positive
+enrichment was. **The negative generalizes no further than the positive did.** And it surfaces 1,156
 findings where semgrep alone surfaces 1,848 — so as a FILTER it would discard
 449 of the 1,263 true-positive-file findings semgrep alone found, a 36% loss,
 for a precision gain that does not reach significance.
@@ -1770,8 +1790,9 @@ filters — non-merged findings are scored lower, not dropped — so "costs reca
 overstates the operational cost. But it does not touch the precision result:
 against the right comparator, consensus is not demonstrated to add signal here.
 
-**So the correct reading is outcome (2): the enrichment over base rate is REAL
-but is NOT evidence FOR consensus.** Both single tools also beat base rate, and
+**So the correct reading is outcome (2), with a power caveat: the enrichment over
+base rate is REAL but is NOT evidence FOR consensus — and the failure to
+demonstrate consensus is a NON-RESULT, not a negative result.** Both single tools also beat base rate, and
 the better one beats it by nearly as much as consensus does. The paragraph below
 is retained because its point about the CODE PATH stands — but its claim to be
 evidence for the consensus premise does not.
@@ -1795,9 +1816,10 @@ interpretation are Claude's.
 **But the CLAIM the tier attaches to must now be narrower.** What is
 `[standard-checked]` is: "merges land on vulnerable files 70.4% of the time
 against a 51.6% base rate, and the whole path from real scanners through
-ingest_sarif to labels executes correctly." What is NOT established is that
-consensus outperforms the best single tool — measured, and it does not, at
-p=0.232 (per-finding) / p=0.063 (file-level).
+ingest_sarif to labels executes correctly." What is NOT established, in EITHER
+direction, is whether consensus outperforms the best single tool: the test was
+underpowered (min detectable effect ~4.0pp vs an observed +2.1pp), so it returns
+no verdict rather than a negative one.
 
 **BOUND, and it is severe:** this is measured on a corpus THIS PROJECT HAS
 ALREADY RECORDED AS UNREPRESENTATIVE — synthetic, structurally uniform, and
