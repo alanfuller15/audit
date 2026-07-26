@@ -241,6 +241,73 @@ Any Java overlap measurement taken before extending the map would produce a
 false negative caused by our parser — the same failure already caught once this
 session, when result-only class scanning resolved 0 of 33 semgrep findings.
 
+### The tension with the C/C++ conclusion — resolved, and NOT by the obvious rule
+
+The C/C++ session concluded "the conservative map is close to correct as-is"
+and that CWE-676 is a deny candidate. Java needs the OPPOSITE: substantial map
+extension, or class resolution stays at zero and A4 can never be measured.
+Whether those conflict was CHECKED rather than assumed.
+
+**First hypothesis, REFUTED.** The obvious rule is MITRE's own abstraction
+level: map Base/Variant entries, deny Class/Pillar. MITRE does say Base is the
+preferred mapping level and that overly abstract Class/Pillar entries are less
+useful (`[fetched]`). But checking the actual entries kills the rule:
+
+| CWE | abstraction | MITRE mapping usage | our experience |
+|---|---|---|---|
+| **676** use of potentially dangerous function | **Base** | **Allowed** | **DANGEROUS for us** — spans buf, fmt, cmdi |
+| **119** improper restriction within buffer bounds | **Class** | **Discouraged** | **SAFE for us** — already mapped to `buf` |
+
+Both are backwards from the rule. So abstraction level does NOT predict
+false-merge risk, and MITRE's mapping guidance answers a different question
+(what to file a CVE against) than ours (when do two tools mean the same thing).
+
+**The criterion that actually holds: CLASS-COHERENCE of the consequence set.**
+
+> Map a CWE if everything it covers lands in ONE class of our taxonomy.
+> Deny it if it spans several.
+
+This explains every case:
+- **119** is abstract, but all its descendants (120, 125, 787, …) are buffer
+  issues → coherent → safe to map to `buf`.
+- **676** is specific-sounding, but it is a *mechanism* ("you called a dangerous
+  function"), and the mechanism's consequences differ per function: `strcpy`→buf,
+  `scanf`→buf/fmt, `system`→command injection → incoherent → deny.
+- **664, 758, 20, 74, 707** span essentially everything → deny.
+
+The distinction is **effect vs mechanism**, not general vs specific. A
+mechanism category collects weaknesses that share a cause but differ in
+consequence, and consequence is what our classes encode.
+
+**Applying it to Java — the tension dissolves, and the reasoning is why.**
+Java's candidate CWEs are effect categories that each name one sink:
+
+| CWE | consequence set | coherent? |
+|---|---|---|
+| 89 SQL injection | SQL query manipulation | yes — spans nothing |
+| 79 XSS | script execution in a page | yes |
+| 502 deserialization | object-graph attack | yes |
+| 611 XXE | XML entity resolution | yes |
+| 918 SSRF | server-side request | yes |
+| 22 path traversal | filesystem path escape | yes |
+
+Each names a specific sink with a single consequence. **CWE-89 spans nothing**,
+exactly as hypothesized — and now with a stated reason rather than an
+impression. So Java map extension carries **lower** false-merge risk than the
+C/C++ experience suggests, and the two conclusions do not conflict: C/C++'s
+problem CWEs were mechanism categories, and Java's candidates are not.
+
+**The trap that DOES carry over** is Java's own mechanism/parent categories —
+CWE-20 (improper input validation), CWE-74 (injection, generic), CWE-707. Those
+are deny candidates in Java for precisely the reason 676 is in C/C++. Extending
+the map is safe for the specific sinks; it is not a licence to add parents.
+
+CAVEAT, stated because this is a design argument and not a measurement: the
+coherence criterion is reasoned from CWE definitions and two fetched entries,
+not from observed merge behaviour on Java data. It predicts lower false-merge
+risk; it does not demonstrate it. The first Java map extension should still be
+followed by a false-merge audit on real output.
+
 ### Extending it for Java — the constraint still applies
 The asymmetric-error-cost rule holds: a false merge inflates `n_tools`, which
 every published number rests on; a missed merge only costs recall. So each Java

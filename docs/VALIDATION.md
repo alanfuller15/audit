@@ -1063,3 +1063,49 @@ decision** (HANDOFF §7 item 1), which has now been held three times: first
 pending the fix, then pending the three-tool result, now pending re-measurement.
 The decision must not be re-opened without the artifact — every prior attempt to
 settle it has been overturned by evidence that arrived afterwards.
+
+## Map/deny criterion, established 2026-07-26: CLASS-COHERENCE, not abstraction
+
+Governs every future `_CWE_CLASS` / `_CWE_DENY` edit, in any language. Recorded
+here because an earlier hypothesis was refuted and the refutation is the useful
+part.
+
+**Refuted hypothesis:** map Base/Variant CWEs, deny Class/Pillar, per MITRE's
+own abstraction levels. MITRE does state Base is the preferred mapping level and
+that Class/Pillar entries are too abstract (`[fetched]`). But the two entries
+that actually matter to us are backwards from it:
+
+| CWE | abstraction | MITRE mapping | our experience |
+|---|---|---|---|
+| 676 use of potentially dangerous function | Base | **Allowed** | dangerous — spans buf/fmt/cmdi |
+| 119 improper restriction within buffer bounds | Class | **Discouraged** | safe — already mapped to `buf` |
+
+MITRE's guidance answers "what should this CVE be filed against"; ours is
+"when do two tools mean the same thing." Different questions.
+
+**The criterion that holds:**
+
+> Map a CWE if everything it covers lands in ONE class of our taxonomy.
+> Deny it if it spans several. The distinction is EFFECT vs MECHANISM, not
+> general vs specific.
+
+- 119 is abstract but all descendants are buffer issues -> coherent -> map.
+- 676 is specific-sounding but is a *mechanism*; `strcpy`->buf, `scanf`->fmt,
+  `system`->command injection -> incoherent -> deny.
+- 664, 758, 20, 74, 707 span everything -> deny.
+
+A mechanism category collects weaknesses sharing a CAUSE but differing in
+CONSEQUENCE, and consequence is what our classes encode. This is why the
+conservative instinct was right in C/C++ without anyone being able to say why.
+
+**Consequence for Java (docs/SPEC_java_admission.md §6):** the apparent conflict
+— "C/C++ says the map is close to correct, Java needs it doubled" — dissolves.
+Java's candidates (89 SQLi, 79 XSS, 502 deserialization, 611 XXE, 918 SSRF,
+22 path traversal) are effect categories naming one sink each, so each is
+class-coherent and safe to map. Java's PARENT categories (20, 74, 707) are the
+same trap as 676 and remain deny candidates.
+
+BOUND: reasoned from CWE definitions plus two fetched entries, not from observed
+merge behaviour on Java data. It predicts lower false-merge risk; it does not
+demonstrate it. A false-merge audit on real Java output must follow the first
+extension.

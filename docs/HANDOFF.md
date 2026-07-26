@@ -197,7 +197,42 @@ so `_result_key` returns `fp:…`; cppcheck emits none so it returns `rk:…`; t
 two can never collide. The headline consensus signal is structurally inert in
 the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
 
-1. [decision — DEMOTED, and coupled to item 2] README honesty. Scoped
+0. [Mac, small — HIGHEST PRIORITY, LIVE IN SHIPPED CODE] Engine-lineage guard.
+   PROMOTED 2026-07-26 from item 6b. This is the ONLY defect found in this
+   session that INFLATES n_tools. By the asymmetric-error-cost rule that makes
+   it the most serious thing outstanding: every other defect costs recall;
+   this one CORRUPTS THE HEADLINE SIGNAL that every published number rests on.
+
+   CONCRETE, in shipped code. Phase 2's diversity guard in ingest_sarif is:
+       if recs[a]["tools"] & recs[b]["tools"]: continue
+   — a set intersection on driver NAME. Two drivers of ONE engine pass it.
+   The diversity-aware merge is not currently diversity-aware; it is NAME-aware.
+
+   EXPLOIT PATH, no adversary required — a plausible enterprise CI:
+     run SpotBugs -> import the report into SonarQube via
+     sonar.java.spotbugs.reportPaths -> feed BOTH the SpotBugs SARIF and the
+     SonarQube SARIF to `audit.py --ingest`.
+   Same findings, two driver names, n_tools=2 on pure self-agreement. The
+   ranking then promotes those findings as "two independent tools agree."
+   Lineage facts are [fetched], docs/SPEC_java_admission.md §2: SpotBugs IS
+   FindBugs (fork, source still under edu/umd/cs/findbugs/); FindSecBugs is a
+   SpotBugs PLUGIN; SonarQube imports SpotBugs/FindBugs/FindSecBugs/PMD/
+   Checkstyle reports.
+
+   MINIMUM VIABLE FIX: an engine-lineage field per KNOWN tool, DEFAULTING TO
+   THE TOOL'S OWN NAME for unknowns; the guard intersects LINEAGE, not name.
+   Unknown tools keep current behaviour exactly, so nothing regresses.
+   Seed lineages: SpotBugs/FindBugs/FindSecBugs -> "findbugs";
+   Cppcheck -> "cppcheck"; Flawfinder -> "flawfinder"; Semgrep* -> "semgrep";
+   CodeQL -> "codeql"; SonarQube -> "sonarqube" BUT see below.
+   SonarQube is CONFIGURATION-DEPENDENT — it may be re-emitting another
+   engine's findings. Lineage cannot be certified from SARIF alone. Options:
+   treat a SonarQube driver as lineage-unknown-but-suspect, or require the
+   operator to declare it. Do not silently assume independence.
+   Regression test to add: two drivers of one lineage must NOT produce
+   n_tools>1; two drivers of different lineage must still merge as today.
+
+1. [decision — BLOCKED on 3c] README honesty. Scoped
    claim-by-claim against the PUBLIC README in
    docs/SCOPE_shipped_consensus_defect.md §5.
    FIRST: THE LOCAL CHECKOUT WAS BEHIND. Local HEAD af2336a; origin/main 1070558
@@ -396,16 +431,8 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    STUDIED (ensemble/weighting literature) before IMPLEMENT.
    [Former 2(b), tool-quality weighting, is CLOSED — tested and rejected, §6.]
 
-6b. [NEW, affects C/C++ TOO — found while scoping Java] The supported-tool
-   registry records tool NAME, not ENGINE LINEAGE. Diversity-aware consensus
-   counts distinct driver names, so two SARIF drivers sharing an engine both
-   contribute to n_tools — self-agreement counted as consensus. Concrete cases:
-   SpotBugs IS FindBugs (fork; source still under edu/umd/cs/findbugs/);
-   FindSecBugs is a SpotBugs PLUGIN; and SonarQube can IMPORT SpotBugs/FindBugs/
-   FindSecBugs/PMD/Checkstyle reports via sonar.java.*.reportPaths, so its
-   independence is a property of the DEPLOYMENT, not the tool. All [fetched].
-   Fix direction: record engine lineage per supported tool; do not let two
-   drivers of one engine both raise n_tools. Details docs/SPEC_java_admission.md §2.
+6b. [PROMOTED TO ITEM 0 — see top of this list] Engine-lineage guard. Kept as a
+   pointer so the number is not reused. It affects C/C++ as much as Java.
 
 7. [Java, doc-only DONE] docs/SPEC_java_admission.md written 2026-07-26.
    Verdict: Java PASSES A3 (real labels — OWASP Benchmark v1.2, 2,740 labeled
