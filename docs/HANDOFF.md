@@ -575,6 +575,7 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
         while finding-level n_tools is {1: 601}.
    Also corrected: arXiv:2602.07842 §D.4 does not exist and does not ground this
    design (that ID is an LLM-calibration paper whose Appendix D has only D.1).
+   See rule 8a: fetch supplied citations before citing them.
    [original scoping follows]
    [SMALL, orthogonal — take it] Disclose size-correlation per run. The tool
    already discloses when a signal is uninformative (the signal gate) and when
@@ -1112,6 +1113,81 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    correct on the evidence available; the missing piece was found by SEARCHING
    for the other artifact, not by capitulating to the assertion.
 
+8a. A CITATION SUPPLIED WITH AN INSTRUCTION IS AN ASSERTION, NOT A SOURCE.
+   FETCH BEFORE CITING. The companion to rule 8, and the same standard: rule 8
+   says a claim about the TREE is verified against the tree; this says a claim
+   about the LITERATURE is verified against the literature.
+
+   THIS IS A KNOWN HAZARD WITH A MEASURED BASE RATE. It is deliberately NOT
+   written as an incident log, because an incident-framed rule quietly expires
+   when the incidents stop, and the base rate does not. The rate below is what
+   justifies the rule; the instances at the end are illustrations of it and
+   would not, on their own, be grounds for anything.
+
+   THE BASE RATE, all `[fetched]` and quoted verbatim from the sources:
+     - Baethge C, Jergas H., "Systematic review and meta-analysis of quotation
+       inaccuracy in medicine", Research Integrity and Peer Review 2025;10:13.
+       46 studies, ~32,000 quotations. Pooled inaccuracy **16.9% (95% CI
+       14.1-20.0%)**; major errors **8.0% (95% CI 6.4-10.0%)** — about half.
+       Meta-regression on year: slope **-0.002 (95% CI -0.03 to 0.02), p=0.85**.
+       NO IMPROVEMENT SINCE THE 1980s.
+     - Smith N., Cumberledge A., "Quotation errors in general science journals",
+       Proc R Soc A 2020;476(2242):20200538. 250 random citations; "The
+       propositions being cited were compared with the referenced materials to
+       verify whether the propositions could be substantiated by those
+       materials. The study found a total error rate of **25%**." Higher than
+       the medical figure, in high-impact general science.
+     - Mogull S.A., PLOS One 2017. Improper secondary (indirect) citation
+       **10.4% (95% CI 3.4-17.5%)**. A major error is "a cited assertion in
+       which the referenced source either failed to substantiate, was unrelated
+       to, or contradicted the assertion."
+
+   WHY THAT JUSTIFIES A HARD RULE. Roughly one citation in six is wrong in
+   peer-reviewed literature written by domain experts under editorial review and
+   pre-publication scrutiny — one in four in general science. The errors are
+   dominated by the case that matters most here: THE SOURCE DOES NOT
+   SUBSTANTIATE THE CLAIM. And the rate has not moved in forty years, so it is a
+   property of the practice, not of a bad cohort that will improve.
+   **Citing without fetching therefore carries a measured ~1-in-6 failure rate
+   no matter who supplies the citation** — the inventor, a search result, a
+   prior session, or you. This is NOT distrust, exactly as rule 8 is not: it is
+   the same standard applied symmetrically, and the symmetry is the point.
+
+   MECHANISM TO WATCH — IMPROPER SECONDARY CITATION. The documented propagation
+   route is citing the citation rather than the original, which "perpetuate[s]
+   such errors" (Mogull). Its practical form here: a SEARCH SNIPPET attributed as
+   though it were the primary source. A snippet is someone else's reading of a
+   paper. Quoting it as the paper is secondary citation with the intermediary
+   silently removed. If you have not opened the source, say "a search result
+   states", not "X states".
+
+   THE OPERATIONAL RULE:
+     - Fetch the source before citing it, including sources handed to you.
+     - If it cannot be fetched, record it as UNVERIFIED and do not cite it.
+       Then check whether the argument survives on other grounds — usually the
+       right outcome, and it keeps an unverifiable citation from becoming
+       load-bearing.
+     - Quote verbatim from what you fetched. State the bound if you read a
+       rendering (ar5iv, abstract, API) rather than the publisher's bytes.
+     - Report the search denominator (rule 5) for citation checks too: what was
+       checked, what came back, and what did not resolve.
+
+   INSTANCES (2026-07-26) — EXAMPLES OF THE HAZARD, NOT ITS JUSTIFICATION:
+     - A GrammaTech attribution about converters losing information: the blog
+       host no longer resolves and the reachable GrammaTech page says nothing
+       about information loss. UNVERIFIED — do not cite.
+     - arXiv:2602.07842 "§D.4" on dispersion checks before Spearman: that ID is
+       an LLM-calibration paper (Wang et al. 2026) whose Appendix D contains
+       only D.1 and which does not discuss tied ranks or degenerate variables.
+       THE SECTION DOES NOT EXIST — do not cite.
+   Both were load-bearing for a design decision, both were supplied in good
+   faith, and both were caught ONLY by fetching. In each case the underlying
+   claim survived on other grounds — SARIF Appendix D and Ruscio 2008
+   respectively — which is the expected and healthy outcome: the unverifiable
+   citation is recorded as unverified, and the argument stands or falls
+   somewhere else. Two in one session is consistent with the base rate above,
+   not evidence of anything unusual about this session.
+
 10. ANY NEGATIVE FINDING DERIVED FROM SARIF IS A CLAIM ABOUT THE INTERCHANGE
    FORMAT UNTIL CHECKED AGAINST NATIVE OUTPUT.
    (Established 2026-07-26 after this bit TWICE. Grounded in the OASIS spec,
@@ -1174,8 +1250,10 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    is the spec warning in our direction and should be read before any future
    design that merges converter output.
 
-   UNVERIFIED, recorded as such: a claim was put to this session that GrammaTech
-   (converter authors) state conversion loses useful information. NOT CONFIRMED
+   UNVERIFIED, recorded as such (and see rule 8a — this is an instance of a
+   hazard with a measured ~1-in-6 base rate, not a one-off): a claim was put to
+   this session that GrammaTech (converter authors) state conversion loses
+   useful information. NOT CONFIRMED
    — blogs.grammatech.com does not resolve, and the reachable GrammaTech page on
    SARIF says nothing about information loss. The rule does not need it; the
    OASIS normative text is stronger. Do not cite the GrammaTech attribution.
