@@ -349,6 +349,13 @@ about the interchange format until it has been checked against native output.
 Any script added here that reports a zero, a missing field, or a "tool does not
 emit X" must say which format it read.
 
+## 4b. EXTENDING THIS DIRECTORY
+
+`analysis/EXTENDING.md` — what a new script must do to resolve corpora, the
+provenance-tier vocabulary, what has to be recorded when a number lands in
+VALIDATION.md, and the rule that an instrument is not changed to fix a result.
+One page.
+
 ## 5. Honest bounds on this directory
 
 - Provenance tier of the scripts themselves: `[self-tested]`. They are Claude-

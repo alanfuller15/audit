@@ -46,7 +46,7 @@ for n in (2, 3):
     combos += list(itertools.combinations(sorted(avail), n))
 for combo in combos:
     agg = audit.ingest_sarif([avail[k] for k in combo])
-    merges = agg["cross_tool_merges"]
+    merges = agg["cross_tool_merged_findings"]  # findings, to match the n_tools distribution printed beside it
     dist = dict(sorted(Counter(f["n_tools"] for f in agg["ranked"]).items()))
     label = "+".join(NAME[k] for k in combo)
     print(f"  {label:<34} merges={merges:<4} n_tools={dist}")
