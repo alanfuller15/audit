@@ -170,9 +170,37 @@ Tested and REJECTED (do not re-attempt as pending work):
   only" is WITHDRAWN — file-level ranking is no longer a proven value either.
   See 0g.
 
-## 6.1 STRUCTURAL DEFECT FOUND 2026-07-26 — the headline signal is inert in the
-##     shipped product. [self-tested], deductive from the code, verified on real
-##     scanner output. Full scoping: docs/SCOPE_shipped_consensus_defect.md
+## 6.1 THE HEADLINE SIGNAL IS INERT IN THE SHIPPED PRODUCT — CONCLUSION STANDS,
+##     MECHANISM CORRECTED 2026-07-26. The cause described below was FIXED by
+##     item 2; the zero it predicted is still real, for a DIFFERENT reason.
+##     Full scoping: docs/SCOPE_shipped_consensus_defect.md
+
+>>> READ THIS BEFORE THE ORIGINAL TEXT. The original root cause — `_result_key`
+>>> using the SAME-tool fingerprint algorithm as the CROSS-tool consensus key —
+>>> NO LONGER EXISTS IN THE TREE. Item 2 split them: `_result_key` is same-tool
+>>> only (fp:/rk:) and `_cross_keys` is cross-tool (location + CWE class).
+>>> Verified against src/audit.py, not inherited.
+>>>
+>>> THE CONCLUSION IS UNCHANGED AND STILL MEASURED: the shipped flawfinder +
+>>> cppcheck pair produces ZERO cross-tool merges on real zlib. But it now
+>>> stands on §6.2's finding — the pair's CWE-class profiles are near-disjoint
+>>> (flawfinder fmt/buf; cppcheck null/uninit/int), so of 14 exact co-locations
+>>> 10 had classes on both sides and 0 matched. That is a SEMANTIC blocker, not
+>>> a key-construction one.
+>>>
+>>> WHY THE DISTINCTION MATTERS RATHER THAN BEING PEDANTRY: the old cause was
+>>> ours and fixable by us; the current one is a property of the two tools'
+>>> coverage and is NOT fixable by us. A session reading the stale mechanism
+>>> would go looking for a bug in the key construction that is not there, and
+>>> might "re-fix" a fix. §6.2 governs what to do instead, and its answer is
+>>> that no purchase resolves it.
+>>>
+>>> The independently-sufficient second blocker below (disjoint ruleId
+>>> namespaces) is also SUPERSEDED: `_cross_keys` matches on CWE class as well
+>>> as ruleId precisely so that differing ruleIds cannot block a merge alone.
+
+[ORIGINAL TEXT, retained so the reasoning is auditable — but see the block
+above before acting on any of it.]
 
 The shipped action runs exactly flawfinder + cppcheck. That pair CANNOT produce
 n_tools>1 on ANY input:
@@ -191,6 +219,7 @@ WHAT THIS DOES AND DOES NOT MEAN:
   merge; the shipped config does not reproduce those conditions.
 - Root cause: `_result_key` uses DefectDojo's SAME-tool dedup algorithm as a
   CROSS-tool consensus key. DefectDojo uses two algorithms to avoid exactly this.
+  [SUPERSEDED — fixed by item 2. See the block at the top of §6.1.]
 - The URI-mismatch blocker claimed earlier in this session was a harness
   artifact and is WITHDRAWN — both tools emit the same relative path.
 
@@ -240,7 +269,15 @@ THE ACTUAL CONSTRAINT, stated once:
 > **Nothing purchasable resolves that.**
 
 WHAT REMAINS GENUINELY OPEN, in priority order:
-  1. DIRECTION B — bounded evaluation of point-in-range matching, on the
+  1. [SETTLED 2026-07-26 — THE PRECONDITION HAS MOVED. See the acquisition note
+     below, which this changes.] DIRECTION B was evaluated against a
+     pre-registered decision rule and PASSED all four gates (yield 36.9%,
+     same-bug 100%, median producing span 2 lines, deterministic). Range
+     containment is SHIPPED and covered by the harness. The sizing recorded
+     below — "degenerates to exact matching in the common case" — was a PRIOR
+     and the measurement REFUTED it. Retained only so the prior is not
+     re-derived. Original text:
+     DIRECTION B — bounded evaluation of point-in-range matching, on the
      minority of findings where a genuine multi-line range exists. Sized
      2026-07-26: reachable with data on disk, but SpotBugs omits endLine on
      70-89% of results and semgrep's range is usually a single line, so it
@@ -260,6 +297,23 @@ WHAT REMAINS GENUINELY OPEN, in priority order:
 >>> NO FURTHER TOOL ACQUISITION IS WARRANTED UNTIL ONE OF THOSE THREE IS
 >>> SETTLED. Acquisition adds pairs; it does not address whether any
 >>> methodologically-diverse pair can produce agreement this mechanism can see.
+>>>
+>>> STATUS 2026-07-26 — THE PRECONDITION HAS PARTIALLY LIFTED, AND THAT IS
+>>> RECORDED HERE RATHER THAN LEFT FOR SOMEONE TO NOTICE. Question 1 IS NOW
+>>> SETTLED: Direction B was pre-registered, passed all four gates, and shipped.
+>>> Read literally ("until ONE of those three is settled") the acquisition bar
+>>> is now met.
+>>> DO NOT TREAT THAT AS AUTHORISATION TO BUY ANYTHING. The bar was a proxy for
+>>> the real question, and the real question — stated in THE ACTUAL CONSTRAINT
+>>> above — is untouched: methodological diversity and co-location pull against
+>>> each other, and nothing purchasable resolves that. What Direction B settled
+>>> is that TOLERANT matching recovers real agreement WITHIN existing pairs; it
+>>> says nothing about whether a NEW pair would co-locate.
+>>> Evidence since, pointing the same way: on the one real-code cross-tool
+>>> agreement ever observed, the two rules are a rule and its own ancestor
+>>> (0f, confirmed). Adding a fourth tool does not address that either.
+>>> THE OPERATIVE BAR IS NOW QUESTION 3 — whether the honest description is
+>>> same-methodology agreement, and the claim change that entails.
 
 ────────────────────────────────────────────────────────────────────────
 ## 7. PENDING WORK (REORDERED 2026-07-26 by a structural finding — read §6.1)
@@ -360,7 +414,22 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    Regression test to add: two drivers of one lineage must NOT produce
    n_tools>1; two drivers of different lineage must still merge as today.
 
-0e. [FINDING — exact-line matching cost 100% of real-code agreement, ONE case]
+0e. [CLOSED 2026-07-26 — DIRECTION B WAS EVALUATED AND IS SHIPPED. The header
+   below described it as an open experiment; that is stale. Verified in the
+   tree: `edges_by_rule` carries a "range-containment" bucket, merges are
+   tagged with `merge_rules`, and the harness covers it.
+   The pre-registered rule (VALIDATION.md "DIRECTION B PRE-REGISTRATION") was
+   fixed BEFORE computing and ALL FOUR GATES PASSED:
+     (a) material yield      427 new pairs = 36.9% of merges   (>=10%)   PASS
+     (b) same-bug rate       100%                              (>=80%)   PASS
+     (c) false-merge risk    median producing span 2 lines; 0% over 100  PASS
+     (d) determinism         order-independent                          PASS
+   So the "REQUIREMENTS on any future evaluation" below were MET, not deferred,
+   and the prior recorded there ("point-in-range degenerates to exact matching
+   in the common case") was REFUTED by the measurement. Do not re-open this as
+   an experiment; the finding text is retained for its reasoning only.]
+   [former header: FINDING — exact-line matching cost 100% of real-code
+   agreement, ONE case]
    On Apache Struts the SpotBugs+semgrep pair produced ZERO merges. Not a path
    artifact (0c clean) and not disagreement — the two tools agreed EXACTLY ONCE
    and the key missed it by THREE LINES:
@@ -586,12 +655,28 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    Cheap, consistent with existing behaviour, and it puts the caveat in the
    OUTPUT rather than only in a document. Scoped, not built.
 
-0i. [THE ONLY ROUTE TO A FUTURE POSITIVE CLAIM — work, not a blocker]
+0k. [CLOSED — WAS A DUPLICATE ITEM NUMBER, AND ITS PROPOSAL IS ALREADY TESTED
+   AND REJECTED. Renumbered 0i -> 0k 2026-07-26; there were two items numbered
+   0i and a reader could not tell which any cross-reference meant.]
+   ITS PROPOSAL IS NOT AN OPEN ROUTE. "Consensus DENSITY — agreement per LOC" is
+   exactly candidate C of the CLOSED 0i, which was pre-registered, measured, and
+   was the WORST performer of the four: PofB@20 0.170 against a 0.185 size-only
+   floor, IFA 1,334, PMI 0.571 — reproducing ManualUp almost exactly, which was
+   the pre-registered PREDICTION of failure, confirmed.
+   It was also refuted on DESIGN grounds before it was run: Kronmal (1993) shows
+   dividing by a common denominator induces correlation between the ratio and
+   that denominator, so consensus/LOC would replace a positive size confound
+   with an induced negative one. The remedy is the denominator as a COVARIATE,
+   which is what 0j then did.
+   WHAT SURVIVES from this entry is only the STANDING RULE below, which is
+   still in force. Do NOT read this item as an unexplored direction.
+   [original text follows]
    Size-controlled formulation of the consensus signal. Raw agreement COUNT is
    substantially a size proxy (Spearman +0.629), which is why every ranking
    claim built on it failed a size-matched control. Candidate: consensus DENSITY
    — agreement per LOC, or agreement normalised by the unit's own finding count
-   — so a large file is not favoured merely for being large. UNMEASURED.
+   — so a large file is not favoured merely for being large. [MEASURED AND
+   REJECTED — see above.]
    STANDING RULE attached: nothing gets headlined until it survives a
    SIZE-MATCHED CONTROL, not merely ManualUp or ManualDown. Three claims have
    now died between "beats a named baseline" and "beats a size-matched
@@ -623,6 +708,17 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    >>> threshold. Note the SPEC's asymmetry limit: only semgrep declares
    >>> provenance, so a LOW number is NOT evidence of independence and must be
    >>> reported as uninformative rather than as clearance.
+   >>> CORRECTION 2026-07-26: THE REGISTRY ARM IS NOT BLOCKED. A prior note in
+   >>> this session recorded it as needing "a fetch not performed" and treated
+   >>> it as unavailable. That was WRONG and is withdrawn. Network works from
+   >>> this machine — verified twice: semgrep pulled p/java live during the
+   >>> Struts re-run, and semgrep.dev/c/p/java returns HTTP 200. The absence of
+   >>> a local rule cache (~/.semgrep holds only settings.yml) is not a blocker,
+   >>> it just means the rules are fetched on demand.
+   >>> So RQ1-at-registry-scale — what fraction of ALL semgrep registry rules
+   >>> declare an upstream source, and how that distributes across upstream
+   >>> tools — is ACTIONABLE TODAY, not blocked. It remains ONE REGISTRY, not
+   >>> the ecosystem, and that bound stands.
    >>> CORPUS ARM RUN 2026-07-26 (registry arm NOT run — needs a fetch).
    >>> Results: SPEC §7. All figures are LOWER BOUNDS.
    >>>   OWASP: 5 of 11 FIRED rules (45.5%) declare FindSecBugs provenance,
@@ -771,8 +867,29 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    defects, and this is the second such defect this session (the first being
    ingest reading the wrong rule-metadata fields, also invisible per-tool).
 
-1. [UNBLOCKED 2026-07-26 — the blocker DISSOLVED, it did not resolve] README
-   honesty. Scoped
+1. [SUBSTANTIALLY DISCHARGED 2026-07-26 — four corrections applied and VERIFIED
+   AGAINST THE PUBLISHED FILE, not assumed. Checked in-session:
+     - no retired figure remains: 0.755, PofB 0.655 and the 1-tool-to-4-tool
+       gradient are all absent from README.md;
+     - quickstart step 2 now reads "re-rank by consensus (with two scanners
+       this column is usually empty — see Honest scope)", so the named
+       flawfinder+cppcheck pair no longer promises what it cannot deliver;
+     - step 3 documents the display-dedup pass as an explicit optional step
+       rather than implying it runs automatically;
+     - the surviving 1.5x carries its interval, its threshold-not-a-score
+       limit, and the nine-project bound.
+   WHAT REMAINS, AND IT REMAINS BY CHOICE: the headline still says "rank
+   findings higher where *independent tools agree*". That phrase was one of the
+   three things this item flagged. It is now QUALIFIED rather than removed — the
+   22.6% bullet states that on the corpus where it could be measured, that share
+   of agreeing locations had no independent agreement behind them, a lower
+   bound. Whether "independent" should come out of the headline entirely is
+   §6.2 question 3, which is a premise change and is tracked there, NOT a
+   pending README edit here.
+   Do not re-open this item to "fix the README"; the remaining decision is a
+   claim decision, not a wording one.]
+   [former header: UNBLOCKED 2026-07-26 — the blocker DISSOLVED, it did not
+   resolve] README honesty. Scoped
    claim-by-claim against the PUBLIC README in
    docs/SCOPE_shipped_consensus_defect.md §5.
    FIRST: THE LOCAL CHECKOUT WAS BEHIND. Local HEAD af2336a; origin/main 1070558
@@ -1272,6 +1389,44 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    — blogs.grammatech.com does not resolve, and the reachable GrammaTech page on
    SARIF says nothing about information loss. The rule does not need it; the
    OASIS normative text is stronger. Do not cite the GrammaTech attribution.
+
+11. AN ITEM HEADER IS A CLAIM ABOUT THE TREE, AND IS SUBJECT TO RULE 8.
+   VERIFY IT BEFORE ACTING ON IT. (Established 2026-07-26 after this became a
+   CLASS rather than three incidents.)
+
+   THE ASYMMETRY, WHICH IS THE WHOLE POINT: three headers went stale — 0c
+   ("Scoped, NOT implemented" when the disclosure half was shipped), §6.1 (a
+   root cause that item 2 had already removed), and 0e ("REQUIREMENTS on any
+   future evaluation" when the evaluation had been done, had passed a
+   pre-registered rule, and had shipped). ALL THREE FAILED IN THE SAME
+   DIRECTION: describing the project as MORE BROKEN AND LESS FINISHED than the
+   code actually was.
+
+   That direction is PREDICTABLE, not bad luck. Headers get written at the
+   moment work is IDENTIFIED and are rarely rewritten at the moment it LANDS,
+   because landing the work feels like the completion. So staleness accumulates
+   on the pessimistic side by construction. A session inheriting this document
+   will therefore SYSTEMATICALLY UNDERESTIMATE what is done — and the specific
+   failure mode is not confusion, it is REDOING FINISHED WORK, or hunting a bug
+   that was fixed two sessions ago.
+
+   THE CONTROL: when an item's header and the tree disagree, THE TREE WINS and
+   the header is corrected IN THE SAME COMMIT AS THE DISCOVERY. Do not defer it,
+   do not note it for later, do not leave it for the reconciliation pass —
+   deferring is exactly how the three above accumulated. The correction is
+   cheap at the moment of discovery and expensive afterwards, because by then
+   somebody has acted on it.
+
+   COROLLARY, so this is not read as licence to trust headers that sound
+   finished: the asymmetry means a PESSIMISTIC header is more likely stale than
+   an optimistic one — but a header claiming something IS done is still a claim
+   about the tree and still gets checked. Rule 8 is symmetric; this rule only
+   says where the errors cluster.
+
+   PRACTICALLY: before starting any item, grep the tree for the thing its header
+   says is missing. Three of these were caught by a single grep that took
+   seconds. The reconciliation pass of 2026-07-26 found five in one sweep, which
+   is evidence the check is cheap and the drift is real.
 
 9. A RECORDED FACT ABOUT A SOURCE'S *METHOD* IS A CONSTRAINT ON OUR
    IMPLEMENTATION, NOT BACKGROUND (established 2026-07-26 by a costly miss).
