@@ -161,6 +161,43 @@ against a size-matched control and not against a weaker one.
 
 ---
 
+## 2a. THE CONVERGENT RESULT — recovering more agreement has not once improved the ranking
+
+This is stronger than either result below it, and it is the one a reader
+deciding whether to attempt this needs.
+
+Two mechanisms were built to recover agreement the exact-line key was missing.
+They have **different causes** and were evaluated independently, each against a
+decision rule fixed before computing:
+
+| mechanism | what it recovers | yield | ranking effect |
+|---|---|---|---|
+| **Direction B** — point-in-range containment | agreement where one tool reports a range and another a point inside it | **+427 edges**, 36.9% of merges; passed all four pre-registered gates | none |
+| **Function-level matching** — ground-truth boundaries, no parser | agreement anywhere in the same function | **3.5x co-location** (1,507 → 5,269 units) | none |
+
+**Both worked at what they were built to do. Neither moved the ordering.**
+Function-level consensus scores PofB@20 = 0.185 — identical to ManualUp and to
+sorting by size alone — with P(size-matched random ≥) = 0.447.
+
+### The mechanism, which is now visible rather than inferred
+At function level, of 5,269 recovered co-locations only **410 (7.8%)** have the
+tools agreeing on the CWE class. **92.2% co-locate and then disagree about what
+the bug is**, and those are correctly rejected — merging two different bugs in
+one function is a false merge, the error direction that inflates the very signal
+the tool reports.
+
+So the agreement that survives a correct guard is **too sparse to reorder
+anything.** That is why yield rose twice and the ranking moved neither time: the
+recovered agreement is mostly not agreement about the same bug, and what remains
+after filtering is a small fraction of a ranking already dominated by size.
+
+**BOUND: two mechanisms, one corpus.** Both evaluations ran on Lipp's C/CVE
+data. A third mechanism, or the same two on a different corpus, could behave
+differently. What this rules out is the assumption that the exact-line key was
+the binding constraint — it was not, twice, for different reasons.
+
+---
+
 ## 3. WHAT SURVIVES — stated with equal care
 
 **A precision effect, not a ranking one.** Functions flagged by two or more

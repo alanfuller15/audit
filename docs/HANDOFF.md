@@ -235,6 +235,37 @@ Untestable with existing public data (do not waste effort re-attempting):
   access limit. Reopen ONLY with self-run tools + manual per-finding labeling.
 
 ────────────────────────────────────────────────────────────────────────
+## 6.1a THE CONVERGENT RESULT (2026-07-26) — recovering more observable
+##      agreement has NOT ONCE improved the ranking. Two mechanisms, two
+##      different causes, one corpus.
+
+Read this before building any third mechanism to recover missed agreement.
+
+  Direction B (point-in-range containment)  +427 edges, 36.9% of merges,
+                                            passed all 4 pre-registered gates
+                                            -> ranking effect: NONE
+  Function-level matching (ground truth)    3.5x co-location, 1,507 -> 5,269
+                                            -> ranking effect: NONE
+                                            PofB@20 0.185 = ManualUp = size-only
+                                            floor; P(size-matched random>=)=0.447
+
+Both mechanisms did what they were built to do. Neither moved the ordering.
+
+THE MECHANISM IS NOW VISIBLE, not inferred: at function level, of 5,269
+recovered co-locations only 410 (7.8%) have the tools agreeing on CWE class.
+92.2% co-locate and then DISAGREE ABOUT WHAT THE BUG IS, and are correctly
+rejected — merging two different bugs in one function is a false merge. What
+survives a correct guard is too sparse to reorder a ranking already dominated
+by size.
+
+CONSEQUENCE FOR PLANNING: the exact-line key was NOT the binding constraint.
+That assumption motivated both mechanisms and was wrong both times, for
+different reasons. A third recovery mechanism needs a reason to expect a
+different outcome, stated before it is built.
+
+BOUND: two mechanisms, one corpus (Lipp C/CVE). Not established for other
+corpora or a third mechanism.
+
 ## 6.2 ACQUISITION IS NOT THE LEVER — CONCLUSION STANDS, REASONING OVERTURNED
 ##     2026-07-26. GRANULARITY WAS THE LEVER, NOT METHODOLOGY.
 
