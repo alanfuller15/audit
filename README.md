@@ -112,13 +112,14 @@ The top of `out.json` is your review queue, ordered by review-worthiness.
 - **The default pair does not agree on real code, and that is a property of the scanners, not a
   bug.** flawfinder pattern-matches risky functions; cppcheck does dataflow. They look for
   different things, so they seldom flag the same line for the same reason. On real zlib the pair
-  produced **zero cross-tool merges**: they co-locate 43 times, only 11 of those have a resolvable
-  bug class on both sides, and none of the 11 agree on it. Expect an empty consensus column with
-  two scanners.
+  produced **zero cross-tool merges**, at both scan scopes we tried: in the wider one they
+  co-locate 43 times, only 11 of those have a resolvable bug class on both sides, and none of the
+  11 agree on it. Expect an empty consensus column with two scanners.
 - **Adding a third scanner did not fix that, and we measured it rather than assuming.** Running
-  semgrep alongside the pair produced 2 merges in 1,164 findings (0.18%) — and both were
-  flawfinder+semgrep, the two most methodologically *similar* tools, agreeing that a `printf` is a
-  `printf`, in benchmark code rather than library sources. Consensus needs tools with *partial*
+  semgrep alongside the pair produced 2 merges among 1,135 deduplicated findings (0.18%, from
+  1,164 raw) — and both were flawfinder+semgrep, the two most methodologically *similar* tools,
+  agreeing that a `printf` is a `printf`, in benchmark code rather than library sources.
+  Consensus needs tools with *partial*
   overlap — different enough that agreement is independent evidence, similar enough that they can
   agree at all — but on this evidence adding scanners is the wrong lever to pull first, and no
   purchase is known to resolve it. See `docs/NEGATIVE_RESULT.md`.

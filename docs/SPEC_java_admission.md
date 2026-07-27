@@ -160,6 +160,10 @@ analysis over `[externally-grounded]` data (real scanners, real zlib):
 > and 0 matched. Adding semgrep yielded 2 merges in 1,131 findings, and both
 > were flawfinder+semgrep — two pattern-matchers agreeing a `printf` is a
 > `printf` — in test code, none in library sources.
+> [DENOMINATOR CORRECTED 2026-07-26: 1,131 is 543+588, the TWO-tool raw count,
+> and omits semgrep's 33 from a three-tool result. Correct: 1,164 raw / 1,135
+> dedup, rate 0.18% on dedup. Inherited from VALIDATION.md's prose, annotated
+> at source. Nothing in this SPEC's argument turns on it.]
 
 **Prediction for Java: semgrep CE vs CodeQL should behave the same way.**
 semgrep CE is intraprocedural; CodeQL is built for multi-step interprocedural

@@ -907,7 +907,20 @@ Splitting those three is now the highest-value measurement available.
 ### Answer to the question asked
 **Adding a third tool did not rescue the default set.** 2 merges in 1,131
 findings (0.18%), between the two most methodologically SIMILAR tools, on test
-code. None of the three pre-registered outcomes fits cleanly: it is not "the
+code.
+> [DENOMINATOR CORRECTED 2026-07-26. **1,131 is wrong**: it is 543 + 588, the
+> TWO-tool raw count, and omits semgrep's 33 from a THREE-tool result. Derived
+> from this section's own component line above — raw 543 + 588 + 33 = **1,164**,
+> dedup 520 + 582 + 33 = **1,135** — and both match the four structured ingest
+> records elsewhere in this file ("1,164 raw / 1,135 dedup / 2 merges").
+> THE RATE IS UNAFFECTED and the correct denominator is the DEDUP one: this
+> section's own table reads 0.18%, and 2/1,135 = 0.176% -> 0.18% while
+> 2/1,164 = 0.172% -> 0.17%. Cross-checked on the other row, which is only
+> consistent the same way: flawfinder+semgrep 2/(582+33) = 0.33%.
+> So the figures were computed on dedup and only the prose denominator is
+> wrong. STATE IT AS: 2 merges among 1,135 deduplicated findings (0.18%), from
+> 1,164 raw. The slip propagated to HANDOFF item 2's carry-forward and to
+> SPEC_java_admission §6; both are annotated. The measurements stand.] None of the three pre-registered outcomes fits cleanly: it is not "the
 tool set is the defect" (the added tool barely helped), not "all pairs merge"
 (one pair, barely), and not quite "deeper than tool selection" either — because
 a concrete, fixable cause is now visible, and it is class-map coverage.

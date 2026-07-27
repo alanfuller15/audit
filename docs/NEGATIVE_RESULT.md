@@ -87,13 +87,23 @@ thing we did not vary.
 
 | # | configuration | corpus | proximate cause | merges |
 |---|---|---|---|---|
-| 1 | flawfinder + cppcheck | zlib 1.3.1 (real C) | **anti-correlated class coverage** — flawfinder fmt/buf, cppcheck null/uninit/int. 14 exact co-locations, 10 with a class resolved on both sides, **0 class matches** | 0 |
-| 2 | + semgrep (3rd tool) | same | 2 merges in 1,164 findings — and both between the **two most methodologically similar** tools, in benchmark code, none in library sources | ~0 |
+| 1 | flawfinder + cppcheck | zlib 1.3.1, **15 C files / 712 findings** | **anti-correlated class coverage** — flawfinder fmt/buf, cppcheck null/uninit/int. 14 exact co-locations, 10 with a class resolved on both sides, **0 class matches** | 0 |
+| 2 | + semgrep (3rd tool) | zlib 1.3.1, **wider scan: 44–59 files / 1,164 raw, 1,135 dedup** | 2 merges (0.18%) — and both between the **two most methodologically similar** tools, in benchmark code, none in library sources. At this scope the pair alone co-locates 43 times, 11 classed on both sides, **0 matching** | ~0 |
 | 3 | SpotBugs + semgrep | Apache Struts (real Java) | **anchoring convention** — classes matched *exactly* (redirect/redirect), locations did not: semgrep at the taint SOURCE (line 244), SpotBugs at the SINK (247) | 0 |
 
 Three different proximate causes, one consequence. Cases 1 and 3 are the same
 finding from opposite directions: in one the locations matched and the classes
 did not; in the other the classes matched and the locations did not.
+
+**Rows 1 and 2 are not the same scan, and the corpus column used to say they
+were** (corrected 2026-07-26). Same library, different scope: row 1 is a 15-file
+scan producing 712 findings, row 2 a wider one over 44–59 files producing 1,164.
+That is why the pair's co-location count differs between them — 14 against 43 —
+and neither number is wrong. **Do not read the two rows as one progression, and
+do not compare their counts directly.** The finding survives the distinction
+intact: the pair produces zero cross-tool merges at BOTH scopes, which is a
+stronger result than either row alone, since it holds across a 1.6x change in
+findings and a 3-4x change in files scanned.
 
 **Adding tools does not fix it.** A fourth tool brings a fourth anchoring
 convention. An interprocedural engine (CodeQL) anchors differently again. We

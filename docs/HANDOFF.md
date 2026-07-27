@@ -1210,6 +1210,11 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
      2. "Maybe add a tool to the quickstart" — overturned: a third tool yielded
         2 merges in 1,131 findings, both between the two most similar tools, in
         test code, and none in library sources.
+        [DENOMINATOR CORRECTED 2026-07-26: 1,131 is 543+588, the TWO-tool raw
+        count, and omits semgrep's 33 from a three-tool result. Correct figures
+        are 1,164 raw / 1,135 dedup, and the 0.18% rate is computed on DEDUP.
+        Inherited from VALIDATION.md's prose, which is annotated at source. The
+        overturning stands — only the denominator was wrong.]
      3. Current state — the README quotes ROC-AUC 0.755, and that number is now
         UNANCHORED (item 3c(b)): it was measured under pre-fix code whose
         n_tools behaviour the fix changed. It may not be quoted as a property of
