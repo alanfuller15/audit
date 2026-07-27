@@ -36,6 +36,15 @@ Two limits on that number matter more than the number does:
   but the interval above touches 1.0x. That is the difference between a measured effect and one a
   different nine projects would reliably reproduce. It is evidence the signal is real, not a
   calibrated multiplier to plan around.
+- **"Independent" is doing less work than it looks.** Static-analysis rules get ported between
+  tools — Semgrep's own documentation says its registry "includes rulesets inspired by the rules
+  of many popular linters and checkers, including ESLint, RuboCop, Bandit, and FindSecBugs." Where
+  we could measure it, **22.6% of the code locations where two tools agreed had no *independent*
+  agreement at all** — the agreement was a rule and the rule it was derived from, which share a
+  blind spot by construction. That is a **lower bound**: nothing obliges a tool to disclose that a
+  rule was ported, so the true figure can only be higher. Measured on one tool pair on a synthetic
+  Java corpus; on the one *real* codebase where two tools ever agreed here, that agreement was
+  also a rule agreeing with its own ancestor.
 
 **What that does not establish — and this distinction is the point:** that a *ranker* built on
 that signal helps you triage. This implementation's ranking has **not** been shown to beat a

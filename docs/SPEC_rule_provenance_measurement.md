@@ -456,8 +456,49 @@ captured at the time and not retained. That claim is:
 Per RULE 10.2 it should be treated as an inventor/prior-session-attested result
 with the artifact absent, not as a checked fact. **Recovering it is cheap**: one
 `semgrep --config=p/java --json` run over Struts captures the metadata, and that
-single re-run would settle it. Recommended before 0f's zero-independent-
-agreements claim is cited again.
+single re-run would settle it.
+
+### >>> SETTLED 2026-07-26. THE RE-RUN WAS DONE. 0f WAS RIGHT. <<<
+
+`semgrep 1.171.0 --config=p/java --json` over `struts-main`. **Reproduced the
+original run exactly** — 60 rules, 1,483 files, 1 finding — so this is the same
+measurement, not a different one. Evidence:
+`analysis/results/struts_derived_pair_evidence.txt`.
+sha256(`struts/sg_native.json`) = `7049d9d5e32b922419da3a599f30564f2b999891f37065224b4d553b2b84685d`
+
+```
+semgrep side
+  check_id        java.lang.security.audit.unvalidated-redirect.unvalidated-redirect
+  location        core/src/main/java/org/apache/struts2/result/ServletRedirectResult.java:244
+  source-rule-url https://find-sec-bugs.github.io/bugs.htm#UNVALIDATED_REDIRECT
+
+SpotBugs(+FindSecBugs) side
+  ruleId          UNVALIDATED_REDIRECT
+  location        org/apache/struts2/result/ServletRedirectResult.java:247
+  helpUri         https://find-sec-bugs.github.io/bugs.htm#UNVALIDATED_REDIRECT
+```
+
+**The two URLs are BYTE-IDENTICAL.** semgrep's declared ancestor is exactly the
+rule the other tool fired — its own canonical identity URL. This is not an
+inference from naming similarity or from category overlap; it is a pointer
+match.
+
+CONSEQUENCES:
+1. **The Struts near-miss IS a derived pair. CONFIRMED, not attested.**
+2. **"On real code this project has observed ZERO independent cross-methodology
+   agreements" is CONFIRMED** and may now be cited as measured. The single
+   real-code agreement ever observed is a rule agreeing with its own ancestor.
+3. 0f's quoted `source-rule-url` was correct verbatim. The prior session was
+   right and the gap was retention, not accuracy.
+4. On REAL code the derived fraction of observed agreement is **1 of 1 = 100%**
+   — on n=1, which is why the OWASP figures remain the quotable ones.
+
+ONE DRIFT NOTE, recorded for honesty: the registry was re-fetched today, and the
+rule's metadata now carries an `owasp: A01:2025` tag absent from the original
+run, so the registry rule has been updated since. The finding is identical
+(same rule, same file, same line 244) and `source-rule-url` is the field at
+issue, so the drift does not affect the conclusion — but these are not the
+original bytes.
 
 ## 7.5 What this does and does not settle against the §4.5 decision rule
 

@@ -219,6 +219,41 @@ is a *different* measurement — scanner versions move.
 
 ---
 
+## 4a. STANDING RULE — RETAIN NATIVE OUTPUT FOR EVERY SCANNER RUN
+
+**Capture and keep the tool's NATIVE format alongside SARIF, for every run, even
+when SARIF is all the current question needs.**
+
+WHY, concretely: the Struts run kept only SARIF. SARIF drops
+`source-rule-url`, so when the rule-provenance question arrived months later the
+single most consequential data point this project has — the only cross-tool
+agreement ever observed on real code — was unmeasurable, and a load-bearing
+claim sat unverifiable until the scan was re-run. The re-run cost minutes. The
+uncertainty cost a session's confidence in a published claim.
+
+This is not a semgrep quirk. SARIF v2.1.0 Appendix D (Normative) grants
+converters explicit permission to drop what has no SARIF equivalent: a converter
+"MAY use it to populate the various property bags ... OR THEY MAY SIMPLY OMIT IT
+FROM THE OUTPUT." Omission is conforming. See HANDOFF §8 rule 10.
+
+WHAT TO CAPTURE, per run:
+```
+semgrep   --json   in addition to --sarif      (carries metadata.source-rule-url,
+                                                references, license — all dropped by SARIF)
+cppcheck  --xml    keep the XML, not just the converted SARIF
+flawfinder         keep default/CSV output alongside --sarif
+SpotBugs  -xml     keep alongside -sarif
+```
+Name them `<tool>_native.{json,xml}` next to the SARIF, and record the sha256 in
+§4 above. They are small — Struts' native semgrep JSON is 124 KB against a
+36 MB corpus. **The cost of keeping them is negligible; the cost of not keeping
+them has now been paid twice.**
+
+Corollary: a measurement that reads SARIF and reports an ABSENCE is a claim
+about the interchange format until it has been checked against native output.
+Any script added here that reports a zero, a missing field, or a "tool does not
+emit X" must say which format it read.
+
 ## 5. Honest bounds on this directory
 
 - Provenance tier of the scripts themselves: `[self-tested]`. They are Claude-

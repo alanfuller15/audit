@@ -624,8 +624,20 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    >>> fire on OWASP, so no join recovers it. That claim is LOAD-BEARING (it is
    >>> the basis for "zero independent real-code agreements") and is currently
    >>> prior-session-attested with the artifact absent — RULE 10.2 applies.
-   >>> CHEAP FIX: one `semgrep --config=p/java --json` run over Struts settles
-   >>> it. Do that before the zero-independent-agreements claim is used again.
+   >>> SETTLED 2026-07-26 — THE RE-RUN WAS DONE AND 0f WAS RIGHT.
+   >>> semgrep 1.171.0 --config=p/java --json over struts-main reproduced the
+   >>> original run exactly (60 rules, 1,483 files, 1 finding). The rule
+   >>> unvalidated-redirect DOES declare
+   >>>   source-rule-url: https://find-sec-bugs.github.io/bugs.htm#UNVALIDATED_REDIRECT
+   >>> and the SpotBugs rule it agreed with, UNVALIDATED_REDIRECT, has helpUri
+   >>>   https://find-sec-bugs.github.io/bugs.htm#UNVALIDATED_REDIRECT
+   >>> BYTE-IDENTICAL. semgrep's declared ancestor IS the rule the other tool
+   >>> fired. Not an inference — a pointer match.
+   >>> THEREFORE: the Struts near-miss IS a derived pair [CONFIRMED], and
+   >>> "on real code this project has observed ZERO independent
+   >>> cross-methodology agreements" is CONFIRMED and may be cited as measured.
+   >>> On real code the derived fraction of observed agreement is 1 of 1, n=1.
+   >>> Evidence: analysis/results/struts_derived_pair_evidence.txt; SPEC §7.4.
    >>> DECISION RULE UNMOVED: D and Delta are unchanged, so per SPEC §4.5.1
    >>> no guard is warranted and disclosure is still owed.
    LINEAGE EXISTS AT THE RULE LEVEL, BELOW THE ENGINE LEVEL 0a GUARDS.
@@ -1079,6 +1091,74 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    is not contradicted by the inventor turning out to be right. Holding was
    correct on the evidence available; the missing piece was found by SEARCHING
    for the other artifact, not by capitulating to the assertion.
+
+10. ANY NEGATIVE FINDING DERIVED FROM SARIF IS A CLAIM ABOUT THE INTERCHANGE
+   FORMAT UNTIL CHECKED AGAINST NATIVE OUTPUT.
+   (Established 2026-07-26 after this bit TWICE. Grounded in the OASIS spec,
+   not inferred from our own incidents.)
+
+   ABSENCE IN SARIF IS EVIDENCE ABOUT THE PRODUCER, NOT ABOUT THE TOOL.
+
+   THE DOCUMENTED CAUSE — SARIF v2.1.0 OS, "Appendix D. (Normative) Production
+   of SARIF by converters", fetched and quoted VERBATIM:
+     "A converter SHOULD populate those elements of the SARIF format for which a
+      direct equivalent exists in the input data. If the input data includes
+      information for which there is no SARIF equivalent, a converter MAY use it
+      to populate the various property bags (3.8) and tag lists (3.8.2) defined
+      by the SARIF format, OR THEY MAY SIMPLY OMIT IT FROM THE OUTPUT."
+   The spec grants NORMATIVE PERMISSION TO DROP INFORMATION. Omission is
+   conforming behaviour, so a well-formed SARIF file carries no guarantee that
+   what the tool knew survived into it.
+   Supporting, same spec: 1 (Introduction) states the format aims to "Be a
+   useful format for analysis tools to emit directly, and also an effective
+   interchange format into which the output of any analysis tool can be
+   converted" — i.e. it is BOTH, and you cannot tell which you are holding from
+   the file alone. 3.8 property bags exist so producers MAY carry tool-specific
+   data with no standard field — MAY, not SHALL.
+
+   TWO INSTANCES, both of which read converter loss as a property of the world:
+     1. Ingest read the wrong rule-metadata fields, and the resulting class
+        resolution looked like a tool limitation. It was a read of the envelope.
+     2. Rule PROVENANCE measured 0 in SARIF. `source-rule-url` is present in
+        semgrep's native JSON and DROPPED by its SARIF producer (verified: 0
+        occurrences in owasp/sg_java2.sarif, present in owasp/sg_native.json).
+        A SARIF-based provenance measurement returns a guaranteed false zero
+        AND LOOKS EXACTLY LIKE CLEARANCE.
+   In both cases the honest reading was "we cannot see it here", and the
+   reading taken was "it is not there."
+
+   THE OPERATIONAL RULE:
+     - Before reporting ANY absence, missing field, zero rate, or "tool does not
+       emit X" that is derived from SARIF, check the tool's NATIVE output.
+     - If native output is unavailable, the finding is "NOT OBSERVABLE IN SARIF",
+       which is a statement about the format. Say that, not "absent".
+     - A zero from SARIF is never clearance.
+
+   >>> BOUND ON THE SHIPPED TOOL — NOTED, NOT ACTED ON. <<<
+   audit.py is SARIF-ONLY BY DESIGN. It is therefore STRUCTURALLY subject to
+   this rule: any signal it reports as absent may be present in the tools'
+   native output, and it cannot distinguish "the tool did not find it" from
+   "the producer did not serialise it". This is a real BOUND ON WHAT THE TOOL
+   CAN CONCLUDE, not a bug to fix today. It applies to class resolution,
+   fingerprints, rule metadata, and provenance alike. Do NOT quietly widen any
+   of audit.py's negative disclosures beyond what SARIF can support.
+   ALSO NOTE: `src/cppcheck_xml_to_sarif.py` IS A CONVERTER under Appendix D's
+   definition, so that guidance binds our own code, not just other vendors'.
+
+   A THIRD SPEC CONSEQUENCE WORTH KNOWING, same appendix:
+     "Since each converter might synthesize SARIF elements differently (notably
+      the rule id; see 3.27.5), a SARIF consumer SHOULD NOT attempt to combine
+      results produced by different converters for the same tool."
+   This tool COMBINES SARIF FROM MULTIPLE PRODUCERS. The clause is scoped to
+   different converters for the SAME tool, which is not exactly our case, but it
+   is the spec warning in our direction and should be read before any future
+   design that merges converter output.
+
+   UNVERIFIED, recorded as such: a claim was put to this session that GrammaTech
+   (converter authors) state conversion loses useful information. NOT CONFIRMED
+   — blogs.grammatech.com does not resolve, and the reachable GrammaTech page on
+   SARIF says nothing about information loss. The rule does not need it; the
+   OASIS normative text is stronger. Do not cite the GrammaTech attribution.
 
 9. A RECORDED FACT ABOUT A SOURCE'S *METHOD* IS A CONSTRAINT ON OUR
    IMPLEMENTATION, NOT BACKGROUND (established 2026-07-26 by a costly miss).
