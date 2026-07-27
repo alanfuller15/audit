@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Pairwise cross-tool merge analysis: is the DEFAULT TOOL SET the defect?"""
 import json, sys, os, itertools
-sys.path.insert(0, "/Users/caitlinfuller/audit/src")
+sys.path.insert(0, os.path.join(os.path.dirname(
+    os.path.abspath(__file__)), "..", "..", "src"))  # was hard-coded
 import audit
 from audit import _cwe_class_of, _norm_uri
 from collections import Counter
 
-LIB = "/private/tmp/claude-501/-Users-caitlinfuller-audit/e15ca3d8-3ea0-4097-85ed-21cccfc71b0a/scratchpad/lib"
+import _corpus  # noqa: E402
+LIB = _corpus.corpus("lib")
 TOOLS = {"ff": f"{LIB}/zf.sarif", "cc": f"{LIB}/zc.sarif", "ql": f"{LIB}/zq.sarif"}
 NAME = {"ff": "flawfinder", "cc": "cppcheck", "ql": "CodeQL"}
 

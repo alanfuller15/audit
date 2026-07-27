@@ -5,11 +5,14 @@ Deliberately per-tool: a merge rate is uninterpretable if one tool's resolution
 is broken, so each tool gets a clean picture before any merge is computed."""
 import json, os, sys, csv
 from collections import Counter
-sys.path.insert(0, "/Users/caitlinfuller/audit/src")
+sys.path.insert(0, os.path.join(os.path.dirname(
+    os.path.abspath(__file__)), "..", "..", "src"))  # was hard-coded
 from audit import (_cwe_class_of, _fingerprint_value, _degenerate_fingerprints,
                    _norm_uri)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _corpus  # noqa: E402  (path resolution only)
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = _corpus.corpus_root()
 KEY = os.path.join(HERE, "owasp", "BenchmarkJava-master", "expectedresults-1.2.csv")
 NEW_JAVA = {"sqli", "cmdi", "xss", "path", "deser", "xxe", "ssrf", "ldapi",
             "xpathi", "csrf", "redirect", "crypto", "hash", "creds", "random"}

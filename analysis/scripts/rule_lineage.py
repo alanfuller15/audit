@@ -4,10 +4,14 @@ A merge between a rule and the rule it was derived from is shared provenance,
 not independent corroboration."""
 import json, os, re, sys, csv
 from collections import Counter, defaultdict
-sys.path.insert(0, "/Users/caitlinfuller/audit/src")
+sys.path.insert(0, os.path.join(os.path.dirname(
+    os.path.abspath(__file__)), "..", "..", "src"))  # was hard-coded
 from audit import _norm_uri, _cwe_class_of, _CWE_CLASS, _CWE_DENY
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _corpus  # noqa: E402  (path resolution only)
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = _corpus.corpus_root()
 
 # --- semgrep: rule -> declared source anchor (the FindSecBugs bug pattern) ---
 nat = json.load(open(os.path.join(HERE, "owasp", "sg_native.json")))

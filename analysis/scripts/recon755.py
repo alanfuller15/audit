@@ -5,8 +5,11 @@
 Computed DIRECTLY from Lipp's found_by lists — no SARIF, no audit.py.
 If this reproduces the numbers, the result never measured audit.py."""
 import json, os, itertools
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _corpus  # noqa: E402  (path resolution only)
 
-BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lipp", "dataset")
+BASE = _corpus.corpus("lipp", "dataset")
 FIVE = {"Cppcheck", "CodeChecker", "CodeQL", "Flawfinder", "CommSCA"}   # recorded set (no Infer)
 
 

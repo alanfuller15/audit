@@ -3,8 +3,11 @@
 Lipp artifact: CVE ground truth + function boundaries, all on disk."""
 import json, os, math, itertools
 from collections import defaultdict, Counter
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _corpus  # noqa: E402  (path resolution only)
 
-B = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lipp", "dataset")
+B = _corpus.corpus("lipp", "dataset")
 
 
 def two_prop_z(x1, n1, x2, n2):

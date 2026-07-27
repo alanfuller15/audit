@@ -3,11 +3,15 @@
 SpotBugs+FindSecBugs x semgrep. Labels are the point of this corpus."""
 import json, os, sys, csv
 from collections import Counter
-sys.path.insert(0, "/Users/caitlinfuller/audit/src")
+sys.path.insert(0, os.path.join(os.path.dirname(
+    os.path.abspath(__file__)), "..", "..", "src"))  # was hard-coded
 import audit
 from audit import _cwe_class_of, _norm_uri
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _corpus  # noqa: E402  (path resolution only)
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = _corpus.corpus_root()
 SB = os.path.join(HERE, "owasp", "sb.sarif")
 SG = os.path.join(HERE, "owasp", "sg_java2.sarif")
 KEY = os.path.join(HERE, "owasp", "BenchmarkJava-master", "expectedresults-1.2.csv")

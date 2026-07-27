@@ -10,7 +10,8 @@ Cases:
 """
 import json, os, sys, tempfile
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..", "Users", "caitlinfuller", "audit", "src"))
-sys.path.insert(0, "/Users/caitlinfuller/audit/src")
+sys.path.insert(0, os.path.join(os.path.dirname(
+    os.path.abspath(__file__)), "..", "..", "src"))  # was hard-coded
 import audit
 
 def sarif(tool, results):

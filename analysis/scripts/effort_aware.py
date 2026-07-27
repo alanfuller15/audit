@@ -4,8 +4,11 @@ Budget is LINES OF CODE reviewed, not units — comparing unit-normalised number
 across granularities flatters the coarser one mechanically."""
 import json, os, math, random
 from collections import defaultdict
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _corpus  # noqa: E402  (path resolution only)
 
-B = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lipp", "dataset")
+B = _corpus.corpus("lipp", "dataset")
 random.seed(11)
 
 func = {}   # (proj,file,name) -> dict(loc, tools:set, vuln)

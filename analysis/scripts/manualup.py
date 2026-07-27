@@ -5,8 +5,11 @@ Zhou et al. 2018 as described in arXiv:2302.00394.
 Metrics: PofB@k, Popt, IFA, PMI@20%."""
 import json, os, math, random
 from collections import defaultdict
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _corpus  # noqa: E402  (path resolution only)
 
-B = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lipp", "dataset")
+B = _corpus.corpus("lipp", "dataset")
 random.seed(23)
 
 func, filu = {}, {}

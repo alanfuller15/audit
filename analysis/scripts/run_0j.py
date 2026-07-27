@@ -23,9 +23,12 @@ constraint must NOT be allowed to select the statistical method again.
 """
 import json, os, math, random, statistics as st
 from collections import defaultdict
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _corpus  # noqa: E402  (path resolution only)
 
 random.seed(31)
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = _corpus.corpus_root()
 B = os.path.join(HERE, "lipp", "dataset")
 
 # ---------------- unit construction (identical to run_0i.py) ----------------

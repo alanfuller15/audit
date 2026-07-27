@@ -3,10 +3,14 @@
 Against the pre-registered decision rule in VALIDATION.md."""
 import json, os, sys, csv
 from collections import Counter, defaultdict
-sys.path.insert(0, "/Users/caitlinfuller/audit/src")
+sys.path.insert(0, os.path.join(os.path.dirname(
+    os.path.abspath(__file__)), "..", "..", "src"))  # was hard-coded
 from audit import _cwe_class_of, _norm_uri, _CWE_CLASS, _CWE_DENY
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _corpus  # noqa: E402  (path resolution only)
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = _corpus.corpus_root()
 KEY = os.path.join(HERE, "owasp", "BenchmarkJava-master", "expectedresults-1.2.csv")
 key = {}
 for r in csv.DictReader(open(KEY)):

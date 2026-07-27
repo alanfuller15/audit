@@ -16,8 +16,8 @@ apart. Pre-registered: a low number is UNINFORMATIVE, not clearance.
 import json, os, re, sys
 from collections import defaultdict, Counter
 
-OLD = ("/private/tmp/claude-501/-Users-caitlinfuller-audit/"
-       "e15ca3d8-3ea0-4097-85ed-21cccfc71b0a/scratchpad")
+import _corpus  # noqa: E402
+OLD = _corpus.corpus_root()
 
 # provenance-bearing metadata fields, in priority order
 PROV_FIELDS = ["source-rule-url"]

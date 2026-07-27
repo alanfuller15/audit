@@ -83,9 +83,8 @@ from collections import defaultdict, Counter
 HERE = os.path.dirname(os.path.abspath(__file__))
 FSB_JAR = os.environ.get(
     "FSB_JAR",
-    "/private/tmp/claude-501/-Users-caitlinfuller-audit/"
-    "e15ca3d8-3ea0-4097-85ed-21cccfc71b0a/scratchpad/fsb/lib/"
-    "findsecbugs-plugin-1.14.0.jar")
+    os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                 "..", "data", "findsecbugs_1.14.0_extract.json"))
 PACKS = ["p/java", "p/security-audit", "p/python", "p/javascript",
          "p/golang", "p/c", "p/csharp", "p/php", "p/ruby"]
 
@@ -124,6 +123,15 @@ def host_hit(text, hosts=UPSTREAM_HOSTS):
 
 # ---------- upstream reference set ----------
 def load_fsb():
+    # SOURCE SUBSTITUTION ONLY — the parsing below is untouched. The committed
+    # extract at analysis/data/findsecbugs_1.14.0_extract.json holds exactly the
+    # strings this function used to pull out of the jar, generated with these
+    # same regexes, so the values are identical (verified). The jar lived in a
+    # temp directory, which is why 0f was unreproducible.
+    if FSB_JAR.endswith(".json"):
+        with open(FSB_JAR) as fh:
+            d = json.load(fh)
+        return d["patterns"], {k: set(v) for k, v in d["cwe"].items()}
     import zipfile
     z = zipfile.ZipFile(FSB_JAR)
     msg = z.read("messages.xml").decode("utf-8", "replace")

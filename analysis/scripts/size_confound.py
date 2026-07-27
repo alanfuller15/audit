@@ -4,12 +4,15 @@ Check 2: confirm the function-level below-random result properly."""
 import json, os, math, random, statistics as st
 from collections import defaultdict
 import importlib.util
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _corpus  # noqa: E402  (path resolution only)
 spec = importlib.util.spec_from_file_location(
     "mu", os.path.join(os.path.dirname(os.path.abspath(__file__)), "manualup.py"))
 random.seed(101)
 
 # rebuild units (same construction as manualup.py)
-B = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lipp", "dataset")
+B = _corpus.corpus("lipp", "dataset")
 func, filu = {}, {}
 for p in sorted(os.listdir(B)):
     d = os.path.join(B, p)

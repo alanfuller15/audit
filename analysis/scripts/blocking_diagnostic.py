@@ -18,8 +18,8 @@ thing this feature would replace.
 import json, os
 from collections import defaultdict, Counter
 
-OLD = ("/private/tmp/claude-501/-Users-caitlinfuller-audit/"
-       "e15ca3d8-3ea0-4097-85ed-21cccfc71b0a/scratchpad")
+import _corpus  # noqa: E402
+OLD = _corpus.corpus_root()
 
 
 def paths_of(sarif):

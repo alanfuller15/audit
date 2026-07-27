@@ -4,9 +4,12 @@ Pure Python — no numpy/scipy on this machine, so IRLS logistic regression and
 the linear algebra are implemented directly."""
 import json, os, math, random, statistics as st
 from collections import defaultdict
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _corpus  # noqa: E402  (path resolution only)
 
 random.seed(31)
-B = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lipp", "dataset")
+B = _corpus.corpus("lipp", "dataset")
 
 # ---------- load function units ----------
 U = []

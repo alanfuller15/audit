@@ -219,6 +219,101 @@ is a *different* measurement — scanner versions move.
 
 ---
 
+## 3a. DURABILITY — pinned SHAs, Software Heritage SWHIDs, and how to run
+
+`analysis/` previously could not be handed to anyone: 12 of 21 scripts hard-coded
+an absolute path (5 into a temp scratchpad), and **0 of 21 ran from a clean
+clone**. Assessment: `docs/ARTIFACT_SELF_ASSESSMENT.md` §3.
+
+### Running the scripts
+```sh
+export AUDIT_CORPUS_ROOT=/path/to/dir/holding/lipp/owasp/struts/lib
+python3 analysis/scripts/run_0j.py
+```
+No absolute paths remain. `analysis/scripts/_corpus.py` resolves `src/` relative
+to the repo and the corpora from `AUDIT_CORPUS_ROOT`. A script that needs a
+corpus and cannot find one exits naming what it wanted and pointing here,
+instead of failing on a stale path.
+
+**The scripts' analysis logic was NOT touched** — only path resolution. They are
+the instruments that produced the recorded numbers, and changing how they compute
+would change what those numbers mean.
+
+### Pinned sources — SHA *and* SWHID, because a SHA alone is not enough
+| corpus | commit SHA | Software Heritage SWHID |
+|---|---|---|
+| `apache/struts` | `0b2bc2be1420829dfd26356dd8ea906a793c8047` | `swh:1:snp:3a26938787d9e4e70930a036a81cc3e9b6d903eb` |
+| `OWASP-Benchmark/BenchmarkJava` | `79b9bd6177e07991a9c11dc19e457c840e229931` | `swh:1:snp:9a17ac8d381581c75612e407b20e639b8c8716b0` |
+| `semgrep/semgrep-rules` | (registry served live) | `swh:1:snp:77a9383d0aaedd71c159124b2589dfec314f6aeb` |
+| `find-sec-bugs/find-sec-bugs` | — | `swh:1:snp:e84036c4d830c03e388f867a4bdc7abb5fd3a940` |
+| zlib 1.3.1 | versioned tarball, already stable | — |
+| Lipp artifact | Zenodo DOI 10.5281/zenodo.6515687 | — (a DOI is the right pattern) |
+
+All four GitHub origins were nominated via Software Heritage **Save Code Now**
+(anyone may submit a public repository) and all four report a **full** snapshot.
+
+**WHY BOTH, AND NOT JUST THE SHA.** A pinned commit SHA is not sufficient on its
+own: **history rewriting can remove a commit from a live repository.** SWHIDs are
+*intrinsic* identifiers — the Software Heritage specification states the core
+identifier "can be _computed from the object itself_, without having to rely on
+any third party" — so they survive the host moving, rewriting, or disappearing.
+
+WORKED EXAMPLE, AND IT IS OURS. A root history rewrite on **this** repository on
+2026-07-26 changed every SHA while leaving content byte-identical. Verified in
+the tree just now: commit `729e893` ("Add standalone cross-tool display dedup")
+still resolves *locally* as an unreachable object, but is on **zero** remote
+branches — an outside copy citing it would find nothing. Only the mapping table
+in `docs/SCOPE_shipped_consensus_defect.md` §9a keeps those references alive, and
+a mapping table is a human artifact that the next rewrite will not update. That
+is precisely the failure an intrinsic identifier does not have.
+
+**Coverage is not total.** Measured (arXiv:2401.04887, 253,590 URIs): 93.98% of
+scholarly Git-hosting URIs are still live, **68.39%** are in Software Heritage,
+81.43% in web archives. So an archive capture may be incomplete — which is why,
+where redistribution is permitted, a local copy AND a SWHID are recorded, not
+either alone.
+
+### Clean-clone test — measured before and after
+```
+                                  BEFORE      AFTER
+no corpora   runs                    0          3
+             clean skip w/ guidance  0         18
+             HARD ERROR             21          0
+with AUDIT_CORPUS_ROOT set  runs     0         19 of 21
+```
+The two that still fail are NOT a path problem and were NOT introduced here:
+`merge_audit.py` and `pairwise.py` die on `KeyError: 'cross_tool_merges'`. That
+key no longer exists in `src/audit.py` — it was split into three fields with
+**different units** (`cross_tool_absorbed_records`, `cross_tool_merged_findings`,
+`cross_tool_edges_by_rule`) precisely because conflating them once caused "351"
+to be mistaken for a shortfall against "427".
+
+**They are left broken deliberately.** Picking which of the three replaces the
+old key is a semantic decision that changes what those scripts report, and the
+standing constraint is that these scripts are instruments — changing their logic
+changes what their recorded numbers mean. Fixing this needs someone to decide
+which unit was intended, not a rename.
+
+That is itself a durability finding worth recording: **dependency drift is not
+only external.** Our own `src/` API moved under our own analysis scripts, and
+nothing detected it until the scripts were run from a clean checkout.
+
+### Licensing decided each case — this is not a uniform policy
+- **semgrep registry rules: NOT redistributable.** The Semgrep Rules License
+  v1.0 states plainly: *"This license does not allow you to distribute the
+  rules, or to make them available to others as a service."* The
+  `semgrep/semgrep-rules` repo is additionally `NOASSERTION`. **No snapshot is
+  committed.** Preservation is by SWHID only — which preserves the artifact
+  without copying it. `rule_provenance_registry.py` therefore still fetches the
+  registry live, and **that remains a durability weakness we cannot fix by
+  copying.** It is disclosed rather than hidden.
+- **FindSecBugs: LGPL-3.0, redistribution permitted.** So both: a committed
+  extract at `analysis/data/findsecbugs_1.14.0_extract.json` (144 patterns, 135
+  CWE maps, with an LGPL notice and upstream pointer) **and** the SWHID above.
+  The extract's strings are **byte-identical** to what the previous jar-reading
+  code produced — verified by running both paths and comparing — so substituting
+  it cannot change any result.
+
 ## 4a. STANDING RULE — RETAIN NATIVE OUTPUT FOR EVERY SCANNER RUN
 
 **Capture and keep the tool's NATIVE format alongside SARIF, for every run, even

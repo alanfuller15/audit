@@ -4,10 +4,14 @@ Tests whether the 15 Java classes added 2026-07-26 actually fire on real Java
 scanner output, and whether resolution comes from result text or rule metadata."""
 import json, os, sys, csv, re
 from collections import Counter
-sys.path.insert(0, "/Users/caitlinfuller/audit/src")
+sys.path.insert(0, os.path.join(os.path.dirname(
+    os.path.abspath(__file__)), "..", "..", "src"))  # was hard-coded
 from audit import _cwe_class_of, _CWE_CLASS, _CWE_DENY
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _corpus  # noqa: E402  (path resolution only)
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = _corpus.corpus_root()
 SARIF = os.path.join(HERE, "owasp", "sg_java.sarif")
 KEY = os.path.join(HERE, "owasp", "BenchmarkJava-master", "expectedresults-1.2.csv")
 
