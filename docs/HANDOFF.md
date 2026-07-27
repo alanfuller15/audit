@@ -235,12 +235,56 @@ Untestable with existing public data (do not waste effort re-attempting):
   access limit. Reopen ONLY with self-run tools + manual per-finding labeling.
 
 ────────────────────────────────────────────────────────────────────────
-## 6.2 ACQUISITION IS NOT THE LEVER (established 2026-07-26, measured 3x)
+## 6.2 ACQUISITION IS NOT THE LEVER — CONCLUSION STANDS, REASONING OVERTURNED
+##     2026-07-26. GRANULARITY WAS THE LEVER, NOT METHODOLOGY.
+
+>>> !! READ THIS BLOCK BEFORE ANYTHING BELOW IT. THE "ACTUAL CONSTRAINT"
+>>> STATED FURTHER DOWN IS WITHDRAWN, AND IT PROPAGATED. !!
+>>>
+>>> The claim below — that methodological diversity and co-location pull
+>>> against each other, so cross-methodology agreement may not be OBSERVABLE
+>>> AT ALL — is FALSE. It is true at LINE level and false at FUNCTION level.
+>>> Measured on Lipp's real CVE data (VALIDATION.md "THE DECISIVE MEASUREMENT"):
+>>>
+>>>   TOOL PAIR                  line-lvl  func-lvl   methodologies
+>>>   CommSCA + Flawfinder              2     1,191   commercial x PATTERN
+>>>   CodeQL + Flawfinder              37       669   INTERPROCEDURAL x PATTERN
+>>>   Flawfinder + Infer                2       274   PATTERN x INTERPROCEDURAL
+>>>   CodeChecker + Flawfinder          0       136   dataflow x PATTERN
+>>>   Cppcheck + Flawfinder             0        66   <- EXACTLY OUR ZLIB PAIR
+>>>   cross-methodology total       1,169     7,514   (6.4x)
+>>>
+>>> Same tools, same corpus, different ruler. Our zlib zero was a GRANULARITY
+>>> ARTIFACT, not a property of the tools.
+>>>
+>>> WHAT SURVIVES: "acquisition is not the lever" — and it is now BETTER
+>>> supported, because a fourth tool would also have been matched at the wrong
+>>> unit. "Nothing purchasable resolves that" HOLDS. Do not buy anything.
+>>>
+>>> WHAT IS WITHDRAWN: that cross-methodology agreement may be unobservable;
+>>> that diversity and co-location are in tension; and the implied conclusion
+>>> that the premise itself is in doubt. It is observable. We were measuring at
+>>> the wrong unit for two sessions.
+>>>
+>>> THE INTERPROCEDURAL QUESTION IS ALSO ANSWERED, and not by us: every scanner
+>>> WE have run is pattern or intraprocedural (flawfinder, semgrep CE, cppcheck,
+>>> SpotBugs), so we never represented one side of the methodology axis. But
+>>> Lipp's dataset CONTAINS CodeQL and Infer, and both co-locate with pattern
+>>> tools at function level (669 and 274). Running CodeQL would test whether OUR
+>>> PIPELINE reproduces that — a TRANSFER question — not whether the premise
+>>> holds. Item 2 (function/entity-level matching) is the priority, not Rosetta.
+>>>
+>>> THIS BLOCK EXISTS BECAUSE THE STALE TEXT PROPAGATED INTO A PUBLIC DOCUMENT.
+>>> See §8 rule 11's worked instance. Correct staleness at the source.
+
+[ORIGINAL TEXT BELOW — retained for the three configurations, which are real
+observations, and for the reasoning trail. Its CONCLUSION is superseded above.]
 
 READ THIS BEFORE PROPOSING TO INSTALL OR BUY ANY SCANNER.
 
 The consensus premise has now failed to produce observable agreement three
-times, in three configurations, for three different proximate reasons:
+times, in three configurations, for three different proximate reasons
+[ALL THREE WERE MATCHED AT LINE LEVEL — see the block above]:
 
   1. flawfinder + cppcheck (C/C++, real zlib)
      Anti-correlated CLASS coverage — fmt/buf vs null/uninit/int.
@@ -260,13 +304,16 @@ so Rosetta does NOT answer this question and must not be installed on the theory
 that it might.** The same applies to semgrep Pro, SonarQube Developer Edition,
 or any other purchase.
 
-THE ACTUAL CONSTRAINT, stated once:
+THE ACTUAL CONSTRAINT, stated once: **[WITHDRAWN 2026-07-26 — the tension it
+asserts does not exist at function level. Retained only so the withdrawn text is
+identifiable if it is quoted elsewhere. The last line still holds.]**
 > The PREMISE values METHODOLOGICAL DIVERSITY — tools with different methods
 > have different blind spots, so their agreement is independent evidence.
 > The MECHANISM requires CO-LOCATION — same file, same line, same class.
 > These pull AGAINST each other. The more methodologically different two tools
 > are, the less likely they are to describe the same bug at the same line.
-> **Nothing purchasable resolves that.**
+> **Nothing purchasable resolves that.**   <- this sentence SURVIVES; the
+> reasoning above it does not.
 
 WHAT REMAINS GENUINELY OPEN, in priority order:
   1. [SETTLED 2026-07-26 — THE PRECONDITION HAS MOVED. See the acquisition note
@@ -479,8 +526,16 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    corpus types. That it generalizes as a structural law is a HYPOTHESIS; that
    it happened both times is measured.
 
-   >>> THIS IS NOW THE CENTRAL OPEN QUESTION FOR THE PREMISE — above tool
-   >>> selection (0d/A4) and above class-map coverage (item 3). Those are
+   >>> [ANSWERED 2026-07-26 — AND THE ANSWER IS YES, IT IS OBSERVABLE. This
+   >>> block asked whether cross-methodology agreement is "OBSERVABLE AT ALL".
+   >>> It is: on Lipp's real CVE data, cross-methodology pairs produce 7,514
+   >>> function-level merges against 1,169 at line level, and our own zlib pair
+   >>> goes 0 -> 66. See the block at the head of §6.2. The question was not
+   >>> about the tools; it was about our matching unit. This paragraph is the
+   >>> text that propagated into a public document before anyone re-read it
+   >>> against VALIDATION.md — see §8 rule 11.]
+   >>> [original] THIS IS NOW THE CENTRAL OPEN QUESTION FOR THE PREMISE — above
+   >>> tool selection (0d/A4) and above class-map coverage (item 3). Those are
    >>> questions about WHICH tools and WHETHER we can read them. This is a
    >>> question about whether the agreement the premise depends on is
    >>> OBSERVABLE AT ALL between methodologically different tools, which is
@@ -1492,6 +1547,51 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    says is missing. Three of these were caught by a single grep that took
    seconds. The reconciliation pass of 2026-07-26 found five in one sweep, which
    is evidence the check is cheap and the drift is real.
+
+   ### WORKED INSTANCE — §6.2 into a PUBLIC document, missed by BOTH parties
+   Recorded in full because the abstract rule did not prevent it, and because
+   this is the first case where stale text escaped the internal documents.
+
+   WHAT HAPPENED. VALIDATION.md commit 752de5f, "Granularity is the lever:
+   section 6.2's conclusion is overturned", recorded that cross-methodology
+   agreement IS observable — 1,169 line-level merges become 7,514 at function
+   level, and our own cppcheck+flawfinder pair goes 0 -> 66. It stated plainly:
+   "'Cross-methodology agreement may not be observable' IS WITHDRAWN."
+   **§6.2 and item 0e were never updated.** They kept asserting the withdrawn
+   claim, including the line "whether the agreement the premise depends on is
+   OBSERVABLE AT ALL between methodologically different tools".
+   A later session read §6.2, believed it, and wrote docs/NEGATIVE_RESULT.md
+   titled "methodologically diverse static analyzers do not produce co-located
+   agreement" — then put a sentence in the PUBLIC README asserting "zero
+   independent agreements at the same location". Both were false as stated, and
+   the refuting data had been in VALIDATION.md the whole time. Worse: the
+   drafting session QUOTED the granularity numbers in its own §4 while framing
+   them as a minor "boundary condition", so it had the refutation in hand and
+   did not see it.
+
+   BOTH REVIEWERS MISSED IT, AND THE REASONS DIFFER — this is why it is worth
+   recording rather than just fixing:
+     - Claude checked the document against §6.2, an internal note, instead of
+       against VALIDATION.md, the evidence record. Header beat data.
+     - The inventor read it against MEMORY OF THE SESSION rather than against
+       VALIDATION.md, and the document was internally consistent and matched
+       what the session had felt like. Recall beat data.
+   Neither review touched the primary record. A document can be coherent,
+   well-cited, agreed by two readers, and wrong.
+
+   THE ADDITIONAL RULES THIS YIELDS:
+     1. **VALIDATION.md OUTRANKS HANDOFF.md.** HANDOFF is a working note;
+        VALIDATION is the evidence record. Where they disagree, VALIDATION wins
+        and HANDOFF is the thing to correct — never the reverse.
+     2. **Before any claim goes into a PUBLIC artifact** (README, a published
+        document, anything a stranger reads), re-derive it from VALIDATION.md,
+        not from a handoff item, not from this session's memory. Publication is
+        the point of no return; internal staleness is recoverable, a published
+        false claim is not.
+     3. **Quoting a number that contradicts your own thesis is a stop signal.**
+        If you find yourself explaining why a figure you just cited does not
+        undermine the claim you are making, re-read the source it came from
+        before continuing. That explanation is where this failure lived.
 
 9. A RECORDED FACT ABOUT A SOURCE'S *METHOD* IS A CONSTRAINT ON OUR
    IMPLEMENTATION, NOT BACKGROUND (established 2026-07-26 by a costly miss).

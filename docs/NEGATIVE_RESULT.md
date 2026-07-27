@@ -1,14 +1,21 @@
-# A negative result: methodologically diverse static analyzers do not produce co-located agreement
+# We measured tool agreement at the wrong unit for two sessions
+
+### A negative result about consensus ranking, and a correction to a negative result we nearly published about consensus itself
 
 *Written for someone deciding whether to attempt this. Not a confession and not
 a changelog — a report of what did not work, so the next person can skip it or
 attack it from a better angle.*
 
 **Scope, stated once and meant: one tool, four scanners, two languages, three
-corpora, one rule registry.** This is worth reporting because nobody appears to
-have reported it, not because it is definitive. Nothing here establishes that
-multi-tool consensus cannot work. It establishes that these attempts failed,
-how, and what would have to be different.
+corpora, one rule registry.** Nothing here establishes that multi-tool consensus
+cannot work.
+
+**AN EARLIER DRAFT OF THIS DOCUMENT WAS TITLED "methodologically diverse static
+analyzers do not produce co-located agreement". THAT CLAIM IS FALSE**, and our
+own records already said so when it was written. It is true at LINE level and
+false at FUNCTION level: the same tool pairs that produce zero agreement when
+matched line-to-line produce hundreds when matched function-to-function.
+Correcting it is §1, and the correction is more useful than the claim was.
 
 ---
 
@@ -34,13 +41,36 @@ attractive. Someone will try it again. This is what happened when we did.
 
 ---
 
-## 1. THE FINDING — three configurations, three distinct causes, no purchasable fix
+## 1. THE FINDING — the unit of measurement was the variable, not the tools
 
-Cross-methodology tool pairs did not produce co-located agreement on real code.
-The premise values **methodological diversity**; the mechanism requires
-**co-location** — same file, same line, same bug class. These pull against each
-other, and the more different two tools are, the less likely they are to
-describe the same bug in the same place.
+We ran three scanner pairings on real code and got zero or near-zero cross-tool
+agreement each time. We attributed that to methodology: the premise wants tools
+with different methods, the mechanism needs them to point at the same place, and
+those seemed to pull against each other.
+
+**That was wrong, and the data that refutes it was already ours.** Matching the
+same findings at FUNCTION level rather than LINE level, on Lipp et al.'s real
+CVE corpus:
+
+```
+TOOL PAIR                   line-lvl  func-lvl   methodologies
+CommSCA + Flawfinder               2     1,191   commercial x PATTERN
+CodeQL + Flawfinder               37       669   INTERPROCEDURAL x PATTERN
+Flawfinder + Infer                 2       274   PATTERN x INTERPROCEDURAL
+CodeChecker + Flawfinder           0       136   dataflow x PATTERN
+Cppcheck + Flawfinder              0        66   <- EXACTLY OUR ZLIB PAIR
+cross-methodology total        1,169     7,514   (6.4x)
+
+overall multi-tool rate      1.56%    35.95%     (23x)
+```
+
+**Same tools. Same corpus. Same findings. Different ruler.** Our zlib zero was a
+granularity artifact. Cross-methodology agreement is observable; we were not
+looking at the level where it occurs.
+
+The three failures below are real observations and are retained — but all three
+were matched at line level, which is the one thing they had in common and the
+thing we did not vary.
 
 | # | configuration | corpus | proximate cause | merges |
 |---|---|---|---|---|
@@ -65,8 +95,11 @@ find-sec-bugs.github.io/bugs.htm#UNVALIDATED_REDIRECT`, and the SpotBugs rule it
 nearly agreed with is `UNVALIDATED_REDIRECT`, whose own `helpUri` is the
 **byte-identical** string. Not an inference — a pointer match.
 
-**So on real code the count of independent cross-methodology agreements observed
-in this project is zero.**
+**So on real code, AT LINE LEVEL, in our own runs, the count of independent
+cross-methodology agreements is zero.** Every qualifier in that sentence is
+load-bearing. It is not a statement about the premise: at function level on
+Lipp's data the same methodology pairing produces hundreds of agreements, and
+whether those survive a rule-lineage filter has not been measured.
 
 ---
 
@@ -146,21 +179,22 @@ about the machinery.**
 If you are attempting this, these are the levers, and two of the three are
 measured rather than speculated.
 
-**Granularity is the strongest lever, and it is a precondition rather than a
-fix.** On the same data:
-```
-multi-tool agreement   at LINE level      1.56%
-                       at FUNCTION level 35.95%
-cross-methodology pairs   1,169 -> 7,514  (6.4x)
-cppcheck + flawfinder         0 -> 66
-```
-Matching at function level rather than line level is the difference between
-observing agreement and not. **But** function-level *ranking* then fails
-effort-normalisation (§2), so this buys observability, not a working ranker.
+**Granularity is not a boundary condition — it is §1, the main result.** The
+numbers are there. What belongs here is the consequence: matching at function
+level is the difference between observing agreement and not, **but** function-
+level *ranking* still fails effort-normalisation (§2). So granularity buys
+OBSERVABILITY, not a working ranker. Those are separate results and fixing the
+first does not fix the second.
 
-**Tool selection cannot be optimised out.** The few merges we did observe on
-real code came from the *most similar* pair, not the most diverse. If you select
-for co-location you select against the independence the premise needs.
+**Tool selection: we cannot say, and previously implied we could.** An earlier
+draft asserted that selecting for co-location selects against independence, on
+the grounds that the few merges we saw came from the most *similar* pair. At
+function level that inference does not hold — the largest cross-methodology
+counts include INTERPROCEDURAL × PATTERN pairs (CodeQL+Flawfinder 669,
+Flawfinder+Infer 274), which is the most methodologically distant pairing
+available in that corpus. Whether diverse pairs agree *less* than similar ones,
+per opportunity, is **unmeasured here**. We have no basis for the trade-off we
+asserted.
 
 **Corpus type determines the answer, and this is the caution we would most want
 passed on.** Synthetic OWASP Benchmark produced 1,427 merges; real code produced
@@ -281,7 +315,7 @@ pages; it is used here as a sensible structure, not attributed to that source.*
 
 ---
 
-## The README sentence — APPLIED 2026-07-26
+## The README sentence — CORRECTED AND RE-APPLIED 2026-07-26
 
 > **What did not work is written up separately** in
 > [docs/NEGATIVE_RESULT.md](docs/NEGATIVE_RESULT.md): across three scanner
@@ -290,14 +324,19 @@ pages; it is used here as a sensible structure, not attributed to that source.*
 > agreeing with the rule it was copied from — and the ranking built on agreement
 > measurably lost to sorting files by size.
 
-REVISED FROM THE FIRST DRAFT, which said tools "did not produce agreement at the
-same location **often enough to rank on**". That phrasing implies a FREQUENCY
-measurement. It is right for the ranking null and it UNDERSTATES the co-location
-finding: on real code, once rule lineage is removed, the count of independent
-cross-methodology agreements is **zero**, not merely small. For someone deciding
-whether to attempt this, near-absence and scarcity are different decisions.
+TWO REVISIONS, RECORDED BECAUSE THE SECOND MATTERS MORE.
 
-The sentence now carries both results in their own terms — the co-location
-finding as an absence, the ranking null as a measured loss to a trivial baseline
-— with the scope ("three scanner pairings on real C and Java") inside the claim
-rather than appended to it.
+The first draft said tools "did not produce agreement at the same location
+**often enough to rank on**" — a frequency claim. It was sharpened to "**zero**
+independent agreements at the same location", which is stronger and, at line
+level, true.
+
+**Then the sharpened version turned out to be the wrong claim entirely.** It
+generalised a line-level measurement into a statement about what scanners can
+do. The applied sentence now leads with the measurement error instead, because
+that is the part a reader can use: the finding was an artifact of our ruler, and
+the ranking null — which is unaffected — is stated separately rather than
+bundled with it.
+
+Both prior versions are recorded rather than deleted, because the sequence is
+the lesson: a claim can survive being tightened and still be false.
