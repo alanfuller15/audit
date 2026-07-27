@@ -22,7 +22,7 @@ Usage:
   DEFAULT = inspection only (walk/read/regex, ZERO code execution).
   --run-tests = ALSO execute the project's test command (runs author-chosen code; opt-in).
 """
-import sys, os, re, json, subprocess, posixpath, urllib.parse
+import sys, os, re, json, subprocess, posixpath, urllib.parse, math, random
 from collections import Counter
 
 # Tool-quality weighting for the ingest consensus term (restricted-2b).
@@ -1323,7 +1323,7 @@ def ingest_sarif(paths):
     total_raw = sum(len((d.get("runs") or [{}])[0].get("results", []))
                     if ("_parse_error" not in d and "_empty" not in d) else 0
                     for _, d in docs)
-    return {
+    _agg = {
         "inputs": [p for p, _ in docs],
         "parse_errors": parse_errors,
         "empty_inputs": empty_inputs,
@@ -1374,6 +1374,12 @@ def ingest_sarif(paths):
                     "merge_rules": sorted(r.get("merge_rules") or ()),
                     "message": r["message"]} for i, r in enumerate(ranked)],
     }
+    # 0h: per-run size-correlation disclosure, computed HERE rather than in
+    # main() so every consumer of ingest_sarif() gets it — the Action path, the
+    # HTML report and any API caller alike. DISCLOSURE ONLY; it is never read
+    # back into scoring, ranking, or filtering.
+    _agg["size_correlation"] = size_correlation_disclosure(_agg["ranked"])
+    return _agg
 
 def ingest_to_sarif(agg, tool_version="6.0"):
     """Re-emit the deduplicated, re-ranked findings as valid SARIF 2.1.0, so the
@@ -1414,6 +1420,244 @@ def ingest_to_sarif(agg, tool_version="6.0"):
             "columnKind": "unicodeCodePoints",
         }],
     }
+
+# ── 0h: PER-RUN SIZE-CORRELATION DISCLOSURE ──────────────────────────────────
+# Agreement counts are substantially a SIZE proxy: on the Lipp corpus
+# Spearman(n_tools, unit size) is +0.629 at file level. That single number
+# explains why every ranking claim built on raw agreement failed a size-matched
+# control. This discloses the same quantity PER RUN so the caveat lands in the
+# OUTPUT rather than only in a document.
+#
+# DISCLOSURE ONLY. It never filters, suppresses, or reweights anything.
+#
+# WHY IT IS GATED. On real runs n_tools is overwhelmingly 1 (measured: zlib
+# {1: 601}; Struts all 1). Spearman on a variable with zero rank variance is
+# UNDEFINED — zero denominator — and on a near-constant one it is unstable in a
+# way a bare coefficient hides. Reporting a number there would repeat the shape
+# of the withdrawn "p<0.0001": a statistic whose instability is invisible to the
+# reader. So the dispersion gate runs FIRST and reports NOT APPLICABLE with a
+# reason instead of a coefficient.
+#
+# MIN_NONMODAL_UNITS is MEASURED, not chosen. analysis/scripts/calibrate_0h.py
+# subsamples the real Lipp file-level population (true rho = +0.629) at
+# realistic run sizes and finds the smallest non-modal count reaching 80% power
+# in a permutation test: m* = 8, stable at 6-8 across run sizes 40-300. Below 8
+# non-modal units the check cannot detect even a STRONG size correlation, so a
+# coefficient there is not reportable.
+#
+# Ruscio J. (2008), "Constructing Confidence Intervals for Spearman's Rank
+# Correlation with Ordinal Data", J. Modern Applied Statistical Methods 7(2),
+# art. 7: analytic CIs show "poorer coverage with ordinal data" while "coverage
+# of bootstrap CIs was usually as good or better". Hence a bootstrap percentile
+# CI rather than an analytic one, and a permutation p rather than an asymptotic
+# one (the asymptotic SE assumes untied ranks, which is false here by
+# construction).
+MIN_NONMODAL_UNITS = 8      # measured; see calibrate_0h.py
+# Optional root for resolving SARIF uris to files on disk, so real file
+# lengths can be read. Left None unless an operator sets it; the check
+# degrades to NOT APPLICABLE rather than to a circular proxy.
+SIZE_LOOKUP_ROOT = os.environ.get("AUDIT_SOURCE_ROOT") or None
+_SIZECORR_BOOTSTRAP = 2000
+_SIZECORR_PERMUTATIONS = 2000
+
+
+def _midrank(values):
+    order = sorted(range(len(values)), key=lambda i: values[i])
+    ranks = [0.0] * len(values)
+    i = 0
+    while i < len(order):
+        j = i
+        while j + 1 < len(order) and values[order[j + 1]] == values[order[i]]:
+            j += 1
+        avg = (i + j) / 2.0 + 1
+        for k in range(i, j + 1):
+            ranks[order[k]] = avg
+        i = j + 1
+    return ranks
+
+
+def _spearman(xs, ys):
+    """Tie-corrected Spearman (Pearson on midranks). None when either variable
+    has zero rank variance — the degenerate case, returned rather than raised."""
+    if len(xs) < 3:
+        return None
+    rx, ry = _midrank(xs), _midrank(ys)
+    mx = sum(rx) / len(rx)
+    my = sum(ry) / len(ry)
+    sx = sum((a - mx) ** 2 for a in rx)
+    sy = sum((b - my) ** 2 for b in ry)
+    if sx <= 0 or sy <= 0:
+        return None
+    return sum((a - mx) * (b - my) for a, b in zip(rx, ry)) / math.sqrt(sx * sy)
+
+
+def _file_line_count(uri, _cache={}):
+    """Real line count for a SARIF uri, or None if it cannot be read. Only a
+    genuine measurement is acceptable here — see size_correlation_disclosure."""
+    if uri in _cache:
+        return _cache[uri]
+    n = None
+    try:
+        path = urllib.parse.unquote(uri)
+        if path.startswith("file://"):
+            path = urllib.parse.urlparse(path).path
+        cands = [path]
+        if SIZE_LOOKUP_ROOT:
+            cands.append(os.path.join(SIZE_LOOKUP_ROOT, path))
+        for c in cands:
+            if os.path.isfile(c):
+                with open(c, "rb") as fh:
+                    n = sum(1 for _ in fh)
+                break
+    except Exception:
+        n = None
+    _cache[uri] = n
+    return n
+
+
+def size_correlation_disclosure(ranked, size_by_uri=None):
+    """0h. Is agreement in THIS run tracking unit SIZE rather than consensus?
+
+    Unit = FILE, matching the granularity the +0.629 was measured at.
+    Returns a dict that ALWAYS carries `applicable`; when False it carries
+    `reason` and NO coefficient."""
+    by_uri = {}
+    for r in ranked:
+        u = r.get("uri") or ""
+        if not u:
+            continue
+        e = by_uri.setdefault(u, {"lineages": set(), "max_line": 0})
+        e["lineages"].update(r.get("tools") or [])
+        ln = r.get("line")
+        if isinstance(ln, int) and ln > e["max_line"]:
+            e["max_line"] = ln
+
+    # SIZE PROXY. Appendix D's rule applies to our own feature: a disclosure
+    # computed from a weak proxy reads as a result. Here the danger is sharper
+    # than weakness — the obvious SARIF-only proxy is CIRCULAR.
+    #
+    # MEASURED on real zlib output: files flagged by 2 tools carry a median of
+    # 16 findings against 2 for single-tool files, so max(startLine) — a MAXIMUM
+    # over the reported lines — is a higher order statistic simply because more
+    # lines were sampled. Its median rises 58 -> 457 between 1-tool and 2-tool
+    # files. That inflation tracks n_tools directly, so using it would
+    # MANUFACTURE the size correlation this check exists to detect, in the
+    # positive direction, and the run would warn about a confound created by the
+    # measurement itself.
+    #
+    # So: real file length or nothing. If the analysed files are not readable,
+    # the check reports NOT APPLICABLE rather than a circular coefficient.
+    units = []
+    unresolved = 0
+    for u, e in by_uri.items():
+        n = len({_lineage_of(t) for t in e["lineages"]}) or 1
+        size = (size_by_uri or {}).get(u)
+        if size is None:
+            size = _file_line_count(u)
+        if size and size > 0:
+            units.append((n, size))
+        else:
+            unresolved += 1
+
+    base = {"unit": "file",
+            # SPELL THE VARIABLE OUT. This is the count of distinct ENGINES that
+            # flagged a FILE — NOT the per-finding `n_tools` in `ranked`, which
+            # counts engines merged onto one finding. The two differ (a file can
+            # draw two tools with zero merged findings) and conflating them is
+            # the denominator error this project keeps having to correct.
+            "variable": "distinct engines flagging the file",
+            "n_units": len(units),
+            "size_proxy": "file_line_count_on_disk",
+            "files_without_readable_size": unresolved,
+            "disclosure_only": True}
+
+    if unresolved and not units:
+        return dict(base, applicable=False,
+                    reason="none of the analysed files could be read to measure "
+                           "their length, and SARIF carries no file-length field. "
+                           "The only SARIF-derivable proxy (highest reported line) "
+                           "rises with the number of findings, hence with the "
+                           "number of tools, so it would manufacture the very "
+                           "correlation being tested for")
+
+    if len(units) < 3:
+        return dict(base, applicable=False,
+                    reason=f"only {len(units)} file unit(s); a rank correlation "
+                           "needs at least 3")
+
+    ns = [u[0] for u in units]
+    sizes = [u[1] for u in units]
+    counts = Counter(ns)
+    modal = counts.most_common(1)[0][0]
+    nonmodal = len(ns) - counts[modal]
+    base.update({"n_tools_distribution": dict(sorted(counts.items())),
+                 "modal_n_tools": modal, "non_modal_units": nonmodal,
+                 "min_non_modal_required": MIN_NONMODAL_UNITS})
+
+    if len(counts) < 2:
+        return dict(base, applicable=False,
+                    reason=f"every file has n_tools={modal}; the variable is "
+                           "constant, so a rank correlation is undefined here "
+                           "(not merely weak)")
+    if len(set(sizes)) < 2:
+        return dict(base, applicable=False,
+                    reason="all file size estimates are identical; no size "
+                           "variation to correlate against")
+    if nonmodal < MIN_NONMODAL_UNITS:
+        return dict(base, applicable=False,
+                    reason=f"only {nonmodal} file(s) differ from the modal "
+                           f"n_tools={modal}; below {MIN_NONMODAL_UNITS} this "
+                           "check cannot detect even a strong size correlation, "
+                           "so no coefficient is reported")
+
+    rho = _spearman(ns, sizes)
+    if rho is None:
+        return dict(base, applicable=False,
+                    reason="rank variance is zero after tie correction")
+
+    rnd = random.Random(0xA17)          # deterministic: same input, same CI
+    boot = []
+    idx = range(len(units))
+    for _ in range(_SIZECORR_BOOTSTRAP):
+        pick = [units[rnd.randrange(len(units))] for _ in idx]
+        rb = _spearman([a for a, _ in pick], [b for _, b in pick])
+        if rb is not None:
+            boot.append(rb)
+    ci = None
+    if len(boot) >= 100:
+        boot.sort()
+        ci = [round(boot[int(0.025 * len(boot))], 3),
+              round(boot[min(len(boot) - 1, int(0.975 * len(boot)))], 3)]
+
+    shuf = list(sizes)
+    ge = 0
+    for _ in range(_SIZECORR_PERMUTATIONS):
+        rnd.shuffle(shuf)
+        rp = _spearman(ns, shuf)
+        if rp is not None and abs(rp) >= abs(rho):
+            ge += 1
+    pval = (ge + 1) / (_SIZECORR_PERMUTATIONS + 1)
+
+    strong = abs(rho) >= 0.4 and pval < 0.05 and ci is not None and (
+        ci[0] > 0 or ci[1] < 0)
+    if strong:
+        meaning = ("Agreement in this run is substantially SIZE-CORRELATED: "
+                   "bigger files attract more tools, so a high agreement count "
+                   "may reflect file size rather than independent consensus. "
+                   "Treat the ranking as size-influenced and compare against "
+                   "simply reading the largest files first.")
+    elif ci is not None and ci[0] <= 0 <= ci[1]:
+        meaning = ("No size correlation detectable in this run — the interval "
+                   "includes zero. This does not prove independence; it means "
+                   "this run is too small or too uniform to show one.")
+    else:
+        meaning = ("Some size correlation is present but not strong. Agreement "
+                   "is not purely a size effect here.")
+
+    return dict(base, applicable=True, spearman_rho=round(rho, 3),
+                bootstrap_ci_95=ci, permutation_p=round(pval, 4),
+                size_correlated=strong, interpretation=meaning)
+
 
 def signal_informativeness(ranked):
     """EVIDENCE-DRIVEN signal gate (NOT benchmark detection). For THIS input,
@@ -1467,6 +1711,7 @@ def main():
             return 1
         agg = ingest_sarif(paths)
         agg["signal_assessment"] = signal_informativeness(agg["ranked"])
+
         if "--json" in sys.argv:
             json.dump(agg, open(sys.argv[sys.argv.index("--json")+1], "w"), indent=2)
         if "--sarif" in sys.argv:
@@ -1494,6 +1739,24 @@ def main():
         if sa["ranking_confidence"] == "low":
             print(f"    ⚠ this input lacks location variety, tool overlap, and severity spread —")
             print(f"      ranking signals have little to work with; treat order as low-confidence.")
+        sc = agg.get("size_correlation") or {}
+        if sc.get("applicable"):
+            ci = sc.get("bootstrap_ci_95") or ["?", "?"]
+            print(f"  size check: Spearman(scanners flagging a file, file length) "
+                  f"= {sc['spearman_rho']:+.3f} "
+                  f"[95% CI {ci[0]:+.3f}, {ci[1]:+.3f}], permutation p={sc['permutation_p']:.4f}"
+                  f"  (n={sc['n_units']} files, proxy: {sc['size_proxy']})")
+            if sc.get("size_correlated"):
+                print(f"    ⚠ SIZE-CORRELATED: {sc['interpretation']}")
+            else:
+                print(f"    {sc['interpretation']}")
+        elif sc:
+            print(f"  size check: NOT APPLICABLE — {sc.get('reason')}")
+            print(f"    (no coefficient is reported: a number produced here would "
+                  f"carry an error the number itself would hide)")
+            if sc.get("files_without_readable_size"):
+                print(f"    to enable it, point AUDIT_SOURCE_ROOT at the directory "
+                      f"the scanner's paths are relative to")
         print(f"  ranking: {agg['ranking_basis']}")
         qw = agg.get("quality_weighting")
         if qw:

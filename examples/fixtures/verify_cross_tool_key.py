@@ -402,6 +402,110 @@ strip = lambda a: [(r["score"], r["uri"], r["line"], r["ruleId"], r["n_tools"])
 check(strip(a1) == strip(a2), "ranking is input-order independent")
 check(strip(audit.ingest_sarif([FF, CC])) == strip(a1), "ranking is deterministic across runs")
 
+# ── 0h: gated per-run size-correlation disclosure ────────────────────────────
+# The gate exists because on real runs n_tools is overwhelmingly 1 (zlib
+# {1: 601}, Struts all 1). A Spearman there is undefined or unstable, and a
+# bare coefficient would hide that. These guard: concentrated -> NOT APPLICABLE,
+# genuine spread + size correlation -> warns, uncorrelated -> silent, and the
+# existing fixtures do not start warning.
+print("\n0h size-correlation disclosure (gated):")
+
+
+def _mkres(uri, line, rule="R1"):
+    return {"ruleId": rule, "message": {"text": "x"},
+            "locations": [{"physicalLocation": {
+                "artifactLocation": {"uri": uri},
+                "region": {"startLine": line}}}]}
+
+
+def _ranked(pairs):
+    """pairs: list of (uri, line, [tools]) -> a minimal `ranked` shape."""
+    return [{"uri": u, "line": ln, "tools": ts, "n_tools": len(ts),
+             "level": "warning", "noisy_loc": False} for u, ln, ts in pairs]
+
+
+def _sizes(pairs):
+    """Real file lengths, injected. The check REFUSES to infer size from SARIF
+    alone, so tests must supply measurements exactly as a real run reads them
+    off disk."""
+    return {u: ln for u, ln, _ in pairs}
+
+
+# CASE 1 — concentrated n_tools (the real-world common case): NOT APPLICABLE.
+conc = _ranked([(f"src/f{i}.c", 10 + i * 7, ["Flawfinder"]) for i in range(40)])
+r1 = audit.size_correlation_disclosure(conc)
+check(r1["applicable"] is False, "concentrated n_tools -> NOT APPLICABLE",
+      r1.get("reason", "")[:60])
+check("spearman_rho" not in r1, "no coefficient reported when not applicable")
+check(r1.get("disclosure_only") is True, "declared disclosure-only (never filters)")
+
+# CASE 2 — genuine spread AND size correlation: warns.
+# big files get more tools, small files one — the confound the check is for.
+corr = []
+for i in range(40):
+    big = i >= 25
+    corr.append((f"src/g{i}.c", 400 + i * 20 if big else 5 + i,
+                 ["Flawfinder", "Cppcheck", "Semgrep"] if big else ["Flawfinder"]))
+r2 = audit.size_correlation_disclosure(_ranked(corr), _sizes(corr))
+check(r2["applicable"] is True, "genuine spread -> check applies",
+      f"n={r2.get('n_units')}, non-modal={r2.get('non_modal_units')}")
+check(r2.get("size_correlated") is True, "size-correlated run WARNS",
+      f"rho={r2.get('spearman_rho')}, p={r2.get('permutation_p')}")
+check(r2.get("bootstrap_ci_95") is not None, "reports a bootstrap CI, not a bare point estimate")
+check(r2.get("permutation_p") is not None, "reports a permutation p, not an asymptotic one")
+
+# CASE 3 — genuine spread, NO size relationship: applies but stays silent.
+# multi-tool files are interleaved across the size range.
+unc = []
+for i in range(40):
+    multi = (i % 3 == 0)
+    unc.append((f"src/h{i}.c", 20 + i * 13,
+                ["Flawfinder", "Cppcheck"] if multi else ["Flawfinder"]))
+r3 = audit.size_correlation_disclosure(_ranked(unc), _sizes(unc))
+check(r3["applicable"] is True, "uncorrelated run: check still applies")
+check(r3.get("size_correlated") is False, "uncorrelated run does NOT warn",
+      f"rho={r3.get('spearman_rho')}, p={r3.get('permutation_p')}")
+
+# CASE 4 — the gate boundary is the MEASURED one, not a round number.
+_below = _ranked(
+    [(f"src/i{i}.c", 500 + i * 10, ["Flawfinder", "Cppcheck"])
+     for i in range(audit.MIN_NONMODAL_UNITS - 1)] +
+    [(f"src/j{i}.c", 5 + i, ["Flawfinder"]) for i in range(40)])
+r4 = audit.size_correlation_disclosure(_below, {r["uri"]: r["line"] for r in _below})
+check(r4["applicable"] is False,
+      f"just below m*={audit.MIN_NONMODAL_UNITS} non-modal -> NOT APPLICABLE")
+_at = _ranked(
+    [(f"src/i{i}.c", 500 + i * 10, ["Flawfinder", "Cppcheck"])
+     for i in range(audit.MIN_NONMODAL_UNITS)] +
+    [(f"src/j{i}.c", 5 + i, ["Flawfinder"]) for i in range(40)])
+check(audit.size_correlation_disclosure(
+          _at, {r["uri"]: r["line"] for r in _at})["applicable"] is True,
+      f"at m*={audit.MIN_NONMODAL_UNITS} non-modal -> applies")
+
+# CASE 5 — the CIRCULAR proxy is REFUSED, not merely labelled.
+# Measured on real zlib: 2-tool files carry a median 16 findings vs 2 for
+# 1-tool files, so max(startLine) rises with n_tools by sampling alone (median
+# 58 -> 457). Using it would manufacture the correlation being tested for, in
+# the positive direction. With no readable file sizes the answer must be
+# NOT APPLICABLE, never an inferred coefficient.
+r5 = audit.size_correlation_disclosure(_ranked(corr))     # no sizes supplied
+check(r5["applicable"] is False,
+      "no readable file sizes -> NOT APPLICABLE (refuses the circular proxy)")
+check("manufacture" in (r5.get("reason") or ""),
+      "refusal names the circularity as the reason")
+check("spearman_rho" not in r5, "no coefficient inferred from SARIF alone")
+
+# CASE 6 — the existing real fixtures must NOT start warning.
+_agg = audit.ingest_sarif([FF, CC])
+_sc = _agg.get("size_correlation")
+check(_sc is not None, "size_correlation present in ingest output (JSON surface)")
+check(not _sc.get("size_correlated"), "existing fixtures do not start warning",
+      f"applicable={_sc.get('applicable')}")
+
+# CASE 7 — determinism: same input, same interval.
+check(audit.size_correlation_disclosure(_ranked(corr), _sizes(corr)) == r2,
+      "disclosure is deterministic across runs (seeded bootstrap)")
+
 print()
 if _fail:
     print(f"FAILED ({len(_fail)}): " + "; ".join(_fail))

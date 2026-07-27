@@ -84,6 +84,44 @@ def build(data):
                      f'<div class="warnfoot">Consensus counts distinct analysis '
                      f'ENGINES, not product names. Agreement between two names for '
                      f'one engine is self-agreement, not corroboration.</div></div>')
+    # 0h: per-run size-correlation disclosure. Same reasoning as the warnings
+    # above — a caveat that only reaches audit_result.json informs nobody on the
+    # Action path. DISCLOSURE ONLY: nothing here filters or reweights.
+    # When the dispersion gate fails we render the NOT-APPLICABLE reason rather
+    # than a coefficient, because a number computed on a near-constant variable
+    # hides its own instability.
+    sc = data.get("size_correlation") or {}
+    size_html = ""
+    if sc.get("applicable"):
+        _ci = sc.get("bootstrap_ci_95") or [None, None]
+        _cis = (f"95% CI {_ci[0]:+.3f} to {_ci[1]:+.3f}"
+                if isinstance(_ci[0], (int, float)) else "CI unavailable")
+        _cls = "warnbox" if sc.get("size_correlated") else "infobox"
+        _ttl = ("⚠ Agreement here is tracking file SIZE"
+                if sc.get("size_correlated") else "Size-correlation check")
+        _proxy = esc(str(sc.get("size_proxy")))
+        _weak = ('<div class="warnfoot">Size was estimated from the highest line '
+                 'number any scanner reported, because the SARIF input carried no '
+                 'file-length information. That is a LOWER BOUND, so this check is '
+                 'weaker than it looks and a quiet result is not clearance.</div>'
+                 if sc.get("size_proxy_is_weak") else "")
+        size_html = (
+            f'<div class="{_cls}"><b>{_ttl}</b>'
+            f'<div>Spearman(scanners agreeing, file size) = '
+            f'<b>{sc["spearman_rho"]:+.3f}</b> ({esc(_cis)}), '
+            f'permutation p = {sc["permutation_p"]:.4f}, '
+            f'over {sc["n_units"]} files. Size proxy: {_proxy}.</div>'
+            f'<div class="warnfoot">{esc(str(sc.get("interpretation")))}</div>'
+            f'{_weak}</div>')
+    elif sc:
+        size_html = (
+            f'<div class="infobox"><b>Size-correlation check: not applicable</b>'
+            f'<div>{esc(str(sc.get("reason")))}</div>'
+            f'<div class="warnfoot">No coefficient is shown on purpose. This run '
+            f'does not have enough variation in how many scanners agree to '
+            f'support a rank correlation, and a number computed anyway would be '
+            f'unstable in a way the number itself would hide.</div></div>')
+
     # Show the engine count alongside the scanner count whenever they disagree —
     # that difference IS the finding.
     engines_stat = ""
@@ -125,6 +163,12 @@ def build(data):
   .warnbox ul {{ margin:8px 0 6px 20px; padding:0; }}
   .warnbox li {{ margin:4px 0; }}
   .warnfoot {{ opacity:.85; font-size:13px; margin-top:6px; }}
+  /* 0h size-correlation disclosure when it is NOT an alarm: same shape as
+     .warnbox but neutral, so a routine disclosure does not read as a
+     warning and a real warning keeps its force. */
+  .infobox {{ border:1px solid var(--line); border-left:4px solid var(--ink2);
+    background:var(--panel); padding:12px 14px; margin:14px 0;
+    border-radius:4px; font-size:14px; }}
   .stat .n.warn {{ color:#b7791f; }}
   .band .pill {{ border:1px solid var(--line); padding:7px 11px; background:var(--panel); }}
   .band .pill b {{ color:var(--ink); font-weight:700; }}
@@ -178,6 +222,7 @@ def build(data):
   {engines_stat}
 </div>
 {warn_html}
+{size_html}
 <div class="band">
   <span class="pill">scanners: <b>{tools_line}</b></span>
   <span class="pill">ranking confidence: <b>{conf}</b></span>

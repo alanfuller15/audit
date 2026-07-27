@@ -556,7 +556,27 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    ACTION REQUIRED before the README is touched again: decide whether to
    re-headline on an effort-aware metric. This supersedes item 1's status.
 
-0h. [SMALL, orthogonal — take it] Disclose size-correlation per run. The tool
+0h. [IMPLEMENTED 2026-07-26 — GATED. Full record: VALIDATION.md "0h IMPLEMENTED".]
+   Disclosure only; never filters or reweights. Gate threshold m*=8 non-modal
+   units is MEASURED (analysis/scripts/calibrate_0h.py) against the Lipp
+   file-level population's real +0.629, not chosen. Bootstrap CI + permutation p
+   per Ruscio 2008 and because n_tools is heavily tied by construction.
+   TWO THINGS A LATER SESSION MUST NOT UNDO:
+     1. The max(startLine) size proxy is CIRCULAR and was removed. More tools ->
+        more findings -> a higher MAXIMUM line, independent of file length
+        (measured on zlib: 1-tool files median max-line 58, 2-tool files 457).
+        With it the tool reported rho=+0.402 p=0.0025 and WOULD HAVE WARNED on a
+        real run; with real file lengths the same run gives +0.232 p=0.086 and is
+        correctly silent. Read real lengths (AUDIT_SOURCE_ROOT) or report NOT
+        APPLICABLE. Do NOT reintroduce a SARIF-inferred size.
+     2. The unit is the FILE and the variable is ENGINES-FLAGGING-THAT-FILE, NOT
+        the per-finding n_tools in `ranked`. They differ and the difference is
+        material: on zlib the file-level view has real spread ({1:15, 2:44})
+        while finding-level n_tools is {1: 601}.
+   Also corrected: arXiv:2602.07842 §D.4 does not exist and does not ground this
+   design (that ID is an LLM-calibration paper whose Appendix D has only D.1).
+   [original scoping follows]
+   [SMALL, orthogonal — take it] Disclose size-correlation per run. The tool
    already discloses when a signal is uninformative (the signal gate) and when
    independence is doubtful (0a/0b). Add the same for the size confound:
    compute Spearman(n_tools, unit size) per ingest and disclose when agreement

@@ -3451,3 +3451,92 @@ the point estimate where it was. What was wrong was never the comparator — it
 was the **significance test**, which nobody had re-examined because the effect
 size kept being the thing under suspicion. The lesson generalises: check the
 test as well as the control.
+
+## 0h IMPLEMENTED (2026-07-26) — per-run size-correlation disclosure, GATED
+
+Tier: `[self-tested]` implementation; the GATE THRESHOLD is `[externally-grounded]`
+(calibrated on the Lipp artifact's real file-level distribution). Method choices
+are `[fetched]`. Disclosure only — it never filters, suppresses, or reweights.
+
+### STUDY, and one citation that did not survive checking
+- Ruscio J. (2008), "Constructing Confidence Intervals for Spearman's Rank
+  Correlation with Ordinal Data: A Simulation Study Comparing Analytic and
+  Bootstrap Methods", *J. Modern Applied Statistical Methods* 7(2), art. 7,
+  DOI 10.22237/jmasm/1225512360. `[fetched]`, abstract verbatim: "Research shows
+  good probability coverage using analytic confidence intervals (CIs) for
+  Spearman's rho with continuous data, but poorer coverage with ordinal data. A
+  simulation study examining the latter case replicated prior results and
+  revealed that coverage of bootstrap CIs was usually as good or better than
+  coverage of analytic CIs." → bootstrap percentile CI, not analytic.
+- Ties: the exact permutation distribution and the asymptotic approximation both
+  assume untied ranks, and the asymptotic standard error uses the no-tie
+  variance. n_tools is integer-valued and heavily tied by construction, so the
+  p-value is a PERMUTATION p, and rho is tie-corrected (Pearson on midranks).
+- **arXiv:2602.07842 §D.4 DOES NOT EXIST and does not support this design.**
+  That ID is "Evaluating and Calibrating LLM Confidence on Questions with
+  Multiple Correct Answers" (Wang et al., 2026); its Appendix D has one
+  subsection, D.1, and the paper does not discuss tied ranks, dispersion checks
+  or degenerate variables. Recorded so the citation is not propagated.
+
+### The gate threshold is MEASURED, not chosen
+`analysis/scripts/calibrate_0h.py`, output `analysis/results/0h_gate_calibration.txt`.
+Parent population: Lipp file-level units, Spearman(n_tools, LOC) = **+0.629** —
+a strong correlation, so a gate that cannot detect it cannot detect anything.
+Subsampling at realistic run sizes, power of a permutation test at alpha=0.05:
+
+```
+non-modal m   1     2     3     4     5     6     8    10    12    15    20
+power       0.19  0.41  0.48  0.57  0.67  0.72  0.85  0.95  0.95  0.98  0.99
+```
+**m* = 8**, and it is stable: run size 40 → 8, 80 → 8, 120 → 6, 300 → 8. Below 8
+non-modal units the check cannot detect even a strong size correlation, so no
+coefficient is reported. alpha=.05/power=.80 are conventions; m* is measured.
+
+### !! THE OBVIOUS SIZE PROXY IS CIRCULAR — CAUGHT BEFORE SHIPPING !!
+The first implementation used `max(startLine)` per file as a size proxy, since
+SARIF carries no file length. **That proxy manufactures the correlation it is
+meant to detect.** Measured on real zlib output:
+```
+files flagged by 1 tool : n=15  median findings= 2  median max-line= 58
+files flagged by 2 tools: n=44  median findings=16  median max-line=457
+```
+A maximum over reported lines is a higher ORDER STATISTIC — more findings means
+a higher max, independent of file length. Findings rise with tool count, so the
+proxy rises with n_tools mechanically.
+
+CONSEQUENCE, measured on the same real run:
+```
+with the circular proxy : rho=+0.402  CI[+0.128,+0.624]  p=0.0025  -> WOULD HAVE WARNED
+with real file lengths  : rho=+0.232  CI[-0.045,+0.459]  p=0.0860  -> correctly silent
+```
+**The circular proxy would have fired a FALSE size-correlation alarm on a real
+run.** The shipped code therefore reads real file lengths from disk
+(`AUDIT_SOURCE_ROOT` to resolve paths) and reports NOT APPLICABLE, naming the
+circularity, when it cannot. It never infers size from SARIF alone.
+
+This is HANDOFF §8 rule 10 applied to our own feature, exactly as intended: a
+number derived from what SARIF happened to carry was a claim about SARIF, not
+about the code.
+
+### Behaviour
+- Unit = FILE; variable = distinct ENGINES flagging that file. **Not** the
+  per-finding `n_tools` in `ranked` — a file can draw two tools with zero merged
+  findings, and conflating the two is the denominator error this project keeps
+  correcting. The JSON spells the variable out.
+- Gate order: ≥3 units → ≥2 distinct n_tools values (else rank variance is zero
+  and rho is UNDEFINED, not merely weak) → size variation present → ≥8 non-modal
+  units. Any failure returns `applicable: false` with a `reason` and NO
+  coefficient.
+- When it applies: tie-corrected rho, 2,000-sample bootstrap percentile CI,
+  2,000-permutation p, and an interpretation sentence. Seeded, so the same input
+  gives the same interval.
+- Surfaced in JSON (`size_correlation`), CLI, and HTML, beside the existing
+  lineage/path warnings.
+- A quiet result is explicitly NOT clearance: the wording says so.
+
+### Regression tests (in `verify_cross_tool_key.py`; harness 67 → 84 checks)
+concentrated n_tools → NOT APPLICABLE with no coefficient; genuine spread + size
+correlation → warns, with CI and permutation p; genuine spread, no correlation →
+applies and stays silent; the m*=8 boundary in both directions; no readable
+sizes → refuses the circular proxy and names why; existing fixtures do not start
+warning; output deterministic across runs.
