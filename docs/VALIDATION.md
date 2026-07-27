@@ -3643,3 +3643,111 @@ sharing a basename in different directories do NOT merge and the ambiguity is
 disclosed by name; substring-but-not-segment-aligned paths do not merge;
 identical paths still merge with linkage inactive; existing fixtures do not
 activate it; the amended warning is asserted in both directions.
+
+## 3e IMPLEMENTED (2026-07-26) — hierarchy-aware CWE resolution.
+## CORRECT, TESTED, AND CURRENTLY INERT ON EVERY CORPUS ON DISK.
+
+Tier: `[self-tested]` implementation over a `[fetched]` CC-BY-4.0 hierarchy
+(Lipp `cwe_mapping/buckets.json`, 162 CWEs).
+
+### STUDY, and what checking the citations changed
+- **V2W-BERT** (Das et al., arXiv:2102.11498) `[fetched]`, verbatim: "According
+  to the MITRE classification, a CWE can have multiple parents and multiple
+  children"; "Some CWEs have multiple parents in different levels and are
+  counted twice"; and "the hierarchical CWE relations available in NVD omit some
+  of the parent-child relations available in MITRE." All three of the supplied
+  claims about multiple parents and NVD omission are CONFIRMED.
+- **TreeVul** is real — Pan, Bao, Xia, Lo & Li, *Fine-grained Commit-level
+  Vulnerability Type Prediction by CWE Tree Structure*, ICSE'23 — but the
+  supplied arXiv ID ("arXiv:2302") does not resolve, and the PeerOf claim could
+  NOT be verified from the paper text (extraction reached 118 KB and contains
+  neither "PeerOf" nor "ChildOf"). Per rule 8a: recorded as UNVERIFIED, not
+  cited as support.
+- **It did not need to be.** The constraint is satisfied by the artifact, which
+  is a stronger check than the citation would have been: `buckets.json` carries
+  exactly `child_of`, `parent_of` and `description` — measured, no PeerOf, no
+  CanPrecede. Non-hierarchical relations cannot leak in because they are not
+  there. Asserted in the harness so a future hierarchy swap cannot introduce
+  them silently.
+
+### WORLD-STATE FACTS, measured not assumed
+```
+entries                                     162
+`child_of` value type                       str, ALWAYS  (never a list)
+CWEs with MULTIPLE parents in our copy      0 of 162
+CWE-328 child_of CWE-327                    present  -> 327+328 resolves to hash
+CWE-22 -> CWE-664 ; CWE-89 -> CWE-707       different pillars -> None
+CWE-209, CWE-211, CWE-326                   ABSENT (confirms the recorded gap)
+```
+**The ambiguity case is UNREACHABLE FROM THIS FILE.** It is implemented and
+tested anyway, with an injected hierarchy, because our copy is a simplification
+of MITRE and any replacement may be multi-parent. An untested branch guarding
+against a false merge is worse than no branch.
+
+### THE RULE
+Ancestor-related CWEs resolve to the MOST SPECIFIC; everything else resolves to
+None. "Everything else" is three distinct situations that deliberately share one
+answer: genuinely unrelated CWEs; a non-unique "most specific" (two maximal
+elements — never an arbitrary pick, which is the first-match-wins error the
+multi-class guard was built to fix); and a connecting edge MISSING from our copy.
+
+### !! WHY IT IS SAFE UNDER AN INCOMPLETE HIERARCHY — AND WHY THAT CAN INVERT !!
+Our copy is 162 CWEs, C-focused, and measurably missing entries. So "no ancestor
+path between A and B" is **ambiguous between "genuinely unrelated" and "the edge
+is absent from our copy."** Both resolve to None, and that is safe because a
+missing edge then costs a MERGE rather than manufacturing one.
+
+**That safety is a property of the rule's DIRECTION, not of the data.** Any
+future change making "no path found" resolve to anything other than None — a
+default class, a nearest common ancestor, a guess — silently converts every
+missing edge into a potential FALSE MERGE, and the hierarchy's incompleteness
+stops being harmless the moment the direction flips. Same shape as the SARIF
+Appendix D rule (HANDOFF §8 rule 10): absence in an incomplete artifact is
+evidence about the artifact, not about the world. Regression-tested both ways.
+
+### COVERAGE — and the honest headline
+Prose path, rules whose text yields more than one CLASS:
+```
+corpus / tool      multi-class rules   findings RECOVERED   still None
+OWASP  SpotBugs                    3                  113           9
+Struts SpotBugs                    1                    0           5
+OWASP  semgrep                     0                    0           0
+zlib   flawfinder / cppcheck       0                    0           0
+```
+113 + 9 = **122**, reconciling exactly with the figure 3e was filed against.
+The 113 are the WEAK_MESSAGE_DIGEST_MD5/_SHA1 (CWE-327 + CWE-328) case; the 9
+are INFORMATION_EXPOSURE (CWE-22/89/209/211), which is genuine ambiguity and
+CORRECTLY stays None. Of the still-None findings, 0 are blocked by a missing
+hierarchy edge — they are all genuinely unrelated.
+
+### **BUT: END-TO-END EFFECT ON EVERY CORPUS ON DISK IS ZERO.**
+Measured by running each corpus with the hierarchy loaded and again with it
+emptied, and diffing the resolved-class distribution:
+```
+OWASP RAW   class distribution change: NONE
+Struts RAW  class distribution change: NONE
+zlib        class distribution change: NONE
+merge counts: Struts 1->1, OWASP 1,427->1,427, zlib 0->0
+```
+**The 113 is a PROSE-PATH figure, not a shipped-path effect.** Every one of those
+findings already had its class resolved by the SARIF `relationships` taxa, which
+ingest consults FIRST — the WEAK_MESSAGE_DIGEST_MD5 rule declares taxon 328
+alone, with no 327 to conflict with. So the prose branch is never reached for
+them.
+
+3e is therefore **correct, guarded, tested, and INERT on all available data.**
+Its value is conditional and precisely bounded: it matters only for a tool that
+emits NO taxa AND whose prose names several ancestor-related CWEs. That is
+exactly what HANDOFF 3e predicted ("still WANTED for tools that emit NO taxa —
+22 of SpotBugs' 77 rules, and semgrep — where prose scraping is the only
+source"). **Do not report this as "recovers 113 findings" without the
+qualifier**; on the shipped path today it recovers none.
+
+### Regression tests (harness 98 -> 112 checks)
+Both known cases on both paths (327/328 -> hash, 22/89 -> None); the hierarchy
+file contains only child_of/parent_of; AMBIGUITY via injected siblings -> None;
+chains of two and three -> most specific; a multi-parent diamond with a unique
+maximal element still resolves; MISSING EDGE with an emptied hierarchy -> None
+end-to-end; a cycle terminates rather than hanging; real fixtures unchanged.
+One pre-existing test was INVERTED, not deleted: it asserted the 327/328 pair
+resolves to None, which was the safe-not-right answer 3e exists to correct.

@@ -647,9 +647,118 @@ _CWE_DENY = {
 
 _CWE_RE = re.compile(r"cwe[-_/:=\"'\s]{0,4}(\d+)", re.I)
 
+# ── 3e: HIERARCHY-AWARE CWE RESOLUTION ───────────────────────────────────────
+# When a rule declares SEVERAL CWEs, "more than one class -> None" is correct
+# for genuine ambiguity (CWE-22 path-traversal + CWE-89 SQLi are unrelated) but
+# merely SAFE for a SPECIFICITY PAIR (CWE-327 broken-crypto + CWE-328 weak-hash,
+# where 328 IS-A 327). This distinguishes the two using MITRE ancestry.
+#
+# RELATION TYPES: ChildOf/ParentOf ONLY. Our hierarchy file carries exactly
+# `child_of` and `parent_of` and nothing else — verified, not assumed — so
+# non-hierarchical relations (PeerOf, CanPrecede) cannot leak in and turn the
+# tree into a general graph.
+#
+# MULTIPLE PARENTS ARE HANDLED EVEN THOUGH OUR DATA CANNOT PRODUCE THEM.
+# V2W-BERT (Das et al., arXiv:2102.11498) `[fetched]`, verbatim: "According to
+# the MITRE classification, a CWE can have multiple parents and multiple
+# children" and "Some CWEs have multiple parents in different levels". In OUR
+# copy every `child_of` is a single string — measured, 0 of 162 entries have
+# more than one parent — so the ambiguous case is UNREACHABLE FROM THIS FILE.
+# It is implemented and tested with an injected hierarchy anyway, because the
+# file is a simplification of MITRE and a future replacement may be multi-parent.
+# If "most specific" is not unique, resolve to None: picking one arbitrarily is
+# exactly the first-match-wins error the multi-class guard exists to prevent.
+#
+# !! WHY THIS IS SAFE UNDER AN INCOMPLETE HIERARCHY — DO NOT INVERT THE RULE !!
+# Our file has 162 CWEs, is C-focused, and is MEASURABLY missing entries
+# (CWE-209, CWE-211 and CWE-326 are all absent — verified). V2W-BERT again:
+# "the hierarchical CWE relations available in NVD omit some of the parent-child
+# relations available in MITRE." So "no ancestor path between A and B" is
+# AMBIGUOUS between "genuinely unrelated" and "the edge is missing from our
+# copy". Both currently resolve to None, which is the conservative direction:
+# a missing edge costs a merge, never manufactures one.
+# THAT SAFETY IS A PROPERTY OF THE RULE'S DIRECTION, NOT OF THE DATA. Any future
+# change that makes "no path found" resolve to something OTHER than None — a
+# default class, a most-common ancestor, a guess — silently converts every
+# missing edge into a potential FALSE MERGE. This is the same shape as the SARIF
+# Appendix D rule (HANDOFF §8 rule 10): absence in an incomplete artifact is
+# evidence about the artifact, not about the world.
+_CWE_HIER_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                              "..", "analysis", "data", "lipp_cwe_buckets.json")
+_CWE_PARENT = None
+
+
+def _cwe_parents():
+    """{int cwe -> [int parent, ...]} from the MITRE-derived hierarchy.
+    Empty dict if the file is absent — the feature then degrades to the old
+    conservative behaviour rather than failing."""
+    global _CWE_PARENT
+    if _CWE_PARENT is None:
+        _CWE_PARENT = {}
+        try:
+            with open(_CWE_HIER_PATH) as fh:
+                raw = json.load(fh)
+            for k, v in raw.items():
+                if not isinstance(v, dict):
+                    continue
+                m = re.match(r"CWE-(\d+)$", str(k))
+                if not m:
+                    continue
+                par = v.get("child_of")
+                par = par if isinstance(par, list) else ([par] if par else [])
+                ps = []
+                for x in par:
+                    mm = re.match(r"CWE-(\d+)$", str(x))
+                    if mm:
+                        ps.append(int(mm.group(1)))
+                if ps:
+                    _CWE_PARENT[int(m.group(1))] = ps
+        except Exception:
+            _CWE_PARENT = {}
+    return _CWE_PARENT
+
+
+def _cwe_ancestors(n, _depth=24):
+    """Transitive ancestors of a CWE. Cycle-guarded and depth-capped: the
+    source is third-party data and a cycle there must not hang ingest."""
+    par = _cwe_parents()
+    seen, frontier = set(), [n]
+    while frontier and _depth > 0:
+        _depth -= 1
+        nxt = []
+        for c in frontier:
+            for p in par.get(c, ()):
+                if p not in seen:
+                    seen.add(p)
+                    nxt.append(p)
+        frontier = nxt
+    return seen
+
+
+def _most_specific_cwe(cwes):
+    """Given several CWEs, return the single MOST SPECIFIC one when they are
+    ancestor-related, else None. None means 'do not merge on this', always."""
+    uniq = sorted({int(n) for n in cwes})
+    if not uniq:
+        return None
+    if len(uniq) == 1:
+        return uniq[0]
+    anc = {n: _cwe_ancestors(n) for n in uniq}
+    # A candidate is maximal-specific if every OTHER cwe is one of its ancestors.
+    maximal = [n for n in uniq
+               if all(o in anc[n] for o in uniq if o != n)]
+    # Exactly one -> unambiguous specificity chain. Zero -> unrelated, or an
+    # edge missing from our copy. More than one -> genuine ambiguity (only
+    # reachable with a multi-parent hierarchy). All non-unique cases -> None.
+    return maximal[0] if len(maximal) == 1 else None
+
+
 def _class_from_cwes(cwes):
     """Resolve a class from an explicit list of CWE numbers (SARIF taxa).
-    Same conservative rule as the text path: >1 distinct class -> None."""
+
+    Conservative rule, now HIERARCHY-AWARE: >1 distinct class -> None, EXCEPT
+    where the CWEs form an unambiguous ancestor chain, in which case the MOST
+    SPECIFIC one wins (CWE-327 + CWE-328 -> 328 -> `hash`)."""
     found = []
     for n in cwes:
         if n in _CWE_DENY:
@@ -657,7 +766,18 @@ def _class_from_cwes(cwes):
         c = _CWE_CLASS.get(n)
         if c and c not in found:
             found.append(c)
-    return found[0] if len(found) == 1 else None
+    if len(found) == 1:
+        return found[0]
+    if len(found) > 1:
+        # 3e: several classes — are the CWEs a specificity chain rather than a
+        # genuine conflict? Only the CWEs that actually CARRY a class are
+        # considered, so a denied or unmapped sibling cannot swing the result.
+        classed = [int(n) for n in cwes
+                   if n not in _CWE_DENY and _CWE_CLASS.get(n)]
+        best = _most_specific_cwe(classed)
+        if best is not None:
+            return _CWE_CLASS.get(best)
+    return None
 
 def _cwe_class_of(rule_id, message, uri=""):
     """Resolve a coarse vulnerability class from CWE numbers appearing in the
@@ -680,15 +800,17 @@ def _cwe_class_of(rule_id, message, uri=""):
       * SPECIFICITY, NOT AMBIGUITY — WEAK_MESSAGE_DIGEST_MD5/_SHA1 list CWE-327
         and CWE-328. Both tags are CORRECT; 328 (weak hash) is a child of 327
         (broken crypto) and is the more precise one. First-match returned
-        `crypto`, shadowing `hash`. None is the SAFE answer here, not the right
-        one — resolving it properly needs hierarchy awareness (see
-        HANDOFF item 3e).
+        `crypto`, shadowing `hash`. None was the SAFE answer here, not the
+        right one. RESOLVED 2026-07-26 (item 3e): ancestor-related CWEs now
+        resolve to the MOST SPECIFIC, so this returns `hash`. Unrelated CWEs,
+        non-unique "most specific", and pairs whose connecting edge is missing
+        from our hierarchy copy all still return None.
 
     Collapsing both to None is deliberate: it is correct for the first and
     merely lossy for the second, and a lossy miss costs recall while a wrong
     class can cause a FALSE MERGE, which inflates n_tools.
     """
-    found = []
+    found, nums = [], []
     for m in _CWE_RE.finditer(f"{rule_id} {message} {uri}"):
         try:
             n = int(m.group(1))
@@ -699,7 +821,22 @@ def _cwe_class_of(rule_id, message, uri=""):
         cls = _CWE_CLASS.get(n)
         if cls and cls not in found:
             found.append(cls)
-    return found[0] if len(found) == 1 else None
+        if cls and n not in nums:
+            nums.append(n)
+    if len(found) == 1:
+        return found[0]
+    if len(found) > 1:
+        # 3e: SPECIFICITY vs AMBIGUITY. The docstring above records that these
+        # two cases were deliberately collapsed to None pending hierarchy
+        # awareness — this is that hierarchy awareness. 327+328 is a chain and
+        # resolves to the child (`hash`); 22+89 sit under different pillars and
+        # stay None. This is the PROSE path, which is where the distinction
+        # still matters: for tools that emit SARIF `relationships` taxa the
+        # exact CWE is already unambiguous and this branch is never reached.
+        best = _most_specific_cwe(nums)
+        if best is not None:
+            return _CWE_CLASS.get(best)
+    return None
 
 # ── ENGINE LINEAGE (diversity-aware consensus must be ENGINE-aware) ─────────
 # Consensus counts agreement across DIFFERENT tools. "Different" must mean a

@@ -1062,7 +1062,33 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    The "MECHANISM vs OUTPUT" tension recorded earlier is VOID — it rested on the
    fix having changed the measurement, which it did not.
 
-3e. [FILED, not built — REFINEMENT that recovers a real loss] Hierarchy-aware
+3e. [IMPLEMENTED 2026-07-26 — CORRECT, TESTED, AND CURRENTLY INERT.
+   Record: VALIDATION.md "3e IMPLEMENTED". Ancestor-related CWEs resolve to the
+   MOST SPECIFIC; unrelated, non-unique-maximal, and MISSING-EDGE all -> None.
+   VERIFIED world-state, not assumed: buckets.json carries ONLY child_of /
+   parent_of (no PeerOf, so it stays a tree), every child_of is a single string,
+   and 0 of 162 entries have multiple parents — so the ambiguity branch is
+   UNREACHABLE from this file and is tested with an injected hierarchy instead.
+   COVERAGE: prose path recovers 113 findings and correctly leaves 9 as None
+   (113+9 = the 122 this item was filed against; the 9 are genuine ambiguity).
+   >>> BUT THE END-TO-END EFFECT ON EVERY CORPUS ON DISK IS ZERO. Measured by
+   >>> emptying the hierarchy and diffing: no class changes, no merge changes
+   >>> (Struts 1->1, OWASP 1,427->1,427, zlib 0->0). Those 113 already resolve
+   >>> via SARIF taxa, which ingest consults FIRST. DO NOT REPORT 3e AS
+   >>> "RECOVERS 113 FINDINGS" WITHOUT THAT QUALIFIER — on the shipped path it
+   >>> recovers none. Its value is conditional on a tool that emits NO taxa and
+   >>> names several ancestor-related CWEs in prose.
+   DO NOT INVERT THE MISSING-EDGE RULE. "No ancestor path" is ambiguous between
+   genuinely-unrelated and edge-absent-from-our-copy; both -> None, so a missing
+   edge costs a merge instead of manufacturing one. Making it resolve to
+   anything else turns every gap in a 162-entry C-focused hierarchy into a
+   potential FALSE MERGE. Same shape as §8 rule 10.
+   Citation note (rule 8a): V2W-BERT's multiple-parent and NVD-omission claims
+   were fetched and CONFIRMED verbatim; the TreeVul PeerOf claim could NOT be
+   verified (the supplied arXiv ID does not resolve) and is not cited — the
+   artifact check replaced it and is stronger.]
+   [former header: FILED, not built — REFINEMENT that recovers a real loss]
+   Hierarchy-aware
    class resolution. Multi-class rule metadata now resolves to NONE (correct for
    genuine ambiguity, merely SAFE for specificity pairs). COST, stated plainly:
    of the 122 findings this drops on SpotBugs+FindSecBugs, **113 are the

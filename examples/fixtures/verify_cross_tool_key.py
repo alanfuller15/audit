@@ -265,9 +265,13 @@ check(_cwe_class_of("INFORMATION_EXPOSURE_THROUGH_AN_ERROR_MESSAGE",
       "ambiguous multi-class metadata resolves to None (was: 'path')")
 
 # (b) SPECIFICITY, not ambiguity: CWE-328 is a CHILD of CWE-327, both correct.
-#     None is the SAFE answer, not the right one — see HANDOFF 3e.
-check(_cwe_class_of("WEAK_MESSAGE_DIGEST_MD5", "CWE-327 CWE-328 weak digest", "") is None,
-      "specificity pair 327/328 resolves to None (was: 'crypto', shadowing 'hash')")
+#     SUPERSEDED 2026-07-26 by item 3e. This previously asserted None — the SAFE
+#     answer, not the right one. With MITRE ancestry available the pair now
+#     resolves to the MOST SPECIFIC member, so the expectation INVERTS from None
+#     to 'hash'. The ambiguity case above is unchanged and must stay None; that
+#     is the whole distinction 3e draws.
+check(_cwe_class_of("WEAK_MESSAGE_DIGEST_MD5", "CWE-327 CWE-328 weak digest", "") == "hash",
+      "specificity pair 327/328 now resolves to the CHILD ('hash'), not None")
 
 # Single-class metadata must still resolve — the fix must not break the 97%.
 check(_cwe_class_of("SQL_INJECTION_JDBC", "CWE-89 sql injection", "") == "sqli",
@@ -592,6 +596,79 @@ check((_base.get("suffix_linkage") or {}).get("active") is False,
 # THE RECORDED COST: deterministic linkage is low-recall BY DESIGN.
 check("LOW-RECALL" in _base["suffix_linkage"]["known_cost"],
       "the known cost (missed real matches) is stated in the output itself")
+
+# ── 3e: hierarchy-aware CWE class resolution ────────────────────────────────
+# ChildOf/ParentOf only; most-specific when ancestor-related; None otherwise.
+# None must remain the answer for unrelated CWEs, for non-unique "most
+# specific", and for pairs whose connecting edge is missing from our copy.
+print("\n3e hierarchy-aware CWE resolution:")
+
+check(audit._class_from_cwes([327, 328]) == "hash",
+      "taxa path: 327+328 are a chain -> most specific (328) -> hash")
+check(audit._class_from_cwes([22, 89]) is None,
+      "taxa path: 22+89 are different pillars -> None")
+check(audit._cwe_class_of("WEAK_MESSAGE_DIGEST_MD5",
+                          "CWE-327 broken crypto CWE-328 weak hash") == "hash",
+      "prose path: 327+328 -> hash (this is the case 3e existed for)")
+check(audit._cwe_class_of("INFORMATION_EXPOSURE",
+                          "CWE-22 CWE-89 CWE-209 CWE-211") is None,
+      "prose path: genuine ambiguity still -> None")
+check(audit._cwe_class_of("X", "CWE-328") == "hash",
+      "single CWE unaffected")
+
+# RELATION TYPES: the hierarchy file must contain ONLY child_of/parent_of, so
+# PeerOf-style relations cannot turn the tree into a general graph.
+_raw = json.load(open(os.path.join(HERE, "..", "..", "analysis", "data",
+                                   "lipp_cwe_buckets.json")))
+_relkeys = set()
+for _v in _raw.values():
+    if isinstance(_v, dict):
+        _relkeys |= set(_v) - {"description"}
+check(_relkeys <= {"child_of", "parent_of"},
+      "hierarchy carries ONLY child_of/parent_of (no PeerOf -> stays a tree)",
+      f"keys={sorted(_relkeys)}")
+
+# AMBIGUITY: multiple parents make "most specific" non-unique -> None.
+# UNREACHABLE from the shipped file (measured: 0 of 162 entries have >1 parent),
+# so it is exercised with an INJECTED hierarchy. Without this test the branch
+# would be unverifiable, and an untested branch guarding a false-merge is worse
+# than no branch.
+_saved = audit._CWE_PARENT
+try:
+    # 900 and 901 both parent 902; neither is an ancestor of the other, and
+    # both are "maximal" -> ambiguous -> None, NOT an arbitrary pick.
+    audit._CWE_PARENT = {900: [902], 901: [902]}
+    check(audit._most_specific_cwe([900, 901]) is None,
+          "AMBIGUITY: two siblings -> None, never an arbitrary winner")
+    # a genuine chain still resolves under the same injected shape
+    audit._CWE_PARENT = {900: [901], 901: [902]}
+    check(audit._most_specific_cwe([900, 901]) == 900,
+          "CHAIN: grandchild+parent -> most specific")
+    check(audit._most_specific_cwe([900, 901, 902]) == 900,
+          "CHAIN of three -> most specific")
+    # DIAMOND: 900 descends from both 901 and 902 -> unique maximal -> 900.
+    audit._CWE_PARENT = {900: [901, 902]}
+    check(audit._most_specific_cwe([900, 901, 902]) == 900,
+          "multi-parent diamond with a unique maximal element still resolves")
+    # MISSING EDGE: the connecting relation is absent from our copy. Must be
+    # None — indistinguishable from 'unrelated', and failing to None is what
+    # makes an incomplete hierarchy safe.
+    audit._CWE_PARENT = {}
+    check(audit._most_specific_cwe([327, 328]) is None,
+          "MISSING EDGE: empty hierarchy -> None (not a guess)")
+    check(audit._class_from_cwes([327, 328]) is None,
+          "MISSING EDGE end-to-end: no hierarchy -> conservative None")
+    # CYCLE GUARD: third-party data must not hang ingest.
+    audit._CWE_PARENT = {900: [901], 901: [900]}
+    check(audit._most_specific_cwe([900, 901]) in (None, 900, 901),
+          "cycle in the hierarchy terminates instead of hanging")
+finally:
+    audit._CWE_PARENT = _saved
+
+# 3e MUST NOT CHANGE ANY EXISTING RESULT on the captured real fixtures.
+_before = audit.ingest_sarif([FF, CC])
+check(_before["cross_tool_merged_findings"] == 1,
+      "3e leaves the real fixtures' merge count unchanged (1, as before)")
 
 print()
 if _fail:
