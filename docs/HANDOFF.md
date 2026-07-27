@@ -114,6 +114,42 @@ design tiers. Only an external judge on real data moves implementation tiers.
 State the tier on every claim you commit, and state its honest bound.
 
 ────────────────────────────────────────────────────────────────────────
+## 5.1 DOCUMENT INDEX — everything a session needs to know exists
+
+Kept because three documents were written and left UNREACHABLE from here; a
+session inheriting HANDOFF would not have known they existed. See §8 rule 11's
+SECOND FORM. **Any new document under docs/ or analysis/ gets a line here in the
+commit that creates it.**
+
+  docs/VALIDATION.md          THE EVIDENCE RECORD. Outranks this file wherever
+                              they disagree (rule 11). Every number lives here.
+  docs/NEGATIVE_RESULT.md     PUBLIC. What did not work, written for someone
+                              deciding whether to attempt it. Linked from the
+                              README. Corrected once already — read §1 before
+                              citing anything about co-location.
+  docs/ARTIFACT_SELF_ASSESSMENT.md
+                              Self-classification against ACM artifact badging,
+                              the SIGSOFT "reasonable efforts" standard, and
+                              artifact-durability findings. §2 is what answered
+                              item 0g. §3 is the durability verdict.
+  docs/SPEC_rule_provenance_measurement.md
+                              Item 0f's pre-registration, results and addendum.
+                              §4.5.1 carries the harm-vs-exposure principle.
+  docs/SCOPE_shipped_consensus_defect.md
+                              §9a holds the pre/post history-rewrite SHA map.
+  docs/SPEC_java_admission.md, docs/SPEC_dedup_shipped_path.md,
+  docs/SPEC_item4_groupability_measurement.md
+                              Earlier specs; check their headers against the
+                              tree before acting (rule 11).
+  analysis/README.md          How every recorded number was produced: scripts,
+                              corpora, fetch commands, pinned SHAs and SWHIDs.
+  analysis/EXTENDING.md       How to ADD to analysis/ — corpus resolution, tier
+                              vocabulary, what to record when a number reaches
+                              VALIDATION.md, and the rule that an instrument is
+                              not changed to fix a result.
+  README.md                   The public front door. Nothing enters it that has
+                              not been re-derived from VALIDATION.md.
+
 ## 6. CURRENT PROJECT STATE (tier-tagged; verify, don't trust this list)
 
 Validated (see VALIDATION.md for full provenance + cross-checks):
@@ -711,7 +747,26 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    formulation adds ranking information beyond size on this corpus.
    Full record: VALIDATION.md "0i RESULT".
 
-0g. [HIGHEST-VALUE OPEN QUESTION — supersedes the granularity work]
+0g. [ANSWERED 2026-07-26 — AND IT PREDICTED ITEM 2 CORRECTLY.
+   BOTH HALVES OF THE OLD HEADER ARE STALE:
+     - "supersedes the granularity work" — the granularity work (item 2) is now
+       EVALUATED AND CLOSED, so there is nothing left to supersede.
+     - "HIGHEST-VALUE OPEN QUESTION" — 0g's own question was "decide whether to
+       re-headline on an effort-aware metric". That was answered by the
+       reasonable-efforts assessment (docs/ARTIFACT_SELF_ASSESSMENT.md §2):
+       the README already MEETS the bar on both limbs — effort was made and
+       accurately disclosed — so it needed one sentence distinguishing
+       "unproven" from "may be unprovable with these tools", not a re-headline.
+       The README now carries a pointer to docs/NEGATIVE_RESULT.md. Done.
+   >>> RECORD THIS, IT IS THE USEFUL PART: 0g's text below says "open item 2 is
+   >>> NOT justified as a parser project", written BEFORE item 2 was evaluated.
+   >>> The evaluation independently reached the same verdict and closed it. This
+   >>> header made a CORRECT PREDICTION and then went stale — which is a
+   >>> different thing from a header that was wrong, and is worth marking as
+   >>> ANSWERED rather than merely superseded. A stale-but-vindicated item is
+   >>> evidence the reasoning was sound, not that it should be discounted.
+   The original text follows and its measurements stand.]
+   [former header: HIGHEST-VALUE OPEN QUESTION — supersedes the granularity work]
    EFFORT-AWARE EVALUATION CHANGES THE ANSWERS. Measured 2026-07-26 on the Lipp
    artifact with the review budget in LINES OF CODE rather than units:
      FUNCTION level consensus PofB@20%LOC = 0.185, IDENTICAL to ranking by LOC
@@ -791,7 +846,28 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    control"; that gap is where this project's claims go to fail.
    Do NOT treat this item as a reason to delay the README correction.
 
-0f. [STRUCTURAL GAP in the 0a guard — record stands regardless of counts]
+0f. [MEASURED ON BOTH ARMS 2026-07-26 — no longer merely a structural gap.
+   Records: VALIDATION.md "0f REGISTRY ARM" and its ADDENDUM, plus the corpus
+   arm. The old header, "STRUCTURAL GAP in the 0a guard", UNDERSTATES what is
+   now known — it describes a hole in a guard, when the hole has since been
+   quantified on two independent populations:
+     CORPUS arm   OWASP: 5 of 11 fired rules declare FindSecBugs provenance;
+                  702/1,909 findings (36.8%). zlib: 0 of 4 — UNINFORMATIVE,
+                  not clearance.
+     REGISTRY arm 560 rules, SEVEN declared upstreams where semgrep's own FAQ
+                  names four. 23.4% declare derivation; multi-signal union
+                  28.2%; Chapman capture-recapture N-hat 95, bootstrap 95% CI
+                  [83, 117], for the one upstream with a reference set.
+     THE FINDING  text similarity recovers 0 of 44 KNOWN-derived rules (median
+                  Jaccard 0.101 against their own upstream). PORTED RULES ARE
+                  REWRITTEN, which is the mechanism that makes derivation
+                  invisible.
+   Still open: whether to build a guard. The decision rule is fixed in
+   docs/SPEC_rule_provenance_measurement.md §4.5 and its §4.5.1 principle —
+   harm governs the guard, exposure governs the disclosure. On current evidence
+   (Delta = 0.8pp) NO guard is warranted and disclosure is owed.
+   The original entry follows.]
+   [former header: STRUCTURAL GAP in the 0a guard — record stands regardless of counts]
    >>> STUDY DONE 2026-07-26, and it WIDENS this item. Full record and a
    >>> PRE-REGISTERED measurement: docs/SPEC_rule_provenance_measurement.md.
    >>> Key external findings, all [fetched]:
@@ -1583,6 +1659,25 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    failure mode is not confusion, it is REDOING FINISHED WORK, or hunting a bug
    that was fixed two sessions ago.
 
+   >>> TREAT THE ASYMMETRY AS STRUCTURAL, NOT AS AN OBSERVATION. It is now at
+   >>> FOUR instances, all in the same direction:
+   >>>   1. 0c   "Scoped, NOT implemented" — the disclosure half was shipped.
+   >>>   2. §6.1 a root cause that item 2 had already removed.
+   >>>   3. 0e   "REQUIREMENTS on any future evaluation" — the evaluation was
+   >>>           done, passed a pre-registered rule, and shipped.
+   >>>   4. 0g   "HIGHEST-VALUE OPEN QUESTION" — already answered, in a document
+   >>>           that was itself orphaned (see SECOND FORM above).
+   >>> Four for four is no longer a run of bad luck to be noted; it is the
+   >>> expected behaviour of this document type and should be planned for.
+   >>> PRACTICAL CONSEQUENCE: when this file and the tree disagree, the PRIOR is
+   >>> that the tree is further along. Check before believing a pessimistic
+   >>> header, and budget a reconciliation sweep at the START of a session
+   >>> rather than treating drift as something to notice opportunistically.
+   >>> COROLLARY WORTH KEEPING: a stale header can still have been RIGHT. 0g
+   >>> predicted item 2's outcome correctly before item 2 was evaluated. Mark
+   >>> such an item ANSWERED, not merely superseded — staleness is about
+   >>> currency, not about whether the reasoning was sound.
+
    THE CONTROL: when an item's header and the tree disagree, THE TREE WINS and
    the header is corrected IN THE SAME COMMIT AS THE DISCOVERY. Do not defer it,
    do not note it for later, do not leave it for the reconciliation pass —
@@ -1600,6 +1695,26 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    says is missing. Three of these were caught by a single grep that took
    seconds. The reconciliation pass of 2026-07-26 found five in one sweep, which
    is evidence the check is cheap and the drift is real.
+
+   ### SECOND FORM — ORPHANING. An artifact that exists but is unreachable
+   ### from the entry point is as lost as one that is stale.
+   Staleness is WRONG TEXT. Orphaning is MISSING TEXT. Both produce the same
+   outcome: **a session that does not know what the project knows.** The second
+   form is easier to miss because nothing looks incorrect — the document is
+   right, it is committed, and it is simply never found.
+
+   FOUND 2026-07-26: three documents had been written and left with no pointer
+   from this file — docs/ARTIFACT_SELF_ASSESSMENT.md (zero references),
+   analysis/EXTENDING.md (zero), docs/NEGATIVE_RESULT.md (one, incidental). One
+   of them, ARTIFACT_SELF_ASSESSMENT §2, contained the answer to open item 0g,
+   which sat marked "HIGHEST-VALUE OPEN QUESTION" while its answer was already
+   written down elsewhere in the repo. That is the cost, concretely: an item
+   stayed open because its answer was unreachable.
+
+   THE CONTROL: **any new document under docs/ or analysis/ gets a line in the
+   DOCUMENT INDEX (§5.1) in the same commit that creates it.** Same discipline
+   as correcting a stale header at the moment of discovery, and for the same
+   reason — the cost is trivial then and compounds afterwards.
 
    ### WORKED INSTANCE — §6.2 into a PUBLIC document, missed by BOTH parties
    Recorded in full because the abstract rule did not prevent it, and because
