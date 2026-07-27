@@ -1,0 +1,60 @@
+==============================================================================
+RULE-PROVENANCE MEASUREMENT — CORPUS ARM (RQ1, RQ2)
+all derived fractions below are LOWER BOUNDS; see header
+==============================================================================
+
+==============================================================================
+OWASP Benchmark v1.2 (Java, synthetic)
+  other tools in this run: SpotBugs, FindSecBugs
+==============================================================================
+  RQ1a  rules that FIRED                        : 11
+  RQ1b  ...declaring provenance (LOWER BOUND)   :     5/11    =  45.5%
+  RQ1c  FINDINGS from declaring rules (LOWER BD):   702/1909  =  36.8%
+
+  upstream named by those rules:
+    FindSecBugs        5 rule(s)
+
+  RQ2 precondition — declaring rules whose NAMED UPSTREAM is also
+  a tool present in this same run:     5/11    =  45.5%
+    findings from those rules:   702/1909  =  36.8%
+        171 findings  java.lang.security.audit.crypto.des-is-deprecated.des-is-deprecated
+                       <- https://find-sec-bugs.github.io/bugs.htm#DES_USAGE
+        130 findings  java.lang.security.audit.crypto.desede-is-deprecated.desede-is-deprecated
+                       <- https://find-sec-bugs.github.io/bugs.htm#TDES_USAGE
+         28 findings  java.lang.security.audit.crypto.use-of-md5.use-of-md5
+                       <- https://find-sec-bugs.github.io/bugs.htm#WEAK_MESSAGE_DIGEST_MD5
+         85 findings  java.lang.security.audit.crypto.use-of-sha1.use-of-sha1
+                       <- https://find-sec-bugs.github.io/bugs.htm#WEAK_MESSAGE_DIGEST_SHA1
+        288 findings  java.lang.security.httpservlet-path-traversal.httpservlet-path-traversal
+                       <- https://find-sec-bugs.github.io/bugs.htm#PATH_TRAVERSAL_IN
+
+==============================================================================
+zlib 1.3.1 (C, real)
+  other tools in this run: Flawfinder, Cppcheck
+==============================================================================
+  RQ1a  rules that FIRED                        : 4
+  RQ1b  ...declaring provenance (LOWER BOUND)   :     0/4     =   0.0%
+  RQ1c  FINDINGS from declaring rules (LOWER BD):     0/33    =   0.0%
+
+  upstream named by those rules:
+
+  RQ2 precondition — declaring rules whose NAMED UPSTREAM is also
+  a tool present in this same run:     0/4     =   0.0%
+    NONE. No rule in this run declares an ancestor that is also
+    one of the other tools scanned, so cross-tool agreement here
+    CANNOT be rule-and-ancestor by DECLARED provenance.
+
+==============================================================================
+CORPORA THAT CANNOT BE MEASURED
+==============================================================================
+  Apache Struts (Java, REAL code) — only SARIF is on disk (struts/sg.sarif,
+  sg_raw.sarif); no native semgrep JSON was captured. SARIF drops
+  source-rule-url, so provenance is UNREADABLE for that run from local data.
+
+  THIS IS THE CONSEQUENTIAL GAP: Struts is the project's only REAL-CODE Java
+  corpus and the site of the single real-code cross-tool agreement ever
+  observed (the ServletRedirectResult near-miss, HANDOFF 0e). Its rule can be
+  resolved only by JOINING against rule metadata captured in another run.
+
+  The Struts near-miss rule does not appear in any measured run;
+  no join is possible from local data.

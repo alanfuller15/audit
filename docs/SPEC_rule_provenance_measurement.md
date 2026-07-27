@@ -252,9 +252,41 @@ agreement is excluded.
 
 Existing evidence (§3) puts D at 22.6–30.4% and Δ at 0.8pp — i.e. **straddling
 the middle band**, which is exactly why the thresholds are fixed now rather than
-after. Note the two criteria disagree on the current data (D says middle, Δ says
-bottom); the pre-committed reading is that **Δ governs the action and D governs
-the disclosure**, because Δ is the measured harm and D is the exposure.
+after. The two criteria disagree on the current data: D says middle band, Δ says
+bottom. Resolved by the principle below.
+
+### 4.5.1 GENERAL PRINCIPLE — harm governs the guard, exposure governs the
+### disclosure. Record this beyond the present instance.
+
+The straddle is not a defect in the thresholds. **The two measures answer
+different questions, so they are entitled to different answers**, and a later
+session hitting the same split should not treat it as a contradiction to be
+resolved in favour of one number.
+
+- **Δ (the shift in the result) is about whether the SIGNAL is CONTAMINATED.**
+  At 0.8pp it barely is. This governs whether to *suppress* — i.e. whether to
+  change what the tool computes. Changing computation on a 0.8pp contaminant
+  would trade a small measured bias for a real loss of merges, which is the
+  wrong trade.
+- **D (the fraction of agreement that is derived) is about whether the CLAIM is
+  HONEST.** A user told "two independent tools agreed" is owed that number
+  **regardless of whether their triage decision would change.** Disclosure is
+  not a weaker form of suppression that you apply when the effect is too small
+  to act on; it discharges a different obligation. The user is owed an accurate
+  description of the evidence they are being shown, and "independent" is a
+  factual claim about provenance, not a summary of effect size.
+
+So: **a small Δ argues against a guard. It argues for nothing whatsoever about
+disclosure.** The two must be decided separately, and a low harm number must
+never be used to retire a disclosure obligation.
+
+This generalises past rule provenance. It is the same shape as 0a/0b (where
+consensus is WITHHELD and the operator is still owed the reason), 0c (a silent
+zero converted to a stated one), and the signal gate (which discloses that
+consensus is not firing rather than pretending). In each case the project's
+standing preference is that **an uninformative or contaminated signal is
+disclosed rather than silently handled** — and the size of the contamination
+governs the handling, never the disclosure.
 
 ### 4.6 Threats, stated in advance
 
@@ -292,3 +324,153 @@ If the fraction is high, "diversity-aware consensus" is measuring something
 weaker than it claims, and that is a README-level fact rather than a caveat.
 If it is low, we have a lower bound and an honest statement of what we could not
 rule out. Both outcomes are publishable; neither requires a new tool.
+
+---
+
+# 7. RESULTS — CORPUS ARM ONLY (run 2026-07-26)
+
+Script `analysis/scripts/rule_provenance.py`, output
+`analysis/results/rule_provenance_corpus_arm.txt`. **Registry arm NOT run** —
+it needs a network fetch not performed, and a partial ecosystem number is worse
+than none because it would be quoted as covering the ecosystem when it covers
+one registry's fired subset.
+
+**INSTRUMENT CORRECTION.** This arm was requested against "SARIF already on
+disk." It is run against **native semgrep JSON** instead, because SARIF drops
+`source-rule-url` — verified, 0 occurrences in `owasp/sg_java2.sarif` versus its
+presence in `owasp/sg_native.json`. A SARIF-based run would have returned a
+guaranteed false zero and looked like clearance.
+
+**Every derived fraction below is a LOWER BOUND.** Nothing obliges a tool to
+declare that a rule was ported.
+
+## 7.1 RQ1 — declaration rate
+
+### OWASP Benchmark v1.2 (Java, synthetic; run alongside SpotBugs+FindSecBugs)
+```
+rules LOADED in the p/java config                 60
+rules that FIRED                                  11
+rules that fired AND declare provenance            5   = 45.5% of fired   [LOWER BOUND]
+                                                       =  8.3% of loaded  [LOWER BOUND]
+findings from those rules                        702 / 1,909 = 36.8%      [LOWER BOUND]
+```
+
+### zlib 1.3.1 (C, real; run alongside flawfinder + cppcheck)
+```
+rules that FIRED                                   4
+rules that fired AND declare provenance            0   = 0.0%             [LOWER BOUND]
+findings from those rules                          0 / 33 = 0.0%          [LOWER BOUND]
+```
+**The zlib zero is UNINFORMATIVE AND MUST NOT BE READ AS CLEARANCE.** Per §4.3,
+pre-registered: a low declaration rate is equally consistent with genuine
+independence and with undeclared porting. semgrep's C rules simply carry no
+`source-rule-url`; that is a fact about disclosure practice, not about ancestry.
+It would be a straightforward error to conclude "the C pipeline is unaffected by
+rule derivation" from this number, and this sentence exists to block it.
+
+## 7.2 RQ2 — does the declared ancestor name a tool ALSO IN THE RUN?
+
+This is the question that matters for consensus, because a declared ancestor
+only contaminates *agreement* if the ancestor's tool is one of the tools
+agreeing.
+
+```
+OWASP : 5 of 5 declaring rules name FindSecBugs, which IS in the run   (100%)
+        covering 702 of 1,909 findings (36.8%)
+zlib  : 0 — no declaring rules at all, so no cross-tool agreement in that
+        run can be rule-and-ancestor by DECLARED provenance
+```
+
+The five, with FINDING counts (not pair counts — see §7.3):
+```
+  288  httpservlet-path-traversal   <- find-sec-bugs #PATH_TRAVERSAL_IN
+  171  des-is-deprecated            <- find-sec-bugs #DES_USAGE
+  130  desede-is-deprecated         <- find-sec-bugs #TDES_USAGE
+   85  use-of-sha1                  <- find-sec-bugs #WEAK_MESSAGE_DIGEST_SHA1
+   28  use-of-md5                   <- find-sec-bugs #WEAK_MESSAGE_DIGEST_MD5
+```
+
+**BOUND ON THE 100%.** Five of five is a striking ratio and it is not a random
+draw. This run was *constructed* to pair semgrep with SpotBugs+FindSecBugs, and
+FindSecBugs is precisely the upstream semgrep's Java security rules are known to
+draw on (§2.1). The honest statement is: **where provenance was declared at all
+in this run, it named a co-present tool every time** — on n=5, in a
+deliberately-chosen pairing. It is not evidence that 100% of derivation
+generally lands on a co-present tool.
+
+## 7.3 THE DENOMINATORS — five of them, all different, none interchangeable
+
+The single most likely way to produce a wrong headline here. Each figure below
+is correct and they are not versions of one another.
+
+| figure | numerator | denominator | what it answers |
+|---|---|---|---|
+| **8.3%** (5/60) | semgrep rules declaring FSB provenance | semgrep rules **loaded** in the `p/java` config | how much of the ruleset we *ran* is declared-derived |
+| **45.5%** (5/11) | same | semgrep rules that **fired** on this corpus | how much of what actually spoke is declared-derived |
+| **36.8%** (702/1,909) | semgrep **findings** from those rules | **all** semgrep findings on this corpus | how much of the *output volume* is declared-derived |
+| **30.4%** (483/1,588) | co-located (semgrep rule, SpotBugs rule) **PAIRS** where the semgrep rule declares that SpotBugs rule as ancestor | all co-located semgrep×SpotBugs rule pairs | how much of the *agreement* is rule-with-its-own-ancestor |
+| **22.6%** (278/1,229) | co-located **LOCATIONS** whose cross-tool agreement is derived-**ONLY** | all co-located locations | how many *places* have no independent agreement at all |
+
+**If one number goes in the README it should be 30.4% or 22.6%**, because those
+are the two that describe *agreement* — which is what the tool claims and what
+the user is being shown. 36.8% describes semgrep's output volume and says
+nothing directly about consensus. 8.3% is the most misleadingly low: 49 of the
+60 loaded rules never fired, so the denominator is dominated by rules
+irrelevant to this corpus.
+
+RECONCILIATION with HANDOFF 0f, checked: 0f lists "the four pairs" as
+PATH_TRAVERSAL_IN 199, DES_USAGE 171, WEAK_MESSAGE_DIGEST_SHA1 85,
+WEAK_MESSAGE_DIGEST_MD5 28 — which sum to exactly 483, i.e. those are
+**co-located PAIR counts, not finding counts**. This run finds the same 5
+declaring rules and the same 702/1,909, and additionally identifies a **fifth**
+rule 0f did not list (`desede-is-deprecated` ← `TDES_USAGE`, 130 findings) which
+evidently contributed 0 co-located pairs. The two records agree; 0f's list was
+of pairs, not of rules.
+
+## 7.4 THE GAP THAT MATTERS — Struts is unmeasurable from local data
+
+Only SARIF was captured for the Struts run; no native semgrep JSON. SARIF drops
+`source-rule-url`, so provenance is unreadable there.
+
+This is consequential rather than incidental: **Struts is the only REAL-CODE
+Java corpus and the site of the single real-code cross-tool agreement this
+project has ever observed** (the `ServletRedirectResult` near-miss, HANDOFF 0e).
+
+The join was attempted and **failed**: the rule that fired on Struts is
+`java.lang.security.audit.unvalidated-redirect.unvalidated-redirect`, and it did
+NOT fire on OWASP, so its metadata is not in any locally-captured native output.
+Its SARIF rule blob carries only `precision` and `tags` — no `source-rule-url`,
+no `references`.
+
+**Therefore: HANDOFF 0f's statement that the Struts near-miss "IS a derived
+pair" is NOT reproducible from data on this machine.** 0f quotes a
+`source-rule-url` for `unvalidated-redirect` pointing at
+`#UNVALIDATED_REDIRECT`, which must have come from registry or native output
+captured at the time and not retained. That claim is:
+- **consistent** with everything measured here (all 5 measurable Java security
+  rules declare FindSecBugs ancestry), and
+- **load-bearing** — it is the basis for "on real code this project has observed
+  ZERO independent cross-methodology agreements", and
+- **currently unverifiable in-session.**
+
+Per RULE 10.2 it should be treated as an inventor/prior-session-attested result
+with the artifact absent, not as a checked fact. **Recovering it is cheap**: one
+`semgrep --config=p/java --json` run over Struts captures the metadata, and that
+single re-run would settle it. Recommended before 0f's zero-independent-
+agreements claim is cited again.
+
+## 7.5 What this does and does not settle against the §4.5 decision rule
+
+It does NOT settle it. §4.5 turns on D (fraction of *agreement* that is derived)
+and Δ (shift in the precision estimate) — D is unchanged at 30.4%/22.6% from 0f,
+and Δ is unchanged at 0.8pp. This arm measured RQ1 and the RQ2 precondition, not
+a new D or Δ.
+
+What it adds: the declaration rate is now measured on two corpora rather than
+asserted from one; the C pipeline's zero is on record *as uninformative*; the
+five denominators are pinned to exact definitions; and the Struts evidence gap
+is identified as the one cheap, high-value re-run outstanding.
+
+Per §4.5.1 the standing reading is unchanged: **Δ = 0.8pp argues against a
+guard and argues nothing about disclosure.** No guard is warranted on this
+evidence. Disclosure remains owed.

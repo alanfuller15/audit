@@ -602,6 +602,32 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    >>> threshold. Note the SPEC's asymmetry limit: only semgrep declares
    >>> provenance, so a LOW number is NOT evidence of independence and must be
    >>> reported as uninformative rather than as clearance.
+   >>> CORPUS ARM RUN 2026-07-26 (registry arm NOT run — needs a fetch).
+   >>> Results: SPEC §7. All figures are LOWER BOUNDS.
+   >>>   OWASP: 5 of 11 FIRED rules (45.5%) declare FindSecBugs provenance,
+   >>>          = 8.3% of the 60 rules LOADED, = 702/1,909 findings (36.8%).
+   >>>          All 5 name a tool CO-PRESENT in the run (n=5, chosen pairing).
+   >>>   zlib : 0 of 4 fired rules declare anything. THIS IS UNINFORMATIVE,
+   >>>          NOT CLEARANCE — semgrep's C rules simply do not disclose.
+   >>> FIVE DENOMINATORS now pinned to exact definitions in SPEC §7.3 —
+   >>> 8.3% / 45.5% / 36.8% / 30.4% / 22.6% are NOT versions of one number.
+   >>> If one goes in the README it should be 30.4% or 22.6%: those describe
+   >>> AGREEMENT, which is what the tool claims. 8.3% is the most misleadingly
+   >>> low (49 of 60 loaded rules never fired).
+   >>> 0f's four listed "pairs" (199/171/85/28) sum to 483 = CO-LOCATED PAIRS,
+   >>> not findings. A FIFTH declaring rule exists that 0f did not list
+   >>> (desede-is-deprecated <- TDES_USAGE, 130 findings, 0 co-located pairs).
+   >>> !! EVIDENCE GAP, ACT ON THIS BEFORE RE-CITING 0f !!
+   >>> The claim "the Struts near-miss IS a derived pair" is NOT reproducible
+   >>> from data on this machine. Only SARIF was kept for Struts and SARIF drops
+   >>> source-rule-url; the rule that fired there (unvalidated-redirect) did NOT
+   >>> fire on OWASP, so no join recovers it. That claim is LOAD-BEARING (it is
+   >>> the basis for "zero independent real-code agreements") and is currently
+   >>> prior-session-attested with the artifact absent — RULE 10.2 applies.
+   >>> CHEAP FIX: one `semgrep --config=p/java --json` run over Struts settles
+   >>> it. Do that before the zero-independent-agreements claim is used again.
+   >>> DECISION RULE UNMOVED: D and Delta are unchanged, so per SPEC §4.5.1
+   >>> no guard is warranted and disclosure is still owed.
    LINEAGE EXISTS AT THE RULE LEVEL, BELOW THE ENGINE LEVEL 0a GUARDS.
    Found 2026-07-26 while sizing open item 2. semgrep's
    `unvalidated-redirect` rule declares, in its own metadata:
