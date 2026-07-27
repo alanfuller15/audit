@@ -1,0 +1,61 @@
+==============================================================================
+0f ADDENDUM — corrected declared set, fair recall denominator,
+bootstrapped interval.  ONE REGISTRY (semgrep), NOT the ecosystem.
+==============================================================================
+
+population: 560 distinct registry rules
+
+==============================================================================
+1. DECLARED PROVENANCE, BY UPSTREAM (corrected)
+==============================================================================
+  FindSecBugs                   44  ( 7.86% of registry)
+  Bandit                        44  ( 7.86% of registry)
+  Brakeman                      19  ( 3.39% of registry)
+  gosec                         15  ( 2.68% of registry)
+  eslint-plugin-security         6  ( 1.07% of registry)
+  gixy                           2  ( 0.36% of registry)
+  hadolint                       1  ( 0.18% of registry)
+
+  S1 as first reported : 73/560 = 13.04%
+  S1 CORRECTED         : 131/560 = 23.39%
+  previously missed    : 58 rules, because their declaration points at a
+                         GitHub repo rather than a docs host.
+
+==============================================================================
+2. UNION RESTATED WITH THE FULL DECLARED SET
+==============================================================================
+  S1 corrected   131   S2    10   S3    48   S4     0
+  union(S1..S4)   158/560 = 28.21%   (was 105 = 18.75%)
+
+==============================================================================
+3. RECALL, ON THE ONLY DENOMINATOR IT CAN FAIRLY BE MEASURED ON
+==============================================================================
+  S3 and S4 compare against a FINDSECBUGS reference set only. Rules
+  declaring any OTHER upstream could never match, so scoring them as misses
+  overstates the failure. Fair denominator = FindSecBugs-declared rules.
+
+  FindSecBugs-declared (testable)        44
+  other upstreams (NEVER TESTED)         87  = 66.4% of the declared set
+    S2 attribution         on FSB-declared   2/44 =   4.5%   | on never-tested upstreams   5 (uninterpretable)
+    S3 rule-id match       on FSB-declared  22/44 =  50.0%   | on never-tested upstreams   2 (uninterpretable)
+    S4 text similarity     on FSB-declared   0/44 =   0.0%   | on never-tested upstreams   0 (uninterpretable)
+
+  So the earlier "S3 recovers 30.1%" was computed over a denominator that
+  included 87 rules it had no reference set for. Corrected, S3 recovers
+  50.0% of FindSecBugs-derived rules. S4 still recovers
+  0.0% — the rewriting finding is UNAFFECTED, because it was
+  always measured against the FindSecBugs text and now has the right denominator.
+
+==============================================================================
+4. CAPTURE-RECAPTURE, ON THE FINDSECBUGS SUB-POPULATION ONLY
+==============================================================================
+  Both passes must address the SAME population. Pass 1 = declares
+  FindSecBugs; pass 2 = rule-id matches a FindSecBugs pattern. Neither can see
+  a Bandit- or gosec-derived rule, so the target is FindSecBugs-derived rules
+  IN THIS REGISTRY, not derived rules in general.
+    n1 (declares FSB) = 44   n2 (FSB name match) = 48   overlap = 22
+    Chapman N-hat = 95
+    BOOTSTRAP 95% CI (5,000 resamples) : [83, 117]
+    bootstrap SD 9   CV = 10%
+  Asymptotic SE is documented as performing poorly at small and moderate n, so
+  the bootstrap interval is quoted in preference to it.

@@ -1,0 +1,23 @@
+{
+  "population": 560,
+  "declared_by_upstream": {
+    "FindSecBugs": 44,
+    "hadolint": 1,
+    "gosec": 15,
+    "eslint-plugin-security": 6,
+    "Bandit": 44,
+    "Brakeman": 19,
+    "gixy": 2
+  },
+  "s1_corrected": 131,
+  "union_corrected": 158,
+  "fsb_declared": 44,
+  "s3": 48,
+  "overlap": 22,
+  "chapman": 94.8695652173913,
+  "boot_ci95": [
+    82.61290322580645,
+    117.125
+  ],
+  "boot_sd": 9.160590389100959
+}

@@ -3753,6 +3753,12 @@ One pre-existing test was INVERTED, not deleted: it asserted the 327/328 pair
 resolves to None, which was the safe-not-right answer 3e exists to correct.
 
 ## 0f REGISTRY ARM (2026-07-26) — prevalence estimation under incomplete detection
+> **[NUMBERS SUPERSEDED — see "0f REGISTRY ARM ADDENDUM" at the end of this
+> file. S1 was UNDERCOUNTED (73 -> 131) because most declarations point at a
+> GitHub repo rather than a docs host, so the union moves 105 -> 158 and the
+> recall denominator used below was wrong. The METHOD and the rewriting finding
+> stand. Do not quote 13.04%, 18.75%, 30.1% or N-hat 157 from the section
+> below.]**
 ## ONE REGISTRY (semgrep). NOT the ecosystem. Say so wherever the number appears.
 
 Tier: `[self-tested]` analysis over `[externally-grounded]` inputs (semgrep's live
@@ -3865,3 +3871,113 @@ NOT supported, and must not be claimed: that ~28% of static-analysis rules
 generally are ported; that other registries behave like this one; or that a
 specific consensus finding is contaminated. This is one registry, one upstream
 reference set, and an estimate with stated assumptions.
+
+## 0f REGISTRY ARM — ADDENDUM (2026-07-26). Corrects the numbers above.
+## Script: `analysis/scripts/rule_provenance_registry_addendum.py`
+
+### CORRECTION 1 — S1 undercounted DECLARED provenance by 44%
+The first run matched upstream *documentation hosts*. Most declarations point at
+a GitHub **repo** instead, so they were missed. All declared upstream tools:
+```
+FindSecBugs             44   ( 7.86%)
+Bandit                  44   ( 7.86%)
+Brakeman                19   ( 3.39%)
+gosec                   15   ( 2.68%)
+eslint-plugin-security   6   ( 1.07%)
+gixy                     2   ( 0.36%)
+hadolint                 1   ( 0.18%)
+                       ---
+S1 first reported       73/560 = 13.04%
+S1 CORRECTED           131/560 = 23.39%      (+58 rules)
+union(S1..S4)          158/560 = 28.21%      (was 105 = 18.75%)
+```
+**Semgrep's FAQ named four upstreams; the registry declares seven.** FindSecBugs
+is only a third of the declared population.
+
+### CORRECTION 2 — the recall denominator was wrong, in the direction that
+### FLATTERED the failure of the undeclared-detection signals
+S3/S4 compare against a **FindSecBugs** reference set only. Rules declaring
+Bandit, Brakeman, gosec, eslint-plugin-security, gixy or hadolint could never
+match, so scoring them as misses overstates the signals' failure. Fair
+denominator = the FindSecBugs-declared subset.
+```
+FindSecBugs-declared (testable)   44
+other upstreams (NEVER TESTED)    87   = 66.4% of the declared set
+
+                         recall on FSB-declared
+S2 attribution               2/44 =  4.5%
+S3 rule-id match            22/44 = 50.0%     (was reported as 30.1%)
+S4 text similarity           0/44 =  0.0%     (unchanged)
+```
+**Two thirds of the declared population was never testable by S3/S4.** That is
+now stated rather than silently absorbed into a recall figure.
+
+**THE REWRITING FINDING IS UNAFFECTED.** S4 was always measured against the
+FindSecBugs text; it now simply has the right denominator. 0 of 44 rules that
+declare FindSecBugs as their source retain enough of its wording to be detected.
+
+### CORRECTION 3 — capture-recapture must run on a COHERENT population
+The earlier N-hat=157 paired n1=73 (mixed upstreams) with n2=48 (FindSecBugs
+name-matching). Those address different populations, so the estimate was
+malformed. Restricted to rules derived FROM FINDSECBUGS:
+```
+n1 (declares FSB) = 44   n2 (FSB name match) = 48   overlap = 22
+Chapman N-hat = 95
+BOOTSTRAP 95% CI (5,000 resamples) = [83, 117]   SD 9   CV 10%
+```
+Bootstrap quoted in preference to the asymptotic SE, which the literature
+reports "often perform[s] poorly with small sample sizes". CV = 10%, inside the
+conventional 20% threshold, so the precision is acceptable — checked, not
+assumed.
+
+So for the ONE upstream with a reference set: **44 declared, ~95 estimated
+actually derived — a 2.2x undercount of declaration.** Whether that factor
+applies to the other 87 declared rules is **UNTESTED and must not be
+extrapolated**; no reference sets exist here for those six upstreams.
+
+### THE THREE INDEPENDENT NEGATIVE BIASES — all point the same way
+Verified individually rather than taken as one caveat:
+
+1. **Positive dependence between sources → UNDERestimation.** Bonander et al.,
+   *Epidemiology* 2024 (PMC11022997) `[fetched]`, verbatim: "positive
+   ascertainment covariance leads to an underestimation of outcome
+   probabilities, whereas negative ascertainment covariance leads to
+   overestimation", citing Brenner (1995), *Use and limitations of the
+   capture–recapture method in disease monitoring with two dependent sources*.
+   HERE: a faithful port is more likely to both declare its source and keep the
+   name. Positive dependence.
+
+2. **Heterogeneous capture probability → UNDERestimation, SEPARATELY.**
+   `[fetched]`: "Heterogeneous capture probabilities cause underestimation of
+   population size"; failure to account for it "has long been known to cause
+   substantial bias". On-point citation: Mao, *Petersen estimator, Chapman
+   adjustment, list effects, and heterogeneity*, Biometrics 2017.
+   HERE, AND NOT PREVIOUSLY NOTED: a faithful port that keeps its upstream name
+   is easy for BOTH passes to catch; a rewritten port is hard for both. Capture
+   probability is strongly heterogeneous across the population, and this
+   depresses N-hat independently of the S1/S3 correlation in (1).
+
+3. **Chapman's own negative bias under violated conditions.** `[fetched]`: "when
+   certain conditions are violated, the Chapman estimator can experience
+   negative bias and provides a lower bound for the true population size, with
+   this underestimation bias being mainly relevant for population sizes below
+   50." **This is the one BOUNDED component**: N-hat = 95 is above 50, so this
+   term is likely minor here.
+
+### CONSEQUENCE — REPORT TWO FLOORS, NOT AN ESTIMATE AND AN INTERVAL
+```
+FLOOR 1 (most conservative)  union of all signals   158/560 = 28.2%
+FLOOR 2 (less conservative)  Chapman, FSB only      95 FSB-derived [83, 117]
+CEILING                      UNBOUNDED by this method
+```
+All three biases push down; none pushes up. The bootstrap interval [83, 117]
+quantifies **sampling** uncertainty only — it does not cover any of the three
+structural biases, and must not be read as a range for the true value.
+
+### WHAT THIS DOES AND DOES NOT CHANGE
+UNCHANGED: the rewriting mechanism (text similarity recovers 0 of 44 known
+FindSecBugs-derived rules); that a low number is uninformative rather than
+clearance; that this is ONE REGISTRY.
+STRENGTHENED: declared provenance is 23.4% not 13.0%, and seven upstreams appear
+where semgrep's own documentation names four — so the practice is broader than
+the vendor's own description of it.

@@ -734,6 +734,30 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    >>> instrument failure first; it is not one, and no threshold rescues it.
    >>> STILL UNINFORMATIVE IF LOW: absence of a marker is not absence of
    >>> derivation. One registry, one upstream reference set.
+   >>> ADDENDUM 2026-07-26 — THE FIRST RUN'S NUMBERS ARE SUPERSEDED. S1 matched
+   >>> upstream DOC HOSTS, but most declarations point at a GitHub REPO, so it
+   >>> undercounted by 44%: S1 73 -> 131 (23.39%), union 105 -> 158 (28.21%).
+   >>> SEVEN upstreams are declared where semgrep's FAQ names four: FindSecBugs
+   >>> 44, Bandit 44, Brakeman 19, gosec 15, eslint-plugin-security 6, gixy 2,
+   >>> hadolint 1.
+   >>> The recall denominator was also wrong and flattered the signals' failure:
+   >>> S3/S4 only have a FindSecBugs reference set, so 87 of 131 declared rules
+   >>> (66.4%) were NEVER TESTABLE. On the fair denominator S3 recovers 50.0%
+   >>> (not 30.1%) and S4 still 0.0% — THE REWRITING FINDING IS UNAFFECTED.
+   >>> Capture-recapture rerun on a COHERENT population (FSB only): N-hat = 95,
+   >>> bootstrap 95% CI [83, 117], CV 10%. The earlier 157 paired mismatched
+   >>> populations and is withdrawn.
+   >>> REPORT AS TWO FLOORS, NOT AN ESTIMATE: union 28.2% and Chapman 95, with
+   >>> the CEILING UNBOUNDED. THREE independent negative biases, all verified
+   >>> and all pointing down — positive source dependence (Brenner via
+   >>> PMC11022997), HETEROGENEOUS capture probability (separate, and it applies
+   >>> strongly here: faithful ports are easy for both passes, rewritten ones
+   >>> hard for both), and Chapman's own negative bias (the one BOUNDED term —
+   >>> mainly matters below N=50, and N-hat is 95).
+   >>> The bootstrap interval covers SAMPLING error only, NOT those biases.
+   >>> DO NOT extrapolate the 2.2x declaration-undercount to the other six
+   >>> upstreams; no reference sets exist for them. And do not extend to other
+   >>> registries — that is a different study.
    >>> CORPUS ARM RUN 2026-07-26 (registry arm NOT run — needs a fetch).
    >>> Results: SPEC §7. All figures are LOWER BOUNDS.
    >>>   OWASP: 5 of 11 FIRED rules (45.5%) declare FindSecBugs provenance,
