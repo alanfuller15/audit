@@ -578,6 +578,30 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    Do NOT treat this item as a reason to delay the README correction.
 
 0f. [STRUCTURAL GAP in the 0a guard — record stands regardless of counts]
+   >>> STUDY DONE 2026-07-26, and it WIDENS this item. Full record and a
+   >>> PRE-REGISTERED measurement: docs/SPEC_rule_provenance_measurement.md.
+   >>> Key external findings, all [fetched]:
+   >>>  - Semgrep's OWN FAQ: the registry "includes rulesets inspired by the
+   >>>    rules of many popular linters and checkers, including ESLint, RuboCop,
+   >>>    Bandit, and FindSecBugs." So 0f is NOT a FindSecBugs quirk — rule
+   >>>    derivation is a documented, general way registries are built.
+   >>>  - di Angelo & Salzer, arXiv 2304.11624 §6.4 NAMES the mechanism exactly
+   >>>    ("Tools form families by being derived from common ancestors…Related
+   >>>    tools may misjudge a contract in a similar way and outnumber tools
+   >>>    with the correct result") — but ASSERTS it, does not measure it, and
+   >>>    in the smart-contract domain.
+   >>>  - The ensemble-diversity literature covers shared METHOD and correlated
+   >>>    OUTCOMES; nothing found models shared PROVENANCE as a distinct cause.
+   >>>  - Lenarduzzi et al. measured ~18,000 cross-tool rule pairs, but by
+   >>>    SEMANTIC containment, which convergent design satisfies too. Adjacent
+   >>>    question, not this one.
+   >>>  - NOBODY HAS MEASURED the derived FRACTION of any tool's rule set.
+   >>>    Explicit search negative. This is a genuine gap, not a rediscovery.
+   >>> NO GUARD IS TO BE BUILT until the pre-registered measurement runs; its
+   >>> decision rule is fixed in the SPEC so the result cannot pick its own
+   >>> threshold. Note the SPEC's asymmetry limit: only semgrep declares
+   >>> provenance, so a LOW number is NOT evidence of independence and must be
+   >>> reported as uninformative rather than as clearance.
    LINEAGE EXISTS AT THE RULE LEVEL, BELOW THE ENGINE LEVEL 0a GUARDS.
    Found 2026-07-26 while sizing open item 2. semgrep's
    `unvalidated-redirect` rule declares, in its own metadata:
