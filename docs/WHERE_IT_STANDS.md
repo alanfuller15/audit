@@ -64,7 +64,7 @@ an unexplained zero.
 authoritative field where scanners record what kind of bug they found, instead
 of guessing from descriptive text.
 
-The main test suite holds 67 checks and they all pass. A second, smaller suite
+The main test suite holds 112 checks and they all pass. A second, smaller suite
 covering how the report renders has 4 passing and 4 known gaps that are recorded
 rather than hidden.
 
@@ -86,12 +86,30 @@ different proximate causes, and it keeps coming out the same way. Adding a third
 scanner produced two agreements in over a thousand findings — and both were
 between the two *most similar* tools, in test code, not library source.
 
-The uncomfortable logic underneath: the premise wants tools that are
-**methodologically different**, because different methods have different blind
-spots. But the mechanism requires them to point at **the same line**. Those pull
-against each other. The more different two tools are, the less likely they are
-to describe the same bug in the same place. **Buying another scanner does not
-fix this**, which is worth knowing before spending money on one.
+The uncomfortable logic underneath — and this paragraph was **wrong for a day**,
+which is itself worth reading:
+
+The original version said the premise pulls against its own mechanism: it wants
+tools that are **methodologically different**, because different methods have
+different blind spots, but the mechanism requires them to point at **the same
+line**, and the more different two tools are the less likely that is. That was
+false, and the project's own evidence log had already refuted it. Match the same
+tools on the same data **function-to-function** instead of line-to-line and the
+agreement is there: our own two default scanners go from 0 agreements to 66, and
+across methodologically different pairs 1,169 becomes 7,514. They were agreeing
+the whole time; we were holding the wrong ruler.
+
+What is actually true is narrower and more interesting. Different scanners *do*
+land in the same function. Then, **92% of the time, they disagree about what the
+bug there is** — one says buffer overflow, the other says null dereference. The
+tool refuses those, correctly, because merging two different bugs is worse than
+missing one. So agreement is not unobservable; it is real, and then most of it
+is filtered out for good reason.
+
+**Buying another scanner still does not fix this** — that conclusion survived
+the correction, and is now better supported than before, because a fourth
+scanner would have been measured with the same wrong ruler. It is worth knowing
+before spending money on one.
 
 ---
 
@@ -177,10 +195,20 @@ are real open questions, not defects.
 
 **Small and clear:**
 
-- Warn the user when scanner agreement is being driven by file size rather than
-  by genuine consensus.
-- When two scanners describe the same file by different paths, the tool now
-  detects and reports it — but doesn't reconcile it. Reconciling is still open.
+Both items that sat here have since been built, and this section was stale for a
+day — a reminder that a status document drifts toward making a project look less
+finished than it is, because entries get written when work is *identified* and
+rarely rewritten when it *lands*.
+
+- ~~Warn the user when scanner agreement is being driven by file size rather
+  than by genuine consensus.~~ **Done.** The tool now reports this per run, and
+  reports "not applicable" rather than an unstable number when it cannot measure
+  it honestly.
+- ~~When two scanners describe the same file by different paths, the tool
+  detects and reports it but doesn't reconcile it.~~ **Done.** It now reconciles
+  them, but only where the match is unambiguous — where it isn't, it still
+  declines rather than guess, because a wrong match invents agreement that isn't
+  there.
 
 **Large and interesting:**
 

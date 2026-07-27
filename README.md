@@ -109,13 +109,19 @@ The top of `out.json` is your review queue, ordered by review-worthiness.
   tool agreement in a published CVE dataset. How well `audit` reproduces that on live scanner
   output has not been measured against CVE ground truth — it implements an externally validated
   premise, and how well it implements it is a separate, open question. See `docs/VALIDATION.md`.
-- **The default pair rarely agrees, and that is a property of the scanners, not a bug.**
-  flawfinder pattern-matches risky functions; cppcheck does dataflow. They look for different
-  things, so they seldom flag the same line for the same reason. On real zlib (1,164 findings)
-  they produced **2 cross-tool merges, both in benchmark code and none in library sources**.
-  Consensus needs tools with *partial* overlap — different enough that agreement is independent
-  evidence, similar enough that they can agree at all. Adding a third scanner with genuinely
-  different coverage is the lever that helps; expect a sparse consensus column with two.
+- **The default pair does not agree on real code, and that is a property of the scanners, not a
+  bug.** flawfinder pattern-matches risky functions; cppcheck does dataflow. They look for
+  different things, so they seldom flag the same line for the same reason. On real zlib the pair
+  produced **zero cross-tool merges**: they co-locate 43 times, only 11 of those have a resolvable
+  bug class on both sides, and none of the 11 agree on it. Expect an empty consensus column with
+  two scanners.
+- **Adding a third scanner did not fix that, and we measured it rather than assuming.** Running
+  semgrep alongside the pair produced 2 merges in 1,164 findings (0.18%) — and both were
+  flawfinder+semgrep, the two most methodologically *similar* tools, agreeing that a `printf` is a
+  `printf`, in benchmark code rather than library sources. Consensus needs tools with *partial*
+  overlap — different enough that agreement is independent evidence, similar enough that they can
+  agree at all — but on this evidence adding scanners is the wrong lever to pull first, and no
+  purchase is known to resolve it. See `docs/NEGATIVE_RESULT.md`.
 - **The premise was measured on C/C++** using findings from the six analyzers in the source study
   — flawfinder, cppcheck, CodeQL, CodeChecker, Infer, and CommSCA, the anonymized commercial tool
   that was the strongest single performer. `audit` itself has been run against live output from

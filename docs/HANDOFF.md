@@ -121,6 +121,13 @@ session inheriting HANDOFF would not have known they existed. See §8 rule 11's
 SECOND FORM. **Any new document under docs/ or analysis/ gets a line here in the
 commit that creates it.**
 
+>>> RECONCILED 2026-07-26 (third sweep): THIS INDEX WAS ITSELF INCOMPLETE ON THE
+>>> DAY IT WAS WRITTEN. It listed 12 of 18 documents. The control above covers
+>>> documents created AFTER it; nobody enumerated the ones already on disk. Six
+>>> were missing and three of those had NO inbound reference from anywhere in the
+>>> repo. The index is now built from `ls docs/ analysis/`, not from memory —
+>>> which is the only form of this control that can be checked.
+
   docs/VALIDATION.md          THE EVIDENCE RECORD. Outranks this file wherever
                               they disagree (rule 11). Every number lives here.
   docs/NEGATIVE_RESULT.md     PUBLIC. What did not work, written for someone
@@ -148,6 +155,35 @@ commit that creates it.**
   docs/SPEC_item4_groupability_measurement.md
                               Earlier specs; check their headers against the
                               tree before acting (rule 11).
+  docs/WHERE_IT_STANDS.md     PUBLIC-FACING, plain language, no numbers on
+                              faith. Sits in front of the README for a
+                              non-specialist reader. WAS ORPHANED — zero
+                              inbound references from anywhere — and it
+                              therefore MISSED the correction sweep of commit
+                              80d1817 and carried the withdrawn co-location
+                              claim for a further day. Corrected 2026-07-26.
+                              Anything published here re-derives from
+                              VALIDATION.md like the README does.
+  docs/README_correction_0j_draft.md
+                              The 0j README correction, DRAFTED NOT APPLIED.
+                              Cross-referenced from item 0j; indexed here so it
+                              is reachable without reading 0j first.
+  docs/GENESIS_TEMPLATE.md    The frozen charter this project's method runs on.
+                              §0 says read HANDOFF before it; it is not
+                              optional, it is second.
+  docs/HANDOFF_VALIDATION.md  Evidence that §10's anti-capitulation hardening
+                              was adversarially TESTED, not asserted — the
+                              probe battery, its results, and what it does NOT
+                              establish. Read before trusting §10 to hold.
+  docs/START_HERE_prompt.txt  The onboarding prompt for handing this project to
+                              a fresh session. BOUND: written for the zip-
+                              delivery workflow ("audit_plugin_v8.zip"); this
+                              is now a git repo, so its step 1 needs reading as
+                              "read these files", not "extract the zip".
+  docs/AUDIT.md               The generic empirical-audit plug-in — how to run
+                              an audit of ANY project with this method. Not
+                              about this project's findings; about the
+                              procedure. Referenced from src/audit.py:1982.
   analysis/README.md          How every recorded number was produced: scripts,
                               corpora, fetch commands, pinned SHAs and SWHIDs.
   analysis/EXTENDING.md       How to ADD to analysis/ — corpus resolution, tier
@@ -461,13 +497,34 @@ WHAT REMAINS GENUINELY OPEN, in priority order:
 ────────────────────────────────────────────────────────────────────────
 ## 7. PENDING WORK (REORDERED 2026-07-26 by a structural finding — read §6.1)
 
+>>> STALE PREAMBLE, CORRECTED 2026-07-26 (rule 11). The text below states the
+>>> FINGERPRINT root cause as a live property of the shipped code. IT IS NOT.
+>>> Item 2 split the two algorithms and the tree confirms it: `_result_key`
+>>> (src/audit.py:1152) is same-tool only and its own docstring says "NOT a
+>>> cross-tool key"; `_cross_keys` (:1174) is the cross-tool path and is "never
+>>> derived from a tool's own fingerprint". An `fp:`/`rk:` collision is no
+>>> longer what blocks anything.
+>>> WHAT SURVIVES, and it is why this ordering still stands: the pair still
+>>> produces ZERO cross-tool merges on real zlib. The cause is now SEMANTIC —
+>>> near-disjoint CWE-class profiles, 43 co-locations, 11 classed on both sides,
+>>> 0 matching — and it is a property of the two tools, NOT fixable by us.
+>>> See §6.1, which has carried this correction since item 2 landed.
+>>> A session acting on the paragraph below would go hunting a key-construction
+>>> bug that is not there. That is the exact cost rule 11 names.
+
+[ORIGINAL TEXT, retained so the reordering's reasoning is auditable:]
 THE FINDING THAT REORDERED THIS: the shipped flawfinder+cppcheck pair CANNOT
 produce n_tools>1 on any input. flawfinder emits `fingerprints` on every result
 so `_result_key` returns `fp:…`; cppcheck emits none so it returns `rk:…`; the
 two can never collide. The headline consensus signal is structurally inert in
 the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
 
-0. [IMPLEMENTED 2026-07-26 — one OPEN DECISION remains, see 0a] Engine-lineage
+0. [IMPLEMENTED AND FULLY CLOSED 2026-07-26. The header formerly read "one OPEN
+   DECISION remains, see 0a" — STALE: 0a was decided (option (b), conservative
+   default) and IMPLEMENTED the same day. Verified in the tree, not inherited:
+   the operator escape hatch `AUDIT_INDEPENDENT_TOOLS` is read at
+   src/audit.py:907 and both directions are disclosed at :958 and :968. There is
+   no open decision under this item.] Engine-lineage
    guard. The merge guard now intersects ENGINE LINEAGE, not driver name;
    n_tools counts distinct ENGINES; quality weighting takes one representative
    driver per engine; unknown tools default to their own name so nothing
@@ -621,6 +678,13 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    requires co-location.** Measured twice, in two language ecosystems, on two
    corpus types. That it generalizes as a structural law is a HYPOTHESIS; that
    it happened both times is measured.
+   >>> [THAT BOLDED SENTENCE IS TRUE ONLY AT LINE LEVEL, AND AS WRITTEN IT IS
+   >>> THE TEXT THAT BECAME NEGATIVE_RESULT.md's TITLE AND A FALSE README
+   >>> CLAIM. Marked inline 2026-07-26 because the ANSWERED block below it is
+   >>> the correction, and anyone quoting this paragraph is quoting it BEFORE
+   >>> reaching that block. At function level the same pairs agree: zlib's
+   >>> flawfinder+cppcheck goes 0 -> 66. Do not quote this sentence without
+   >>> its unit.]
 
    >>> [ANSWERED 2026-07-26 — AND THE ANSWER IS YES, IT IS OBSERVABLE. This
    >>> block asked whether cross-methodology agreement is "OBSERVABLE AT ALL".
@@ -1380,6 +1444,14 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    mechanism, then fell again once the _result_key fix was identified — post-fix
    the co-located same-class case merges at scoring and the display pass covers
    genuinely residual cases only. Do not size the badge before item 3.
+   NOTE [STALE — CORRECTED 2026-07-26. THE REBUILD IT ASKS FOR WAS DONE.
+   Verified by opening the files, not by reading a header: flawfinder_min.sarif
+   is Flawfinder 2.0.20 output with ruleIds FF1013/FF1001/FF1016 (the real
+   namespace) and a real `contextHash/v1` fingerprint on all 3 results;
+   cppcheck_min.sarif carries no authored CWE in any message. The regenerator is
+   committed at examples/fixtures/regen_fixtures.sh and its header records the
+   hand-authored pair in the PAST TENSE as the thing it exists to prevent.
+   The original note follows so the hazard it names stays on record:]
    NOTE: examples/fixtures/*.sarif are UNREPRESENTATIVE (hand-authored; wrong
    flawfinder ruleId namespace, no fingerprints, CWE authored into a cppcheck
    message). Rebuild from captured real output before trusting them.
@@ -1674,8 +1746,24 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    >>>           done, passed a pre-registered rule, and shipped.
    >>>   4. 0g   "HIGHEST-VALUE OPEN QUESTION" — already answered, in a document
    >>>           that was itself orphaned (see SECOND FORM above).
-   >>> Four for four is no longer a run of bad luck to be noted; it is the
-   >>> expected behaviour of this document type and should be planned for.
+   >>>   5. §7   preamble — the fingerprint root cause, as the live finding that
+   >>>           ordered the whole pending list, when item 2 had removed it and
+   >>>           §6.1 had said so for a day. The most-read paragraph in §7.
+   >>>   6. 0    "one OPEN DECISION remains, see 0a" — 0a was decided AND
+   >>>           implemented the same day.
+   >>>   7. 4    "fixtures are UNREPRESENTATIVE… rebuild before trusting them" —
+   >>>           the rebuild was done and its regenerator is committed.
+   >>>   8. WHERE_IT_STANDS.md — three claims, all pessimistic: 67 checks (112),
+   >>>           size-correlation warning "still open" (0h shipped), path
+   >>>           reconciliation "still open" (0c(a) shipped).
+   >>> EIGHT for eight. This is no longer a run of bad luck to be noted; it is
+   >>> the expected behaviour of this document type and should be planned for.
+   >>> AND NOTE WHERE INSTANCES 5-8 CAME FROM: a sweep run on a document that had
+   >>> been reconciled TWICE in the preceding 24 hours, by sessions that had just
+   >>> written this rule. The rule does not make the drift stop. What it buys is
+   >>> that the sweep is cheap and finds real things every time it is run — so
+   >>> run it on a schedule, not on suspicion. Suspicion is the thing that
+   >>> demonstrably does not fire.
    >>> PRACTICAL CONSEQUENCE: when this file and the tree disagree, the PRIOR is
    >>> that the tree is further along. Check before believing a pessimistic
    >>> header, and budget a reconciliation sweep at the START of a session
@@ -1722,6 +1810,37 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    DOCUMENT INDEX (§5.1) in the same commit that creates it.** Same discipline
    as correcting a stale header at the moment of discovery, and for the same
    reason — the cost is trivial then and compounds afterwards.
+
+   >>> THE CONTROL WAS INSUFFICIENT AS WRITTEN, AND FAILED ON ITS FIRST DAY.
+   >>> Found 2026-07-26, one day after it was added: the index listed 12 of 18
+   >>> documents. Six were missing — WHERE_IT_STANDS.md, HANDOFF_VALIDATION.md,
+   >>> START_HERE_prompt.txt, AUDIT.md, GENESIS_TEMPLATE.md,
+   >>> README_correction_0j_draft.md — and three of those had ZERO inbound
+   >>> references from anywhere in the repository.
+   >>> THE DEFECT IS IN THE CONTROL'S SHAPE, not in anyone's diligence: it is a
+   >>> rule about documents created FROM NOW ON. It says nothing about the ones
+   >>> already on disk, and the session that wrote it enumerated the index from
+   >>> what it had recently read rather than from the filesystem. A control that
+   >>> only covers the future cannot discharge a backlog it never looked at.
+   >>> THE STRONGER FORM, now in force: **the index is built by listing
+   >>> `docs/` and `analysis/` and accounting for every entry.** That is
+   >>> mechanically checkable in one command; "did I remember to add it" is not.
+   >>>
+   >>> ### THE SECOND COST OF ORPHANING, and it is worse than the first
+   >>> An orphaned document is invisible to CORRECTION SWEEPS, not only to
+   >>> readers. Commit 80d1817 set out to fix a false claim "at its source and
+   >>> everywhere it spread". It reached README.md, HANDOFF.md and
+   >>> NEGATIVE_RESULT.md — every document the sweeping session could find.
+   >>> WHERE_IT_STANDS.md, a PUBLIC-FACING plain-language document, carried the
+   >>> withdrawn claim ("the more different two tools are, the less likely they
+   >>> are to describe the same bug in the same place") verbatim and was not
+   >>> touched, because nothing pointed at it. The sweep was diligent and still
+   >>> incomplete, and it reported itself as complete.
+   >>> SO: **a correction sweep's coverage is bounded by the document index.**
+   >>> Before claiming a claim was fixed "everywhere it spread", grep the tree
+   >>> for the claim — not the index, and not memory. `grep -rl` over docs/ and
+   >>> README.md costs one command and is the only thing that makes
+   >>> "everywhere" a checkable word.
 
    ### WORKED INSTANCE — §6.2 into a PUBLIC document, missed by BOTH parties
    Recorded in full because the abstract rule did not prevent it, and because

@@ -2062,6 +2062,26 @@ The ecosystem constraint recorded earlier now has a concrete instance.
 
 ## THE CENTRAL OPEN QUESTION (2026-07-26): is cross-methodology agreement
 ## OBSERVABLE AT ALL under a co-location requirement?
+## >>> ANSWERED LATER THE SAME DAY, AND THE ANSWER IS YES. SEE "GRANULARITY IS
+## >>> THE LEVER" AND "THE DECISIVE MEASUREMENT" BELOW IN THIS FILE, WHICH STATE
+## >>> IN TERMS: "Cross-methodology agreement may not be observable" IS
+## >>> WITHDRAWN. The MEASUREMENTS in this section stand exactly as recorded —
+## >>> they are line-level and correct at that unit. The BOLD CONCLUSION drawn
+## >>> from them does not.
+
+>>> WHY THIS POINTER WAS ADDED (2026-07-26, reconciliation sweep). This file is
+>>> a chronological log, so a superseded entry is not an error — the later entry
+>>> is the record. But HANDOFF §8 rule 11 requires that anything entering a
+>>> PUBLIC artifact be RE-DERIVED FROM THIS FILE, and a session doing that
+>>> greps. Grep this file for "co-located agreement" and THIS section is the
+>>> first hit; its refutation is 528 lines further down under a heading that
+>>> shares no vocabulary with it. The false claim that reached the README was
+>>> therefore re-derivable from the evidence record itself, at the first place a
+>>> conscientious session would look.
+>>> THE GENERAL RULE THIS YIELDS: chronological ordering is not enough for a
+>>> document that gets consulted by search rather than read front to back. When
+>>> an entry here is overturned, the OVERTURNED entry gets the forward pointer —
+>>> not only the new one, which the reader has by definition not found yet.
 
 Promoted above tool selection and class-map coverage. Two measurements, two
 language ecosystems, two corpus types, two DIFFERENT mechanisms, ONE consequence.
