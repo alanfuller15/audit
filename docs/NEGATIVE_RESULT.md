@@ -68,6 +68,19 @@ overall multi-tool rate      1.56%    35.95%     (23x)
 granularity artifact. Cross-methodology agreement is observable; we were not
 looking at the level where it occurs.
 
+**And then a second measurement narrowed it again.** Running function-level
+matching through the actual pipeline rather than counting co-occurrences: tools
+co-locate 3.5x more often at function level (1,507 → 5,269 units), but of those
+5,269 co-occurrences only **410 (7.8%)** have the tools agreeing on the CWE
+class. **92.2% co-locate and then disagree about what the bug is.** Because a
+merge correctly requires class agreement — merging two different bugs in one
+function would be a false merge — actual merges rise only 4.9%.
+
+So the accurate statement is neither of the two we have held. Not "diverse tools
+do not co-locate", which is false. And not "granularity fixes it", which
+overstates. It is: **they co-locate readily at the right unit, and then disagree
+about what they found.**
+
 The three failures below are real observations and are retained — but all three
 were matched at line level, which is the one thing they had in common and the
 thing we did not vary.

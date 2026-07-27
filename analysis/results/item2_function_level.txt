@@ -1,0 +1,68 @@
+==============================================================================
+ITEM 2 — FUNCTION-LEVEL MATCHING THROUGH THE REAL PIPELINE
+ground-truth boundaries from Lipp functions.json; no parser used
+==============================================================================
+
+  LINE level
+    raw results          98,417
+    unique after dedup   95,195
+    cross-tool merges     3,009   (3.16% of unique)
+    n_tools            {1: 92186, 2: 2944, 3: 65}
+    top classes        {'uninit': 16596, 'buf': 13932, 'null': 11384, 'leak': 8159, 'int': 6172}
+
+  FUNCTION level
+    raw results          98,417
+    unique after dedup   67,280
+    cross-tool merges     3,155   (4.69% of unique)
+    n_tools            {1: 64125, 2: 2797, 3: 335, 4: 20, 5: 3}
+    top classes        {'uninit': 11903, 'buf': 10279, 'null': 6445, 'leak': 5328, 'int': 3928}
+
+  MERGE DELTA: 3,009 -> 3,155  (1.0x)
+
+==============================================================================
+2. PRECISION AT FUNCTION LEVEL — CONSISTENCY CHECK, NOT A NEW RESULT
+==============================================================================
+  multi 1.54%  single 0.58%  uncontrolled 2.67x
+  size-matched control 1.02%   ratio 1.51x
+  0j recorded 1.51x at 10 strata — agreement here means the pipeline
+  reproduces it, not that the finding is re-established.
+
+==============================================================================
+3. RANKING AT FUNCTION LEVEL — THE DECIDING QUESTION
+==============================================================================
+  ranker                        PofB@20     IFA   PMI@20
+  consensus (n_tools desc)        0.185     142    0.161
+  ManualUp (size asc)             0.185    1746    0.602
+  size-only floor (desc)          0.185       2    0.022
+
+  consensus PofB@20 0.185 vs SIZE-MATCHED random 0.178+/-0.032   P(rand>=)=0.447
+  vs ManualUp 0.185   vs size-only floor 0.185
+
+==============================================================================
+DECISION, against the rule fixed before computing
+==============================================================================
+  beats size-matched random (p<0.05)? False   (p=0.447)
+  beats ManualUp?                     False
+  IFA gain vs size-only floor         0.01x  (rule wants >=2)
+  => CLOSE item 2. Consensus does not beat a size-matched control,
+     so merge-count gains do not become ranking gains and do not
+     justify a dependency whose failure mode is FALSE MERGES.
+
+================================================================================
+RECONCILIATION (run after the main evaluation, because the merge delta of 1.0x
+appeared to contradict VALIDATION.md's recorded 6.4x granularity gain)
+================================================================================
+CO-OCCURRENCE (tools sharing a unit, CWE class IGNORED — VALIDATION's measure)
+  line level       1,507
+  function level   5,269   (3.5x)
+
+OF those 5,269 function-level co-occurrences, how many have ALL findings
+agreeing on CWE — the extra thing OUR pipeline requires?
+  class-agreeing        410  =  7.8%
+  class-DISAGREEING   4,859  = 92.2%   co-located, but our key rejects them
+
+=> The two numbers do not conflict. They measure different things.
+   Granularity DOES restore co-location (3.5x). Our pipeline additionally
+   requires the tools to agree on WHAT THE BUG IS, and that requirement
+   rejects 92.2% of the recovered co-locations. Hence merged findings move
+   only 3,009 -> 3,155 (+4.9%).

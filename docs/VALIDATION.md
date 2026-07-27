@@ -3981,3 +3981,93 @@ clearance; that this is ONE REGISTRY.
 STRENGTHENED: declared provenance is 23.4% not 13.0%, and seven upstreams appear
 where semgrep's own documentation names four — so the practice is broader than
 the vendor's own description of it.
+
+## ITEM 2 EVALUATED AND CLOSED (2026-07-26) — function-level matching does not
+## earn a boundary-extraction dependency
+
+Pre-registered in commit `2f0bd52` BEFORE computing. Script
+`analysis/scripts/eval_function_level.py`, output
+`analysis/results/item2_function_level.txt`. Run on Lipp's `functions.json`
+ground-truth boundaries, so **no parser was introduced**; function-level matching
+was implemented as a pre-ingest location canonicalisation, leaving `audit.py`
+unmodified.
+
+### Result 1 — merges rise, but only slightly, and the reason matters
+```
+                  raw     unique    cross-tool merges    n_tools
+LINE level      98,417    95,195    3,009  (3.16%)      {1:92186, 2:2944, 3:65}
+FUNCTION level  98,417    67,280    3,155  (4.69%)      {1:64125, 2:2797, 3:335, 4:20, 5:3}
+                                    1.0x
+```
+Deeper agreement does appear — n_tools of 4 and 5 exist at function level and
+did not at line level — but total merged findings move only **+4.9%**.
+
+### !! RECONCILIATION with the recorded 6.4x granularity gain — NOT a conflict !!
+The +4.9% appeared to contradict "THE DECISIVE MEASUREMENT" above (1,169 →
+7,514 cross-methodology pairs, 6.4x). Checked rather than left standing, per
+§8 rule 11:
+```
+CO-OCCURRENCE (tools sharing a unit, CWE class IGNORED)
+  line level       1,507
+  function level   5,269    (3.5x)   <- reproduces the granularity gain in kind
+
+OF those 5,269, all findings agreeing on CWE?
+  class-agreeing        410  =  7.8%
+  class-DISAGREEING   4,859  = 92.2%
+```
+**The two measurements are different quantities and both are right.**
+Granularity DOES restore co-location — 3.5x, consistent in direction and order
+with the recorded 6.4x (which counts cross-methodology *pairs*, a different
+unit). Our pipeline then additionally requires the tools to **agree on what the
+bug is**, and that requirement rejects **92.2%** of the recovered co-locations.
+
+**This REFINES the §6.2 correction; it does not reverse it again.** "Diverse
+tools do not co-locate" remains FALSE. What is true is narrower and was not
+previously stated: *at function level they co-locate readily and then disagree
+about the bug class 92% of the time.* Requiring class agreement is correct —
+merging two different bugs in one function is a FALSE MERGE — so this is a cost
+of a correct guard, not a defect.
+
+### Result 2 — precision consistency check PASSES
+```
+multi 1.54%  single 0.58%  uncontrolled 2.67x
+size-matched control 1.02%   ratio 1.51x
+```
+Identical to 0j's recorded 1.51x. This means the pipeline reproduces the
+finding; it does not re-establish it.
+
+### Result 3 — the deciding question: ranking still fails
+```
+ranker                        PofB@20     IFA   PMI@20
+consensus (n_tools desc)        0.185     142    0.161
+ManualUp (size asc)             0.185   1,746    0.602
+size-only floor (desc)          0.185       2    0.022
+
+consensus vs SIZE-MATCHED random: 0.185 vs 0.178 +/- 0.032, P(rand>=) = 0.447
+```
+Consensus does not beat size-matched random, does not beat ManualUp on PofB, and
+its IFA is **0.01x** the size-only floor against a rule wanting ≥2x. Routing
+through the real merge machinery changed nothing versus 0i's `found_by`-based
+result.
+
+### DECISION — against the rule fixed before computing: **CLOSE ITEM 2**
+The pre-registered rule said to close if consensus fails to beat a size-matched
+control **regardless of how far merge counts rise**, because observability that
+does not become ranking cannot justify a dependency whose failure mode is false
+merges. It failed. Item 2 closes.
+
+**Same shape as Direction B:** yield improved, ranking did not follow. That is
+now twice, and it is worth stating as a pattern rather than a coincidence —
+mechanisms that recover more agreement have not once produced a better ordering
+on this corpus.
+
+### The parser question — REACHABLE BUT UNMEASURED, and now moot
+`[fetched]` universal-ctags can emit function end lines (`--fields=+ne`; the
+`end` field "indicates the line number of the end lines of the language object"),
+so boundary extraction without a full parser is reachable. Its documented failure
+mode: it follows only the first branch of a preprocessor conditional "because
+following both branches would result in ambiguous syntax with unbalanced braces",
+and where that fails it "falls back to relying upon a closing brace (`}`) in
+column 1 as indicating the end of a block". **A wrong boundary assigns a finding
+to the wrong function — a FALSE MERGE, the forbidden direction.** Unmeasured, and
+item 2's closure means it stays that way. Not foreclosed; not needed.

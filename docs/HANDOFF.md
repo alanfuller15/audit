@@ -331,7 +331,29 @@ WHAT REMAINS GENUINELY OPEN, in priority order:
      degenerates to exact matching in the common case. Worth measuring; not a
      fix. Requirements in item 0e (measure source-sink SEPARATION, do not sweep
      a window, do not treat TOL=3 as validated).
-  2. Whether any principled ENTITY-LEVEL match exists WITHOUT a Java/C parser.
+  2. [EVALUATED AND CLOSED 2026-07-26 — NOT WORTH BUILDING. Record:
+     VALIDATION.md "ITEM 2 EVALUATED AND CLOSED". Pre-registered before
+     computing (commit 2f0bd52) and run on Lipp's ground-truth function
+     boundaries, so no parser was introduced.
+     Function-level matching through the REAL pipeline moves merged findings
+     only 3,009 -> 3,155 (+4.9%), and the ranking is unchanged: PofB@20 0.185,
+     identical to ManualUp and the size-only floor, P(size-matched random >=)
+     = 0.447. The pre-registered rule said close if it fails a size-matched
+     control regardless of merge gains. It failed.
+     THE REASON THE MERGE GAIN IS SMALL, AND IT IS NEW: granularity DOES restore
+     co-location — co-occurrence goes 1,507 -> 5,269 (3.5x) — but of those 5,269
+     function-level co-occurrences only 410 (7.8%) have the tools agreeing on
+     CWE class. 92.2% co-locate and then disagree about what the bug IS. Our key
+     requires class agreement, correctly, so it rejects them. This REFINES the
+     §6.2 correction and does not reverse it: "diverse tools do not co-locate"
+     stays FALSE; "they co-locate and then disagree on class" is the accurate
+     narrower statement.
+     SAME SHAPE AS DIRECTION B — yield up, ranking flat. Twice now.
+     universal-ctags remains REACHABLE BUT UNMEASURED for boundary extraction
+     (--fields=+ne emits end lines; documented fallback is a closing brace in
+     column 1 when preprocessor conditionals unbalance braces, and a wrong
+     boundary is a FALSE MERGE). Not foreclosed; not needed.]
+     [original] Whether any principled ENTITY-LEVEL match exists WITHOUT a Java/C parser.
      Direction A is blocked today: SpotBugs emits logicalLocations on 100% of
      results, semgrep on 0%, and matching needs both sides.
   3. Whether the honest description is SAME-METHODOLOGY agreement — and if so,
