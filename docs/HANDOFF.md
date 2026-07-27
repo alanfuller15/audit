@@ -137,6 +137,13 @@ commit that creates it.**
                               §4.5.1 carries the harm-vs-exposure principle.
   docs/SCOPE_shipped_consensus_defect.md
                               §9a holds the pre/post history-rewrite SHA map.
+  docs/SESSION_HANDOFF_2026-07-26b.md
+                              MOST RECENT session residue — read after §0 and
+                              this index. Its §2 says run a reconciliation
+                              sweep FIRST; its §3 is the worked account of how
+                              a false claim reached the README.
+  docs/SESSION_HANDOFF_2026-07-26.md
+                              Prior session. Its §1 (the 0j check) is DONE.
   docs/SPEC_java_admission.md, docs/SPEC_dedup_shipped_path.md,
   docs/SPEC_item4_groupability_measurement.md
                               Earlier specs; check their headers against the
