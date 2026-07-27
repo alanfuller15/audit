@@ -1,0 +1,23 @@
+{
+  "population": 560,
+  "per_signal": {
+    "S1": 73,
+    "S2": 10,
+    "S3": 48,
+    "S4": 0,
+    "S5": 415
+  },
+  "ground_truth_declared": 73,
+  "recall_on_declared": {
+    "S2": 0.0547945205479452,
+    "S3": 0.3013698630136986,
+    "S4": 0.0
+  },
+  "capture_recapture_chapman": 156.65217391304347,
+  "union_s1_s4": 105,
+  "union_incl_weak_s5": 426,
+  "strongest_single": "S1",
+  "undercount_factor": 1.4383561643835616,
+  "found_by_exactly_one": 81,
+  "scope": "one registry (semgrep), not the ecosystem"
+}

@@ -285,7 +285,62 @@ def main():
   Therefore: a LOW union here is UNINFORMATIVE, not clearance. A HIGH union is
   informative, because every signal is a positive marker.""")
 
+    # ── ADDITION, NOT PRE-REGISTERED ─────────────────────────────────────────
+    # Declared to be an addition rather than folded in silently. It became
+    # available only because S1 turned out to be a GROUND-TRUTH SUBSET: a rule
+    # that declares FindSecBugs as its source IS derived, by its own admission.
+    # That permits two things the pre-registration did not anticipate.
+    print("\n" + "=" * 78)
+    print("5. ADDITION (NOT PRE-REGISTERED) — validated recall, and a")
+    print("   capture-recapture estimate rather than only a lower bound")
+    print("=" * 78)
+    gt = hits["S1"]
+    print(f"  ground-truth-derived subset (self-declared) : {len(gt)}")
+    print("\n  RECALL of each NON-declaration signal on that subset — i.e. how")
+    print("  well it would detect derivation for a tool that does NOT declare:")
+    for k in ("S2", "S3", "S4"):
+        r = len(hits[k] & gt) / len(gt) if gt else 0
+        print(f"    {k}  {names[k]:40} {len(hits[k] & gt):4}/{len(gt)} = {100*r:5.1f}%")
+    print("""
+  S4 (text similarity) recovers NONE of them. Measured directly: across the 73
+  self-declared-derived rules the best token Jaccard against the FindSecBugs
+  original has median 0.101 and max 0.359. PORTED RULES ARE REWRITTEN. Text
+  similarity is not a weak detector of derivation here, it is a NULL one — and
+  that is itself the substantive result, because it is the mechanism by which a
+  ported rule comes to look independently authored.""")
+
+    n1, n2 = len(hits["S1"]), len(hits["S3"])
+    m = len(hits["S1"] & hits["S3"])
+    if m:
+        chap = ((n1 + 1) * (n2 + 1) / (m + 1)) - 1
+        var = ((n1 + 1) * (n2 + 1) * (n1 - m) * (n2 - m)) / \
+              (((m + 1) ** 2) * (m + 2))
+        se = var ** 0.5
+        print(f"""  CAPTURE-RECAPTURE (Chapman-corrected Lincoln-Petersen), treating
+  declaration (S1) and rule-id retention (S3) as two independent detection
+  passes over the same population:
+    n1 (S1) = {n1}   n2 (S3) = {n2}   overlap = {m}
+    estimated total derived N-hat = {chap:.0f}  (SE {se:.0f})
+      = {100*chap/n:.1f}% of {n} registry rules
+    against the multi-signal union lower bound of {len(union)} ({100*len(union)/n:.1f}%)
+
+  ASSUMPTIONS, AND WHY THE ESTIMATE IS STILL CONSERVATIVE. Capture-recapture
+  assumes the two passes are INDEPENDENT and detectability is HOMOGENEOUS. Both
+  are doubtful here, and in a knowable direction: a faithful port is more likely
+  to BOTH declare its source AND keep the upstream name, so S1 and S3 are
+  POSITIVELY correlated. Positive correlation inflates the overlap, and an
+  inflated overlap DEPRESSES N-hat. So {chap:.0f} is more likely an
+  under-estimate than an over-estimate — it does not rescue the ceiling, it
+  raises the floor.""")
+
     out = {"population": n, "per_signal": {k: len(v) for k, v in hits.items()},
+           "ground_truth_declared": len(gt),
+           "recall_on_declared": {k: (len(hits[k] & gt) / len(gt) if gt else None)
+                                  for k in ("S2", "S3", "S4")},
+           "capture_recapture_chapman": (((len(hits["S1"]) + 1) *
+                                          (len(hits["S3"]) + 1) /
+                                          (len(hits["S1"] & hits["S3"]) + 1)) - 1)
+           if len(hits["S1"] & hits["S3"]) else None,
            "union_s1_s4": len(union), "union_incl_weak_s5": len(union5),
            "strongest_single": strongest,
            "undercount_factor": (len(union)/sb) if sb else None,

@@ -3751,3 +3751,117 @@ maximal element still resolves; MISSING EDGE with an emptied hierarchy -> None
 end-to-end; a cycle terminates rather than hanging; real fixtures unchanged.
 One pre-existing test was INVERTED, not deleted: it asserted the 327/328 pair
 resolves to None, which was the safe-not-right answer 3e exists to correct.
+
+## 0f REGISTRY ARM (2026-07-26) — prevalence estimation under incomplete detection
+## ONE REGISTRY (semgrep). NOT the ecosystem. Say so wherever the number appears.
+
+Tier: `[self-tested]` analysis over `[externally-grounded]` inputs (semgrep's live
+registry; FindSecBugs 1.14.0 plugin jar). Methodology `[fetched]`.
+Pre-registration was committed BEFORE computing (commit `2e00ba2`).
+
+### STUDY
+Khosravani & Mockus, *Detecting AI Coding Agents in Open Source: A Validated
+Multi-Method Census of 180 Million Repositories*, arXiv:2606.24429 `[fetched]`,
+verbatim:
+> "These multi-method counts are relative-recall improvements over single-method
+> baselines, not absolute recall estimates."
+> "The true total ... is bounded below by our multi-method union but may be
+> larger if additional detection signals remain unprobed."
+> "absolute recall is unknown"
+
+**One nuance not in the brief and carried through the whole design:** their 30x
+figure compares ONE SIGNAL against THEIR UNION — not detection against reality.
+Every undercount factor below inherits that limit.
+
+Bomfather, arXiv:2503.02097 `[fetched]`: "A gap remains between declared and
+actual dependencies." The declared-vs-actual gap is independently named in
+supply-chain work; a declaration is a lower bound on the fact.
+
+### RESULTS — 560 distinct registry rules, 9 packs
+```
+1. PER-SIGNAL
+   S1 declared source-rule-url        73/560 = 13.04%
+   S2 attribution fields              10/560 =  1.79%
+   S3 rule-id name match              48/560 =  8.57%
+   S4 description similarity           0/560 =  0.00%
+   S5 CWE overlap [WEAK, excluded]   415/560 = 74.11%
+
+2. MULTI-SIGNAL UNION (S1..S4) = 105/560 = 18.75%   <- improved lower bound
+   (with the weak S5 admitted it would read 76.07% — which is why S5 was
+    pre-registered as excluded, not judged afterwards)
+
+3. UNDERCOUNT FACTOR = 105/73 = 1.4x, RELATIVE recall between signals only.
+   77.1% of the union (81 of 105) is found by EXACTLY ONE signal — the tail is
+   fragile, and a single-signal study would have missed 32 of 105.
+```
+
+### THE SUBSTANTIVE FINDING: S4 = 0 IS REAL, AND IT IS THE MECHANISM
+S4 returning exactly zero was checked as a possible instrument failure before
+being reported. It is not one — messages parse, tokens extract, and the observed
+best Jaccard tops out at 0.359 against a pre-registered threshold of 0.50.
+
+Because S1 is a GROUND-TRUTH SUBSET (a rule declaring FindSecBugs as its source
+IS derived, by its own admission), each other signal's RECALL can be validated:
+```
+recall on the 73 self-declared-derived rules
+  S2 attribution        4/73 =  5.5%
+  S3 rule-id match     22/73 = 30.1%
+  S4 text similarity    0/73 =  0.0%
+best Jaccard of those 73 against their own FindSecBugs original:
+  median 0.101, max 0.359
+```
+**Ported rules are rewritten.** Text similarity is not a weak detector of
+derivation here — it is a NULL one. That is not a limitation of the measurement,
+it is the mechanism by which a ported rule comes to look independently authored.
+
+POST-HOC SENSITIVITY, reported for transparency and NOT substituted for the
+pre-registered threshold: 0.50 -> 0, 0.40 -> 0, 0.30 -> 2, 0.20 -> 5,
+0.10 -> 237 (42% of the registry, i.e. noise). No threshold rescues S4; the
+pre-registered 0.50 stands and was not retuned to the result.
+
+### ADDITION, NOT PRE-REGISTERED — capture-recapture rather than a bare bound
+Available only because S1 turned out to be ground truth. Treating declaration
+(S1) and rule-id retention (S3) as two detection passes, Chapman-corrected
+Lincoln-Petersen:
+```
+n1 = 73   n2 = 48   overlap = 22
+N-hat = 157  (SE 19)  = 28.0% of 560 rules
+vs the multi-signal union lower bound of 105 (18.8%)
+```
+ASSUMPTIONS AND THEIR DIRECTION: capture-recapture assumes independent passes and
+homogeneous detectability. Both are doubtful here, in a KNOWABLE direction — a
+faithful port is more likely to BOTH declare its source AND keep the upstream
+name, so S1 and S3 are positively correlated, which inflates the overlap and
+DEPRESSES N-hat. So 157 is more likely an under-estimate than an over-estimate.
+It raises the floor; it does not establish a ceiling.
+
+### WHAT REMAINS UNDETECTABLE — the floor of what is knowable
+A rule ported but undeclared, renamed AND reworded is silent to all five
+signals. No format requires disclosure of derivation, so that population cannot
+be bounded from artifacts at all. Two further ceilings, both pre-registered:
+the upstream reference set is FindSecBugs ONLY (semgrep's FAQ names ESLint,
+RuboCop and Bandit besides, all invisible to S3/S4), and 560 rules is ONE
+REGISTRY.
+
+**Therefore a LOW number here is UNINFORMATIVE, not clearance.** Every signal is
+a positive marker; absence of a marker is not absence of derivation.
+
+### THE CLAIM THIS SUPPORTS, STATED CAREFULLY
+Supported by the measurement:
+> In one registry, at least 18.8% of rules carry a detectable marker of
+> derivation from another tool, and a capture-recapture estimate puts it near
+> 28%. Among rules KNOWN to be derived, the markers that do not depend on
+> voluntary disclosure recover at most 30% of them, and textual similarity
+> recovers none.
+
+The consequence, which is the part with reach beyond this project:
+> **If ported rules cannot reliably be distinguished from independently authored
+> ones, then a consumer of multi-tool consensus has no way to assess the
+> independence their consensus assumes.** The information needed is not merely
+> absent from SARIF — it is absent from the rules themselves once ported rules
+> are rewritten, which is the normal case.
+
+NOT supported, and must not be claimed: that ~28% of static-analysis rules
+generally are ported; that other registries behave like this one; or that a
+specific consensus finding is contaminated. This is one registry, one upstream
+reference set, and an estimate with stated assumptions.

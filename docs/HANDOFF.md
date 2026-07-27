@@ -719,6 +719,21 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    >>> declare an upstream source, and how that distributes across upstream
    >>> tools — is ACTIONABLE TODAY, not blocked. It remains ONE REGISTRY, not
    >>> the ecosystem, and that bound stands.
+   >>> RUN 2026-07-26. Record: VALIDATION.md "0f REGISTRY ARM". Framed as
+   >>> PREVALENCE ESTIMATION UNDER INCOMPLETE DETECTION per arXiv:2606.24429,
+   >>> pre-registered in commit 2e00ba2 BEFORE computing.
+   >>> 560 registry rules, 9 packs, 5 signals. Union(S1..S4) = 18.8% carry a
+   >>> detectable derivation marker; Chapman capture-recapture estimates 28.0%
+   >>> (SE 19), and that estimate is biased DOWN because the two passes are
+   >>> positively correlated.
+   >>> THE FINDING THAT MATTERS: among 73 rules KNOWN derived (self-declared),
+   >>> rule-id matching recovers 30.1%, attribution 5.5%, and TEXT SIMILARITY
+   >>> RECOVERS 0% — median Jaccard 0.101 against their own upstream. PORTED
+   >>> RULES ARE REWRITTEN. That is the mechanism that makes derivation
+   >>> invisible, not a weakness of the instrument. Checked as a possible
+   >>> instrument failure first; it is not one, and no threshold rescues it.
+   >>> STILL UNINFORMATIVE IF LOW: absence of a marker is not absence of
+   >>> derivation. One registry, one upstream reference set.
    >>> CORPUS ARM RUN 2026-07-26 (registry arm NOT run — needs a fetch).
    >>> Results: SPEC §7. All figures are LOWER BOUNDS.
    >>>   OWASP: 5 of 11 FIRED rules (45.5%) declare FindSecBugs provenance,

@@ -1,0 +1,107 @@
+==============================================================================
+0f REGISTRY ARM — prevalence estimation under incomplete detection
+ONE REGISTRY (semgrep), NOT THE ECOSYSTEM
+==============================================================================
+
+upstream reference set: FindSecBugs 1.14.0, 144 bug patterns, 59 distinct CWEs
+  p/java                60 rules  (+60 new)
+  p/security-audit     225 rules  (+199 new)
+  p/python             151 rules  (+121 new)
+  p/javascript          74 rules  (+67 new)
+  p/golang              42 rules  (+25 new)
+  p/c                    2 rules  (+0 new)
+  p/csharp              27 rules  (+27 new)
+  p/php                 24 rules  (+24 new)
+  p/ruby                45 rules  (+37 new)
+
+POPULATION: 560 distinct registry rules
+
+==============================================================================
+1. PER-SIGNAL DERIVED FRACTION
+==============================================================================
+  S1  declared source-rule-url                        73/560 = 13.04%
+  S2  attribution fields                              10/560 =  1.79%
+  S3  rule-id name match                              48/560 =  8.57%
+  S4  description similarity                           0/560 =  0.00%
+  S5  CWE overlap [WEAK, excluded from union]        415/560 = 74.11%
+
+==============================================================================
+2. MULTI-SIGNAL UNION — the improved LOWER BOUND (S1-S4; S5 excluded)
+==============================================================================
+  union(S1..S4)          105/560 = 18.75%
+  union incl. WEAK S5    426/560 = 76.07%   <- shown only to price the weak signal; NOT the estimate
+
+  pairwise agreement (rules flagged by BOTH):
+             S1     S2     S3     S4     S5
+    S1       73      4     22      0     65
+    S2        4     10      2      0      7
+    S3       22      2     48      0     47
+    S4        0      0      0      0      0
+    S5       65      7     47      0    415
+
+==============================================================================
+3. UNDERCOUNT FACTOR — RELATIVE recall between signals, NOT absolute
+==============================================================================
+  strongest single signal : S1 (declared source-rule-url) = 73
+  multi-signal union      : 105
+  UNDERCOUNT FACTOR       : 1.4x
+    i.e. relying on S1 alone would have missed 32 of 105 detectable rules.
+
+  WHAT THIS FACTOR IS NOT. Following arXiv:2606.24429 exactly: this compares one
+  signal against THIS UNION. It does not compare detection against reality. The
+  paper is explicit that "absolute recall is unknown", and so is ours.
+  rules found by EXACTLY ONE signal: 81 of 105 (77.1%) — the fragile tail
+
+==============================================================================
+4. WHAT REMAINS UNDETECTABLE
+==============================================================================
+  A rule that was ported but is (a) undeclared, (b) renamed, and (c) reworded
+  is SILENT TO ALL FIVE SIGNALS. Nothing in any tool's format requires
+  disclosure of derivation, so this population cannot be bounded from artifacts
+  at all — it is the floor of what is knowable here, not a residual to estimate.
+
+  Two further ceilings on the number above, both pre-registered:
+   - the upstream reference set is FindSecBugs ONLY. Semgrep's own FAQ names
+     ESLint, RuboCop and Bandit as further sources; derivation from those is
+     invisible to S3/S4 and depresses every figure above.
+   - 560 rules is ONE REGISTRY. It is not the static-analysis ecosystem.
+
+  Therefore: a LOW union here is UNINFORMATIVE, not clearance. A HIGH union is
+  informative, because every signal is a positive marker.
+
+==============================================================================
+5. ADDITION (NOT PRE-REGISTERED) — validated recall, and a
+   capture-recapture estimate rather than only a lower bound
+==============================================================================
+  ground-truth-derived subset (self-declared) : 73
+
+  RECALL of each NON-declaration signal on that subset — i.e. how
+  well it would detect derivation for a tool that does NOT declare:
+    S2  attribution fields                          4/73 =   5.5%
+    S3  rule-id name match                         22/73 =  30.1%
+    S4  description similarity                      0/73 =   0.0%
+
+  S4 (text similarity) recovers NONE of them. Measured directly: across the 73
+  self-declared-derived rules the best token Jaccard against the FindSecBugs
+  original has median 0.101 and max 0.359. PORTED RULES ARE REWRITTEN. Text
+  similarity is not a weak detector of derivation here, it is a NULL one — and
+  that is itself the substantive result, because it is the mechanism by which a
+  ported rule comes to look independently authored.
+  CAPTURE-RECAPTURE (Chapman-corrected Lincoln-Petersen), treating
+  declaration (S1) and rule-id retention (S3) as two independent detection
+  passes over the same population:
+    n1 (S1) = 73   n2 (S3) = 48   overlap = 22
+    estimated total derived N-hat = 157  (SE 19)
+      = 28.0% of 560 registry rules
+    against the multi-signal union lower bound of 105 (18.8%)
+
+  ASSUMPTIONS, AND WHY THE ESTIMATE IS STILL CONSERVATIVE. Capture-recapture
+  assumes the two passes are INDEPENDENT and detectability is HOMOGENEOUS. Both
+  are doubtful here, and in a knowable direction: a faithful port is more likely
+  to BOTH declare its source AND keep the upstream name, so S1 and S3 are
+  POSITIVELY correlated. Positive correlation inflates the overlap, and an
+  inflated overlap DEPRESSES N-hat. So 157 is more likely an
+  under-estimate than an over-estimate — it does not rescue the ceiling, it
+  raises the floor.
+
+  machine-readable summary -> analysis/results/0f_registry_arm.json
