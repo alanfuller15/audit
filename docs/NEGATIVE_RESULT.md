@@ -281,19 +281,23 @@ pages; it is used here as a sensible structure, not attributed to that source.*
 
 ---
 
-## Proposed README sentence — DRAFT, NOT APPLIED
+## The README sentence — APPLIED 2026-07-26
 
-To follow the existing "the signal exists; turning it into a useful ordering is
-unproven" paragraph:
-
-> **What did not work is written up separately**, in
+> **What did not work is written up separately** in
 > [docs/NEGATIVE_RESULT.md](docs/NEGATIVE_RESULT.md): across three scanner
-> pairings on real C and Java, methodologically different tools did not produce
-> agreement at the same location often enough to rank on — with the effect
-> sizes, the boundary conditions, and what we would check first if attempting it
-> again.
+> pairings on real C and Java, methodologically different tools produced **zero**
+> independent agreements at the same location — the one near-match was a rule
+> agreeing with the rule it was copied from — and the ranking built on agreement
+> measurably lost to sorting files by size.
 
-Rationale: the README's job is to say what the tool does; this says where the
-idea ran out, once, with a pointer rather than an argument. It claims nothing
-the body of this document does not support, and it does not describe the result
-as general.
+REVISED FROM THE FIRST DRAFT, which said tools "did not produce agreement at the
+same location **often enough to rank on**". That phrasing implies a FREQUENCY
+measurement. It is right for the ranking null and it UNDERSTATES the co-location
+finding: on real code, once rule lineage is removed, the count of independent
+cross-methodology agreements is **zero**, not merely small. For someone deciding
+whether to attempt this, near-absence and scarcity are different decisions.
+
+The sentence now carries both results in their own terms — the co-location
+finding as an absence, the ranking null as a measured loss to a trivial baseline
+— with the scope ("three scanner pairings on real C and Java") inside the claim
+rather than appended to it.

@@ -57,6 +57,11 @@ So: the signal exists; turning it into a useful ordering is unproven. Earlier ve
 README quoted performance figures for the ranking. They did not survive controlled baselines and
 have been removed.
 
+**What did not work is written up separately** in [docs/NEGATIVE_RESULT.md](docs/NEGATIVE_RESULT.md):
+across three scanner pairings on real C and Java, methodologically different tools produced **zero**
+independent agreements at the same location — the one near-match was a rule agreeing with the rule
+it was copied from — and the ranking built on agreement measurably lost to sorting files by size.
+
 ## What has been checked
 
 The ranking is unproven; the machinery underneath it is tested. Each of these is covered by
