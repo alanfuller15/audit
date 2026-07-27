@@ -1,0 +1,52 @@
+
+==============================================================================
+Struts  (REAL Java)
+  SpotBugs          432 distinct paths   e.g. org/apache/struts/beanvalidation/constraints/impl/FieldMatchVali
+  semgrep(raw)        1 distinct paths   e.g. core/src/main/java/org/apache/struts2/result/ServletRedirectResu
+==============================================================================
+   depth  A blocks  A non-singleton  B blocks  B non-singleton  both-unique matches
+       1       428         4 ( 0.9%)         1         0 ( 0.0%)             1 (+0 amb)
+       2       432         0 ( 0.0%)         1         0 ( 0.0%)             1 (+0 amb)
+       3       432         0 ( 0.0%)         1         0 ( 0.0%)             1 (+0 amb)
+       4       432         0 ( 0.0%)         1         0 ( 0.0%)             1 (+0 amb)
+       5       432         0 ( 0.0%)         1         0 ( 0.0%)             1 (+0 amb)
+       6       432         0 ( 0.0%)         1         0 ( 0.0%)             0 (+0 amb)
+
+  exact path match today: 0 shared paths   (ZERO — this is the 0c silent failure)
+  SpotBugs basename block sizes: {1: 424, 2: 4}
+    basename 'XWorkJUnit4TestCase.java' -> 2 distinct files (would be REFUSED by the uniqueness guard)
+    basename 'ValueStackShadowMap.java' -> 2 distinct files (would be REFUSED by the uniqueness guard)
+    basename 'ValueStackDataSource.java' -> 2 distinct files (would be REFUSED by the uniqueness guard)
+
+==============================================================================
+OWASP   (synthetic Java)
+  SpotBugs        2,755 distinct paths   e.g. org/owasp/benchmark/helpers/DataBaseServer.java
+  semgrep(raw)    1,515 distinct paths   e.g. owasp/BenchmarkJava-master/src/main/java/org/owasp/benchmark/tes
+==============================================================================
+   depth  A blocks  A non-singleton  B blocks  B non-singleton  both-unique matches
+       1     2,755         0 ( 0.0%)     1,515         0 ( 0.0%)         1,515 (+0 amb)
+       2     2,755         0 ( 0.0%)     1,515         0 ( 0.0%)         1,515 (+0 amb)
+       3     2,755         0 ( 0.0%)     1,515         0 ( 0.0%)         1,515 (+0 amb)
+       4     2,755         0 ( 0.0%)     1,515         0 ( 0.0%)         1,515 (+0 amb)
+       5     2,755         0 ( 0.0%)     1,515         0 ( 0.0%)         1,515 (+0 amb)
+       6     2,755         0 ( 0.0%)     1,515         0 ( 0.0%)             0 (+0 amb)
+
+  exact path match today: 0 shared paths   (ZERO — this is the 0c silent failure)
+  SpotBugs basename block sizes: {1: 2755}
+
+==============================================================================
+zlib    (REAL C)
+  flawfinder         44 distinct paths   e.g. zlib-1.3.1/contrib/blast/blast.c
+  cppcheck           59 distinct paths   e.g. zlib-1.3.1/adler32.c
+==============================================================================
+   depth  A blocks  A non-singleton  B blocks  B non-singleton  both-unique matches
+       1        43         1 ( 2.3%)        58         1 ( 1.7%)            42 (+1 amb)
+       2        44         0 ( 0.0%)        59         0 ( 0.0%)            44 (+0 amb)
+       3        44         0 ( 0.0%)        59         0 ( 0.0%)            44 (+0 amb)
+       4        44         0 ( 0.0%)        59         0 ( 0.0%)            44 (+0 amb)
+       5        44         0 ( 0.0%)        59         0 ( 0.0%)            44 (+0 amb)
+       6        44         0 ( 0.0%)        59         0 ( 0.0%)            44 (+0 amb)
+
+  exact path match today: 44 shared paths   (paths already align)
+  flawfinder basename block sizes: {1: 42, 2: 1}
+    basename 'zfstream.h' -> 2 distinct files (would be REFUSED by the uniqueness guard)

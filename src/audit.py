@@ -831,6 +831,92 @@ def _lineage_warnings(tools, declared=frozenset()):
                 "AUDIT_INDEPENDENT_TOOLS=\"" + ",".join(sorted(sonar_drivers)) + "\"")
     return out
 
+def _suffix_alias_map(tool_paths):
+    """0c option (a): reconcile paths reported relative to DIFFERENT ROOTS.
+
+    RECORD-LINKAGE FRAMING, using the field's vocabulary rather than invented
+    terms. This is DETERMINISTIC linkage: matching on exact predefined rules.
+    The literature is explicit about the trade — deterministic rules are
+    "capable of achieving high precision (few False Positives)" and "prone to
+    low recall (False Negatives)" (Splink, MoJ). The alternative, probabilistic
+    linkage (Fellegi-Sunter), weighs partial agreement and would let a
+    near-match contribute.
+
+    WE CHOOSE DETERMINISTIC DELIBERATELY, and the price is recorded with the
+    choice: THIS WILL MISS REAL MATCHES. That is the correct direction here
+    because the error costs are asymmetric — a false merge silently inflates
+    n_tools, which is the signal the whole tool rests on, while a missed merge
+    only costs a merge. Everywhere else in this codebase uncertainty resolves
+    to NO-MERGE (unresolvable CWE class, denied CWE, unknown lineage,
+    degenerate fingerprint); this keeps that rule.
+
+    MECHANICS. The path SUFFIX is a BLOCKING KEY and "exactly one path per
+    side" is a CARDINALITY-1 CONSTRAINT on the block:
+      - block on basename (cheap, and measured to give tiny blocks);
+      - within a block, require a SEGMENT-ALIGNED suffix relation, so
+        `a/util/Config.java` never matches `b/utilConfig.java`;
+      - require the relation to be UNIQUE ON BOTH SIDES. If either side offers
+        more than one candidate, the block is AMBIGUOUS and resolves to
+        NO-MERGE. It is counted and disclosed, never silently dropped.
+
+    MEASURED BEFORE BUILDING (analysis/scripts/blocking_diagnostic.py), which is
+    what justified building it at all — block-size distributions on the three
+    corpora on disk:
+      Struts SpotBugs 432 paths: 4 non-singleton basename blocks (0.9%), ZERO
+        at depth >= 2.  OWASP 2,755 paths: ZERO non-singleton at every depth.
+      zlib flawfinder 44 paths: 1 non-singleton basename block (2.3%,
+        `zfstream.h`), ZERO at depth >= 2.
+    So basename ALONE is not safe (real collisions exist) but the segment
+    suffix plus the uniqueness constraint is: the guard refuses a handful of
+    genuinely ambiguous names and permits the rest.
+
+    Returns (alias, stats). `alias` maps a path to its canonical form (the
+    shorter, common suffix). Identity for anything unmatched.
+    """
+    alias, stats = {}, {"pairs_matched": 0, "pairs_ambiguous": 0,
+                        "ambiguous_examples": [], "tool_pairs": []}
+    tools = sorted(tool_paths)
+    for i in range(len(tools)):
+        for j in range(i + 1, len(tools)):
+            ta, tb = tools[i], tools[j]
+            A, B = tool_paths[ta], tool_paths[tb]
+            # BLOCKING: index each side by basename.
+            ba, bb = {}, {}
+            for p in A:
+                ba.setdefault(p.rsplit("/", 1)[-1], []).append(p)
+            for p in B:
+                bb.setdefault(p.rsplit("/", 1)[-1], []).append(p)
+            matched = ambiguous = 0
+            for name in set(ba) & set(bb):
+                ca, cb = ba[name], bb[name]
+                # CARDINALITY-1 ON BOTH SIDES. More than one candidate either
+                # side and we cannot tell which pairing is right, so no merge.
+                if len(ca) != 1 or len(cb) != 1:
+                    ambiguous += 1
+                    if len(stats["ambiguous_examples"]) < 5:
+                        stats["ambiguous_examples"].append(
+                            f"{name}: {len(ca)} path(s) from {ta}, "
+                            f"{len(cb)} from {tb}")
+                    continue
+                a, b = ca[0], cb[0]
+                if a == b:
+                    continue                      # exact match already works
+                # SEGMENT-ALIGNED suffix relation, not substring.
+                if a.endswith("/" + b):
+                    alias[a] = b
+                elif b.endswith("/" + a):
+                    alias[b] = a
+                else:
+                    continue                      # same name, unrelated paths
+                matched += 1
+            if matched or ambiguous:
+                stats["tool_pairs"].append(
+                    {"tools": [ta, tb], "matched": matched, "ambiguous": ambiguous})
+            stats["pairs_matched"] += matched
+            stats["pairs_ambiguous"] += ambiguous
+    return alias, stats
+
+
 def _path_root_mismatch(tool_paths):
     """Detect tools that report the SAME files relative to DIFFERENT roots.
 
@@ -1039,6 +1125,27 @@ def ingest_sarif(paths):
         if _u:
             _tool_paths.setdefault(_t, set()).add(_u)
     path_warnings = _path_root_mismatch(_tool_paths)
+    # 0c(a): deterministic suffix linkage behind a cardinality-1 guard.
+    # Computed from the ORIGINAL path sets, so the mismatch DIAGNOSTIC
+    # above still sees what the tools actually reported.
+    _alias, _alias_stats = _suffix_alias_map(_tool_paths)
+    # The root-mismatch warning above was written when nothing could reconcile
+    # these paths, and it asserts merging "CANNOT MATCH". Once suffix linkage
+    # rescues the pair that sentence is FALSE, so amend it rather than leave a
+    # warning that contradicts the merge count printed beside it. The warning
+    # still fires: the operator should still fix the configuration, because
+    # linkage is deliberately strict and will not rescue every case.
+    if _alias and path_warnings:
+        path_warnings = [
+            w.replace("CANNOT MATCH and any consensus count involving this pair "
+                      "will be ZERO for that reason alone — NOT because the "
+                      "tools disagree.",
+                      "would not match on the paths as reported. Suffix linkage "
+                      "reconciled them for this run (see 'path linkage' below), "
+                      "so the consensus count is NOT zero for that reason — but "
+                      "linkage is deliberately strict and will not rescue every "
+                      "case, so the configuration is still worth fixing.")
+            for w in path_warnings]
 
     for path, doc in docs:
         if "_empty" in doc:
@@ -1092,6 +1199,10 @@ def ingest_sarif(paths):
                 key = (tool, _result_key(res, tool, degenerate_fps))
                 loc = (((res.get("locations") or [{}])[0].get("physicalLocation") or {}))
                 uri = _norm_uri((loc.get("artifactLocation") or {}).get("uri", ""))
+                # 0c(a): canonicalise to the common suffix when the guard
+                # accepted this path. Identity otherwise.
+                _uri_orig = uri
+                uri = _alias.get(uri, uri)
                 _reg = loc.get("region") or {}
                 line = _reg.get("startLine", 1)
                 end_line = _reg.get("endLine") or line
@@ -1104,8 +1215,14 @@ def ingest_sarif(paths):
                            "message": msg, "level": lvl, "tools": set(),
                            "levels": set(), "rulemeta": "", "all_rule_ids": set(),
                            "all_msgs": {}, "taxa_cwes": [],
-                           "end_line": end_line, "merge_rules": set()}
+                           "end_line": end_line, "merge_rules": set(),
+                           # 0c(a): original path forms contributing here. >1
+                           # distinct form means suffix linkage did work on this
+                           # record, and that is reported as its own confidence
+                           # layer rather than folded into the merge count.
+                           "uri_forms": set()}
                     findings[key] = rec
+                rec["uri_forms"].add(_uri_orig)
                 if isinstance(end_line, int) and isinstance(rec.get("end_line"), int):
                     rec["end_line"] = max(rec["end_line"], end_line)
                 rec["tools"].add(tool)
@@ -1248,6 +1365,11 @@ def ingest_sarif(paths):
             if m.get("taxa_cwes") and not base.get("taxa_cwes"):
                 base["taxa_cwes"] = m["taxa_cwes"]
             base["merge_rules"] |= m.get("merge_rules") or set()
+            # 0c(a): carry the ORIGINAL path forms across the merge, so a merge
+            # that only happened because suffix linkage reconciled two path
+            # forms is distinguishable afterwards from one where both tools
+            # already agreed on the path.
+            base["uri_forms"] |= m.get("uri_forms") or set()
         merged[base["key"]] = base
     findings = merged
 
@@ -1353,6 +1475,30 @@ def ingest_sarif(paths):
         "cross_tool_merged_findings": sum(
             1 for r in findings.values() if r["n_tools"] > 1),
         "cross_tool_edges_by_rule": {k: len(v) for k, v in sorted(edges_by_rule.items())},
+        # ── 0c(a) SUFFIX LINKAGE, reported as a DISTINCT CONFIDENCE LAYER.
+        # Deterministic record linkage is one layer within a strategy, not the
+        # whole of it, and a merge that needed path reconciliation rests on more
+        # inference than one where both tools already agreed on the path. Kept
+        # separately so the two populations can be measured apart rather than
+        # inherited pooled — same reasoning as merge_rules for range-containment.
+        "suffix_linkage": {
+            "active": bool(_alias),
+            "paths_reconciled": len(_alias),
+            "candidate_pairs_matched": _alias_stats["pairs_matched"],
+            "candidate_pairs_refused_ambiguous": _alias_stats["pairs_ambiguous"],
+            "ambiguous_examples": _alias_stats["ambiguous_examples"],
+            "by_tool_pair": _alias_stats["tool_pairs"],
+            "merges_using_suffix_match": sum(
+                1 for r in findings.values()
+                if r["n_tools"] > 1 and len(r.get("uri_forms") or ()) > 1),
+            "method": "deterministic record linkage: basename blocking, "
+                      "segment-aligned suffix relation, cardinality-1 on both "
+                      "sides; ambiguity resolves to NO-MERGE",
+            "known_cost": "deterministic matching is high-precision and "
+                          "LOW-RECALL by construction — real matches are missed, "
+                          "accepted deliberately because a false merge inflates "
+                          "n_tools while a missed merge only costs a merge",
+        },
         "findings_by_merge_rule": dict(sorted(Counter(
             rule for r in findings.values() if r["n_tools"] > 1
             for rule in (r.get("merge_rules") or ["?"])).items())),
@@ -1730,6 +1876,23 @@ def main():
                   f"(consensus counts engines, not product names)")
         for w in agg.get("path_warnings", []):
             print(f"  ⚠ PATH MISMATCH: {w}")
+        _sl = agg.get("suffix_linkage") or {}
+        if _sl.get("active"):
+            print(f"  path linkage ACTIVE: reconciled {_sl['paths_reconciled']} path(s) "
+                  f"reported relative to different roots; "
+                  f"{_sl['merges_using_suffix_match']} of "
+                  f"{agg.get('cross_tool_merged_findings', 0)} cross-tool merges "
+                  f"required it")
+            print(f"    matched on a segment-aligned path SUFFIX, unique on both "
+                  f"sides; ambiguous names are refused, not guessed")
+            if _sl.get("candidate_pairs_refused_ambiguous"):
+                print(f"    ⚠ {_sl['candidate_pairs_refused_ambiguous']} name(s) "
+                      f"REFUSED as ambiguous (same filename, several paths): "
+                      f"{'; '.join(_sl.get('ambiguous_examples') or [])}")
+        elif _sl.get("candidate_pairs_refused_ambiguous"):
+            print(f"  path linkage: {_sl['candidate_pairs_refused_ambiguous']} "
+                  f"ambiguous filename(s) refused — "
+                  f"{'; '.join(_sl.get('ambiguous_examples') or [])}")
         for w in agg.get("lineage_warnings", []):
             print(f"  ⚠ independence: {w}")
         print(f"  {agg['raw_result_count']} raw results → {agg['deduplicated_count']} unique after dedup")

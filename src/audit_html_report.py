@@ -84,6 +84,35 @@ def build(data):
                      f'<div class="warnfoot">Consensus counts distinct analysis '
                      f'ENGINES, not product names. Agreement between two names for '
                      f'one engine is self-agreement, not corroboration.</div></div>')
+    # 0c(a): suffix-linkage disclosure. A merge that needed path reconciliation
+    # rests on more inference than one where both tools already agreed, so it is
+    # surfaced as its own layer rather than folded into the merge count.
+    sl = data.get("suffix_linkage") or {}
+    link_html = ""
+    if sl.get("active") or sl.get("candidate_pairs_refused_ambiguous"):
+        _amb = sl.get("ambiguous_examples") or []
+        _ambh = ""
+        if sl.get("candidate_pairs_refused_ambiguous"):
+            _ambh = ('<div class="warnfoot"><b>'
+                     f'{sl["candidate_pairs_refused_ambiguous"]} filename(s) refused '
+                     'as ambiguous</b> — the same filename appears at several paths, '
+                     'so which pairing is correct cannot be determined and no merge '
+                     'was made: ' + esc("; ".join(_amb)) + '</div>')
+        _act = ""
+        if sl.get("active"):
+            _act = (f'<div>Reconciled <b>{sl["paths_reconciled"]}</b> path(s) that two '
+                    f'scanners reported relative to different roots. '
+                    f'<b>{sl["merges_using_suffix_match"]}</b> of '
+                    f'{data.get("cross_tool_merged_findings", 0)} cross-tool merges '
+                    f'required this reconciliation.</div>')
+        link_html = (
+            f'<div class="infobox"><b>Cross-scanner path linkage</b>{_act}'
+            f'<div class="warnfoot">Matched on a segment-aligned path suffix that is '
+            f'unique on both sides. This is deliberately strict: it is '
+            f'high-precision and will MISS real matches, because a wrong merge '
+            f'would inflate the agreement count this tool reports, while a missed '
+            f'one only costs a merge.</div>{_ambh}</div>')
+
     # 0h: per-run size-correlation disclosure. Same reasoning as the warnings
     # above — a caveat that only reaches audit_result.json informs nobody on the
     # Action path. DISCLOSURE ONLY: nothing here filters or reweights.
@@ -222,6 +251,7 @@ def build(data):
   {engines_stat}
 </div>
 {warn_html}
+{link_html}
 {size_html}
 <div class="band">
   <span class="pill">scanners: <b>{tools_line}</b></span>

@@ -3540,3 +3540,106 @@ correlation → warns, with CI and permutation p; genuine spread, no correlation
 applies and stays silent; the m*=8 boundary in both directions; no readable
 sizes → refuses the circular proxy and names why; existing fixtures do not start
 warning; output deterministic across runs.
+
+## 0c OPTION (a) IMPLEMENTED (2026-07-26) — deterministic suffix linkage,
+## cardinality-1 guard. Diagnostic ran FIRST and authorised building it.
+
+Tier: `[self-tested]` implementation, verified against `[externally-grounded]`
+real scanner output on three corpora. Framing is `[fetched]` record-linkage
+literature.
+
+### FRAMING — this is RECORD LINKAGE, using the field's vocabulary
+- **Deterministic linkage**: matching on exact predefined rules. Splink (MoJ)
+  `[fetched]`, verbatim: "✅ Capable of achieving high precision (few False
+  Positives)" / "❌ Prone to Low recall (False Negatives)".
+- **Probabilistic linkage (Fellegi-Sunter)** is the alternative: it weighs
+  partial agreement, assigning weights from m- and u-probabilities so a
+  near-match can contribute.
+- **We choose deterministic DELIBERATELY**, and the price is recorded with the
+  choice: **it will miss real matches.** Correct here because the error costs
+  are asymmetric — a false merge silently inflates `n_tools`, the signal the
+  whole tool rests on, while a missed merge costs only a merge. Consistent with
+  every other uncertainty in this codebase resolving to NO-MERGE.
+- The uniqueness requirement is a **BLOCKING KEY with a CARDINALITY-1
+  CONSTRAINT**: the path suffix is the key, "exactly one path per side" is the
+  constraint.
+- HONESTY NOTE on one citation, per rule 8a: Splink documents the
+  precision/recall trade but does **not** discuss loosening rules raising false
+  positives. That part of the framing is supported by the general linkage
+  literature (relaxations proposed to absorb formatting variation), not by
+  Splink, and is not attributed to it.
+
+### DIAGNOSTIC FIRST — block-size distribution, which decided whether to build
+`analysis/scripts/blocking_diagnostic.py` → `analysis/results/0c_blocking_diagnostic.txt`.
+Standard practice is to observe block sizes as criteria change. Run on the RAW
+scanner output (not the hand-aligned copies, which are the thing being replaced):
+
+```
+corpus / side          paths   non-singleton basename blocks   at depth >= 2
+Struts SpotBugs          432   4  (0.9%)                       0  (0.0%)
+Struts semgrep(raw)        1   0                               0
+OWASP  SpotBugs        2,755   0  (0.0%)                       0  (0.0%)
+OWASP  semgrep(raw)    1,515   0  (0.0%)                       0  (0.0%)
+zlib   flawfinder         44   1  (2.3%, `zfstream.h`)         0  (0.0%)
+zlib   cppcheck           59   1  (1.7%)                       0  (0.0%)
+
+exact path match today:  Struts 0 · OWASP 0 · zlib 44
+both-unique suffix matches: Struts 1 · OWASP 1,515 · zlib 44
+```
+**VERDICT: the guard is NOT too strict.** Basename ALONE is unsafe — real
+collisions exist on two of three corpora — but the segment-aligned suffix plus
+cardinality-1 permits 1,515 matches on OWASP and 1 on Struts while refusing only
+a handful of genuinely ambiguous names. That is what authorised building it.
+
+### VERIFICATION ON REAL DATA — linkage reproduces hand-alignment EXACTLY
+```
+                        merges   linkage  paths        merges via
+                                 active   reconciled   suffix match
+Struts  hand-aligned         1   False             0             0
+Struts  RAW                  1   True              1             1
+OWASP   hand-aligned     1,427   False             0             0
+OWASP   RAW              1,427   True         1,515         1,427
+zlib                         0   False             0             0   (1 refused)
+```
+Both RAW runs go from **0 merges to exactly the hand-aligned count**. That is
+the strongest available check: the feature reproduces what a human did by hand,
+to the merge.
+
+CORRECTION to the brief: Struts hand-aligned is **1** merge, not 2. (2 was
+zlib's figure in an earlier configuration.) The target was set from measurement,
+not from the recollection.
+
+### Behaviour
+- Basename blocking → segment-aligned suffix relation (`a/util/Config.java`
+  never matches `b/utilConfig.java`) → cardinality-1 on BOTH sides.
+- Ambiguity resolves to **NO-MERGE**, and is **counted and disclosed**, never
+  silently dropped. zlib: `zfstream.h` refused, 2 paths each side.
+- Suffix-assisted merges reported **separately** (`suffix_linkage`), as
+  range-containment is, because a merge needing path reconciliation rests on
+  more inference than one where both tools already agreed.
+- The output states its own known cost: deterministic matching is low-recall by
+  construction.
+- Surfaced in JSON, CLI and HTML.
+- **The root-mismatch warning was AMENDED.** It previously asserted the count
+  "will be ZERO for that reason alone"; once linkage rescues the pair that is
+  false, so the text now says linkage reconciled it and the configuration is
+  still worth fixing. A warning contradicting the merge count beside it would be
+  its own honesty failure. When linkage does NOT fire, the original wording is
+  retained in full — verified.
+
+### THE NAMED TRAP, and why it was not entered
+The literature documents the pattern: formatting differences cause false
+negatives → teams relax the rules → false positives rise. The instruction was to
+stop rather than loosen if the guard proved too strict. **It did not prove too
+strict**, so nothing was loosened. The guard is unchanged from its strictest
+form: unique on both sides or no merge. If a future corpus shows the guard
+blocking useful matches, the recorded decision is to accept the loss or move to
+an explicitly probabilistic layer with its own disclosure — NOT to relax the
+cardinality constraint.
+
+### Regression tests (harness 84 → 98 checks)
+suffix-related paths merge and are attributed to the linkage layer; two files
+sharing a basename in different directories do NOT merge and the ambiguity is
+disclosed by name; substring-but-not-segment-aligned paths do not merge;
+identical paths still merge with linkage inactive; existing fixtures do not
+activate it; the amended warning is asserted in both directions.

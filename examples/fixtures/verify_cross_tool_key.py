@@ -295,10 +295,28 @@ check(bool(mism.get("path_warnings")),
       f"{len(mism.get('path_warnings', []))} warning(s)")
 check(any("DIFFERENT ROOTS" in w for w in mism.get("path_warnings", [])),
       "the warning names the cause")
-check(any("ZERO for that reason alone" in w for w in mism.get("path_warnings", [])),
-      "the warning says a zero count is NOT tool disagreement")
-check(max(f["n_tools"] for f in mism["ranked"]) == 1,
-      "no suffix matching is attempted (that is option (a), not built)")
+# AMENDED 2026-07-26 alongside option (a). The warning used to assert the count
+# "will be ZERO for that reason alone"; once suffix linkage rescues the pair
+# that is false, so the text now says linkage reconciled it AND that the
+# configuration is still worth fixing. A warning that contradicts the merge
+# count printed beside it is its own honesty failure.
+check(any("still worth fixing" in w for w in mism.get("path_warnings", [])),
+      "warning is amended when linkage rescues the pair, not left contradictory")
+check(not any("ZERO for that reason alone" in w for w in mism.get("path_warnings", [])),
+      "the now-false 'will be ZERO' claim is removed when linkage succeeded")
+# SUPERSEDED 2026-07-26. This previously asserted "no suffix matching is
+# attempted (that is option (a), not built)". Option (a) IS now built, behind
+# the cardinality-1 guard, so the expectation INVERTS: these two paths are
+# suffix-related and unique on both sides, so they SHOULD now merge. The
+# warning above is still emitted, and that is deliberate — the operator is told
+# the roots differ even when linkage rescues the merge, because the underlying
+# configuration is still worth fixing.
+check(max(f["n_tools"] for f in mism["ranked"]) == 2,
+      "option (a) IS built: unique suffix-related paths now merge")
+check(mism["suffix_linkage"]["merges_using_suffix_match"] == 1,
+      "and the rescue is attributed to suffix linkage, not to plain agreement")
+check(bool(mism.get("path_warnings")),
+      "the root-mismatch warning is STILL emitted even when linkage succeeds")
 
 # Matched paths must stay silent AND still merge.
 matched = ingest(sarif("SpotBugs", [res("CWE-89", "org/acme/Login.java", 42, "sqli CWE-89")]),
@@ -505,6 +523,75 @@ check(not _sc.get("size_correlated"), "existing fixtures do not start warning",
 # CASE 7 — determinism: same input, same interval.
 check(audit.size_correlation_disclosure(_ranked(corr), _sizes(corr)) == r2,
       "disclosure is deterministic across runs (seeded bootstrap)")
+
+# ── 0c(a): deterministic suffix linkage behind a cardinality-1 guard ─────────
+# Record-linkage framing: basename is the BLOCKING KEY, "exactly one path per
+# side" is the CARDINALITY-1 CONSTRAINT. Deterministic by choice — high
+# precision, low recall — because a false merge inflates n_tools while a missed
+# merge only costs a merge.
+print("\n0c(a) cross-tool path suffix linkage (guarded):")
+
+
+def _sfx(tool, uri, rule="CWE-89", line=7):
+    return sarif(tool, [{"ruleId": rule, "message": {"text": "sql injection"},
+                         "locations": [{"physicalLocation": {
+                             "artifactLocation": {"uri": uri},
+                             "region": {"startLine": line}}}]}])
+
+
+def _ingest(a, b):
+    d = tempfile.mkdtemp()
+    pa, pb = os.path.join(d, "a.sarif"), os.path.join(d, "b.sarif")
+    json.dump(a, open(pa, "w")); json.dump(b, open(pb, "w"))
+    return audit.ingest_sarif([pa, pb])
+
+# THE CASE THE FEATURE EXISTS FOR: package-relative vs scan-root-relative.
+r = _ingest(_sfx("SpotBugs", "org/x/Foo.java"),
+            _sfx("Semgrep", "proj/src/main/java/org/x/Foo.java"))
+check(r["cross_tool_merged_findings"] == 1, "suffix-related paths now merge",
+      f"merges={r['cross_tool_merged_findings']}")
+check(r["suffix_linkage"]["merges_using_suffix_match"] == 1,
+      "suffix-assisted merge is reported as its OWN layer, not folded in")
+check(r["suffix_linkage"]["active"] is True, "linkage disclosed as active")
+
+# THE GUARD: same basename, several paths per side -> AMBIGUOUS -> NO MERGE.
+amb_a = sarif("SpotBugs", [
+    {"ruleId": "CWE-89", "message": {"text": "sql"},
+     "locations": [{"physicalLocation": {
+         "artifactLocation": {"uri": "a/util/Config.java"},
+         "region": {"startLine": 7}}}]},
+    {"ruleId": "CWE-89", "message": {"text": "sql"},
+     "locations": [{"physicalLocation": {
+         "artifactLocation": {"uri": "b/util/Config.java"},
+         "region": {"startLine": 7}}}]}])
+amb_b = _sfx("Semgrep", "proj/src/main/java/util/Config.java")
+ra = _ingest(amb_a, amb_b)
+check(ra["cross_tool_merged_findings"] == 0,
+      "two files sharing a basename in different directories do NOT merge",
+      f"merges={ra['cross_tool_merged_findings']}")
+check(ra["suffix_linkage"]["candidate_pairs_refused_ambiguous"] >= 1,
+      "the ambiguous case is DISCLOSED, not silently dropped")
+check(any("Config.java" in e for e in ra["suffix_linkage"]["ambiguous_examples"]),
+      "the refused filename is named in the disclosure")
+
+# SEGMENT ALIGNMENT: a suffix must align on separators, not on characters.
+rs = _ingest(_sfx("SpotBugs", "x/MyFoo.java"),
+             _sfx("Semgrep", "proj/src/Foo.java"))
+check(rs["cross_tool_merged_findings"] == 0,
+      "substring-but-not-segment-aligned paths do NOT merge (MyFoo vs Foo)")
+
+# NON-REGRESSION: already-aligned paths are untouched and linkage stays off.
+rq = _ingest(_sfx("SpotBugs", "org/x/Foo.java"), _sfx("Semgrep", "org/x/Foo.java"))
+check(rq["cross_tool_merged_findings"] == 1, "identical paths still merge")
+check(rq["suffix_linkage"]["active"] is False,
+      "linkage stays INACTIVE when paths already agree")
+_base = audit.ingest_sarif([FF, CC])
+check((_base.get("suffix_linkage") or {}).get("active") is False,
+      "existing fixtures do not activate suffix linkage")
+
+# THE RECORDED COST: deterministic linkage is low-recall BY DESIGN.
+check("LOW-RECALL" in _base["suffix_linkage"]["known_cost"],
+      "the known cost (missed real matches) is stated in the output itself")
 
 print()
 if _fail:

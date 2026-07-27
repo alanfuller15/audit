@@ -699,7 +699,22 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    CANNOT SEE rule provenance at all. Any fix needs a second input format or a
    curated ancestry list.
 
-0c. [STALE HEADER — CORRECTED 2026-07-26. The DISCLOSURE half IS IMPLEMENTED in
+0c. [CLOSED 2026-07-26 — BOTH HALVES NOW SHIPPED. (b) disclosure and (a)
+   suffix matching behind a uniqueness guard. Record: VALIDATION.md
+   "0c OPTION (a) IMPLEMENTED". Diagnostic ran FIRST and authorised it:
+   basename blocks are non-singleton on 0.9% (Struts) and 2.3% (zlib) of paths
+   and ZERO at depth>=2, so basename alone is unsafe but segment-suffix +
+   cardinality-1 is not too strict. VERIFIED: Struts RAW 0->1 merges and OWASP
+   RAW 0->1,427, both EXACTLY reproducing the hand-aligned counts.
+   NOTE the correction: Struts hand-aligned is 1 merge, not 2.
+   THE GUARD MUST NOT BE LOOSENED. The documented failure pattern is
+   formatting differences -> relax the rules -> false positives rise. The guard
+   was measured as adequate, so nothing was relaxed. If a future corpus shows
+   it blocking useful matches, accept the loss or add an explicitly
+   probabilistic layer with its own disclosure — do NOT weaken cardinality-1.
+   Deterministic linkage was chosen deliberately and its price (missed real
+   matches) is stated in the tool's own output.]
+   [former header: STALE HEADER — CORRECTED 2026-07-26. The DISCLOSURE half IS IMPLEMENTED in
    shipped code; verified against the tree, not asserted: `_path_root_mismatch`
    at src/audit.py:834, wired at :1041 and :1339, rendered at
    audit_html_report.py:74. The README's "Path-root mismatch disclosure" bullet
