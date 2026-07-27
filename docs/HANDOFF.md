@@ -192,6 +192,16 @@ commit that creates it.**
                               not changed to fix a result.
   README.md                   The public front door. Nothing enters it that has
                               not been re-derived from VALIDATION.md.
+  .claude/verify.sh           NOT A DOCUMENT — the project's VERIFICATION GATE,
+                              indexed because a session must know it exists.
+                              The genesis Stop hook runs it on any turn that
+                              left the working tree dirty, and a non-zero exit
+                              PREVENTS THE TURN FROM ENDING. It runs the two
+                              harnesses (112 checks + render). To suspend it for
+                              a deliberate mid-refactor: `touch
+                              .genesis/skip-verify`, and delete it when done —
+                              it announces itself each turn so it cannot be
+                              forgotten quietly.
 
 ## 6. CURRENT PROJECT STATE (tier-tagged; verify, don't trust this list)
 
@@ -1846,6 +1856,56 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    >>> for the claim — not the index, and not memory. `grep -rl` over docs/ and
    >>> README.md costs one command and is the only thing that makes
    >>> "everywhere" a checkable word.
+
+   ### THIRD FORM — A CORRECTION THAT NEVER RE-DERIVES ITS OWN NUMBERS.
+   ### The claim gets fixed everywhere. The arithmetic under it is never checked.
+   Staleness is WRONG TEXT. Orphaning is MISSING TEXT. This is a third:
+   **TEXT THAT IS NOW CORRECT CARRYING NUMBERS THAT WERE NEVER RE-DERIVED.**
+
+   IT IS HARDER TO CATCH THAN EITHER OF THE OTHER TWO, and the reason is
+   specific: **the sweep reports success honestly.** A stale header is wrong and
+   an orphan is absent — both are detectable by looking. A completed correction
+   is neither. It did exactly what it set out to do, it says so accurately, and
+   the figures it carried through were never in its scope. There is no false
+   statement anywhere in the record to trip over.
+
+   THE MECHANISM, and it is the part worth internalising:
+   **THOROUGHNESS ON THE CLAIM IS WHAT MAKES CHECKING THE ARITHMETIC FEEL
+   UNNECESSARY.** Having grepped the tree for a sentence and corrected every
+   instance, the figures inside those sentences read as settled — they were just
+   handled. The care spent on the claim is precisely what buys the numbers a
+   pass. This is not carelessness; it is a predictable consequence of doing the
+   first job well, which is why it needs a control rather than more diligence.
+
+   FOUND 2026-07-26, the same day and by the next sweep. The morning's pass
+   corrected the co-location claim everywhere it had spread — genuinely
+   everywhere, verified by grepping for the claim rather than trusting the
+   index. It never re-derived the numbers attached to it. Two defects were
+   sitting in them:
+     - `1,131` was 543+588, the TWO-tool raw count, describing a THREE-tool
+       result. It had propagated from VALIDATION's prose into two more files.
+     - `1,164 findings (0.18%)` paired a RAW count with a DEDUP-derived rate,
+       and the morning's own correction put that pairing into the PUBLIC README.
+   Both fell out of one line of arithmetic against the component figures the
+   same document already carried.
+
+   >>> THE PROJECT ALREADY KNEW THIS, IN ANOTHER FORM, AND IT DID NOT TRANSFER.
+   >>> Item 0f pinned FIVE denominators to exact definitions — 8.3% / 45.5% /
+   >>> 36.8% / 30.4% / 22.6% — with the explicit warning that they "are NOT
+   >>> versions of one number". That lesson was learned, written down, and
+   >>> applied hard to the figure it was learned on. It did not generalise to a
+   >>> figure that LOOKED SETTLED. A rule attached to the instance that produced
+   >>> it protects that instance; what generalises is the rule stated as a class,
+   >>> which is what this form is.
+
+   THE CONTROL: **when a sweep corrects a claim, RE-DERIVE EVERY NUMBER attached
+   to it FROM COMPONENTS — not from the prose that carried it.** Find the line
+   that produced the figure (the per-tool counts, the script, the record) and do
+   the arithmetic. If a rate is quoted, check which denominator reproduces it;
+   a rate is a second, independent check on the count, and here it was the thing
+   that caught the raw/dedup mismatch. Correcting a claim and checking its
+   arithmetic are DIFFERENT OPERATIONS, and finishing the first is not evidence
+   about the second.
 
    ### WORKED INSTANCE — §6.2 into a PUBLIC document, missed by BOTH parties
    Recorded in full because the abstract rule did not prevent it, and because

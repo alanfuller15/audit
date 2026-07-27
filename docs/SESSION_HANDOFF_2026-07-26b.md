@@ -153,3 +153,10 @@ Rule 11, and its two forms. Staleness is wrong text; orphaning is missing text.
 Four-for-four in the pessimistic direction. **When this file and the tree
 disagree, the tree is probably further along than the file says.** Check first,
 then act.
+
+[UPDATED 2026-07-26 by two later sweeps, so this pointer does not undercount
+what it points at: rule 11 now has THREE forms and EIGHT instances. The third
+form is a correction that is complete in its own terms and never re-derives the
+NUMBERS attached to the claim it corrected — which is how a figure in this
+file's own §6 survived a sweep that had just corrected the sentence around it.
+Go to rule 11 itself; this line is a pointer, not a summary.]

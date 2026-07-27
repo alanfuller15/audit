@@ -9,3 +9,5 @@ __pycache__/
 audit_result.json
 audit_report.html
 .DS_Store
+.genesis/
+.claude/settings.local.json
