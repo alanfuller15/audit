@@ -1,7 +1,7 @@
 {
   "_meta": {
     "tier": "[self-tested]",
-    "what": "Population PILOT — 12 of ~202 claims in VALIDATION.md. Not the corpus.",
+    "what": "Population PILOT — 12 claims from VALIDATION.md. Not the corpus. NOT '12 of ~202': that denominator was inferred from section headings and never counted. Counted 2026-07-28 against VALIDATION.md at e260631 — 61 dated records / ~190 result-bearing subsections / ~390 (interval ~300-470) independently validatable assertions. The spec does not fix the claim unit and these twelve span all three granularities, so no denominator is quotable without naming the rule that produced it. Method: POPULATION_PILOT.md header. Filed as HANDOFF §7 item 9.",
     "spec": ["docs/CLAIM_STRUCTURE.md", "docs/EVIDENCE_SCALE.md", "docs/PROVENANCE_FIELDS.md"],
     "measurements_and_recommendation": "docs/POPULATION_PILOT.md",
     "DECISION_1_storage": "The spec never says WHERE populated fields live. Chosen: a SIDECAR keyed by claim id, not inline in VALIDATION.md. Reason: VALIDATION.md is append-only (established in the reconcile work), so editing historical entries to add fields would violate that; and machine-writable fields need a parseable format. JSON not YAML because no yaml module is installed. COST: the sidecar can drift from VALIDATION.md, which is a new instance of the failure this whole design targets, and nothing currently checks the link.",

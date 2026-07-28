@@ -4,6 +4,34 @@
 fields are in `docs/claims.json`. Nothing beyond the 12 was populated and no
 field spec was adjusted to make a claim fit.
 
+> **[COUNT CORRECTED 2026-07-28 — the "~200" below was never counted, and the
+> denominator depends on a rule this project has not fixed.]** Counted against
+> VALIDATION.md at `e260631` (4,106 lines, 291 logical headings — the "~307"
+> figure counted raw `#` lines, including one inside a code fence and 11
+> continuation lines of multi-line headings):
+>
+> | counting rule | count | basis |
+> |---|---|---|
+> | **one claim = one dated record** (`##`) | **61** | exact; 6 are front-matter reference sections, 55 are records |
+> | **one claim = one result-bearing subsection** (`###`), plus records with no subsections | **~190** | 177 + 13; keyword classification, ±~20 |
+> | **one claim = one independently validatable assertion** — the granularity the pilot mostly used | **~390 (interval ~300–470)** | hand-count over a systematic 1-in-7 sample of records: 56 claims in 9 records / 538 lines (13.1% of the file) |
+>
+> **"~200" is the heading count, not the claim count.** It is right under the
+> middle rule and roughly half the answer under the rule the pilot's own 12 were
+> populated at. **The ambiguity is that the spec never fixes the claim unit, and
+> the pilot did not either:** of its 12, C04 is a single table row, C02 an
+> 8-line block, C01 and C03 two claims sharing one 15-line range, and C08/C09/C10
+> whole `##` records. A single corpus-wide number cannot be quoted without
+> naming which of these three rules produced it.
+>
+> **Consequence for §5.** The direction of the recommendation is unchanged and
+> mildly strengthened — the case against full population gets stronger as the
+> denominator grows. The *magnitude* changes: step 2 ("populate `status` alone,
+> corpus-wide") is ~390 units of one field, not ~190, and §10 of
+> PROVENANCE_FIELDS adds a twelfth field (`signature`) with a corpus-wide grep
+> attached. **Fixing the claim unit is now a prerequisite to pricing anything**,
+> and it is a step-2 spec gap, not a counting problem.
+
 ---
 
 ## 1. SELECTION RULE — fixed before populating

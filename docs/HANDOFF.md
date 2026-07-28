@@ -191,8 +191,13 @@ commit that creates it.**
                               records that two of the four source IDs given were
                               wrong papers. No scale and no tier assignments —
                               that is step 3.
-  docs/POPULATION_PILOT.md    Field-population PILOT — 12 of ~200 claims, with
+  docs/POPULATION_PILOT.md    Field-population PILOT — 12 claims, with
                               measurements and a recommendation. [self-tested].
+                              NOT "12 of ~200": that denominator was a heading
+                              estimate, never counted. Counted 2026-07-28 —
+                              61 / ~190 / ~390 under three different claim
+                              units, and the spec fixes none of them. See the
+                              header, and §7 item 9.
                               §2 records four ambiguities the spec did not
                               determine, each marked a DECISION with its cost.
                               §4 is the finding: S1 CANNOT see the recorded
