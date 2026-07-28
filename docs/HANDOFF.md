@@ -1612,6 +1612,50 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    [LETOR: note §6's rejection of hand-crafted per-warning weighting is evidence
    AGAINST this path, not neutral. Study that result before spending on it.]
 
+9. [OPEN — SPEC GAP, NOT A DEFECT. Surfaced by counting, 2026-07-28.
+   FILED DELIBERATELY UNFIXED: this decides whether the population thread
+   continues, so it is a call against the board, not an edit.]
+   THE CLAIM UNIT IS UNDEFINED.
+
+   Counting VALIDATION.md produced three defensible answers, not one:
+     one dated record (##)                             61   exact
+     one result-bearing subsection (###), plus
+       records having none                           ~190   177+13, ±~20
+     one independently validatable assertion         ~390   ~300-470
+   **And the population pilot's own twelve claims span all three.** C04 is a
+   single table row; C02 an 8-line block; C01 and C03 are two claims sharing
+   one 15-line range; C08/C09/C10 are whole ## records. The pilot did not fix
+   a unit either — it selected across the design space and never had to.
+
+   CONSEQUENCE, and it is not small: **nothing can be priced, counted, or
+   populated corpus-wide until this is fixed.** Every per-claim cost estimate,
+   every "~190 remaining", and every "N of M populated" is unquotable without
+   naming the rule that produced it. The "~200" that ran through the pilot,
+   claims.json and this index was the MIDDLE rule's answer, arrived at by
+   estimating from headings rather than counting.
+
+   IT IS A STEP-2 GAP. CLAIM_STRUCTURE.md defines a claim's PARTS —
+   asserts/grounds/warrant/estimand/comparator/bound/defeater — and never its
+   BOUNDARIES. Where one claim stops and the next begins is not in the spec.
+   Surfaced by counting, which is the same shape as step 4 discovering that
+   step 2's TIME lacked `restated-at`: found by trying to USE the spec, not by
+   re-reading it. That is now three times this sequence has found a step-2 gap
+   downstream rather than in step 2.
+
+   IT IS THE PREREQUISITE TO THE PILOT'S OWN RECOMMENDATION. POPULATION_PILOT
+   §5 says populate `status` alone, corpus-wide, and then reconsider. You
+   cannot populate one field across the corpus without knowing what you are
+   populating it across — 61 units and ~390 units are different projects.
+
+   THE QUESTION IS TWO-SIDED AND THIS ITEM DOES NOT ANSWER IT. Either fixing
+   the unit is the next move, or the fact that the unit went undefined through
+   five design steps AND a pilot is itself an argument for stopping the
+   population thread entirely. Both readings are live. Left for the inventor.
+
+   Records: POPULATION_PILOT.md header (the count, its method, and its sample);
+   PROVENANCE_FIELDS.md §10 (which adds a twelfth field and so raises whatever
+   the per-claim cost turns out to be).
+
 ────────────────────────────────────────────────────────────────────────
 ## 8. STANDING BEHAVIORAL RULES (the user established these by correction)
 
