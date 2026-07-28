@@ -312,6 +312,11 @@ grading, provenance, and maintenance — derived throughout from this project's 
 documented failures rather than imported wholesale.
 
 ### What remains unbuilt — all of it
+
+> **[SUPERSEDED BY §13, 2026-07-28.]** This list reads as a work queue. It is
+> not one. Item 4 (population) was piloted and **declined**, and items 1–3 and 5
+> are all downstream of it. §13 states what is in use, what is specified and
+> will not run, and why — read it instead of treating this as pending work.
 1. **`TERMS.md`.** Downstream of all five and deliberately not written. Steps 1
    and 5 both point at it: step 1 found the conflicts, §9.4 identifies a
    versioned terminology store as the only defence against semantic drift.
@@ -465,3 +470,80 @@ block it. The script keeps its non-zero exit for manual and CI use.
 (you corrected a claim, did you re-derive?), and form 3's check is S1, which
 reads fields that do not exist. When claims carry fields, Stop becomes the right
 home for S1 and this decision should be revisited.
+
+> **[CLOSED 2026-07-28 — the condition will not arrive.]** "When claims carry
+> fields" was written as a matter of time. It is now a matter of decision: the
+> population thread is stopped (§13), so claims will not carry fields, and Stop
+> stays empty. The reasoning above was right and its premise expired.
+
+---
+
+## 13. WHAT IS ACTUALLY IN USE — the honest end-state of steps 1–5
+
+**Written for an outside reader**, and it supersedes §11's "what remains
+unbuilt", which listed population as pending work. It is not pending. The
+population thread was stopped on 2026-07-28 (HANDOFF §7 item 9), and this
+section says what that leaves.
+
+### IN USE — running, or used by a reader
+| what | where | needs per-claim fields? |
+|---|---|---|
+| **C1–C4, four mechanical checks** | `.claude/reconcile.sh`, wired to SessionStart | **no** |
+| **The three-class partition** (mechanical / semi-mechanical / judgment) | §5 | **no** — it is a decision rule about what to build, and its main effect has been to stop things being built as mechanical that are not |
+| **The vocabulary** — the terms step 1 separated, used claim-by-claim in prose | `TERMS_INVENTORY.md`, and every document since | **no** |
+| **The forward-pointer rule** — an overturned entry carries the pointer, not only the entry that supersedes it | VALIDATION.md §"THE CENTRAL OPEN QUESTION"; applied four times on 2026-07-28 alone | **no** |
+| **The reporting contract** — never report clean over what you did not examine; `fired / silent / unassessable`, INCONCLUSIVE when unassessable > 0 | `reconcile.sh`, `s1_crossfile.py` | **no** |
+
+### SPECIFIED AND UNUSED — correct, and not going to run
+| what | where | why unused |
+|---|---|---|
+| Ten claim parts | `CLAIM_STRUCTURE.md` (step 2) | needs population |
+| Four certainty levels, six downgrade + three upgrade domains | `EVIDENCE_SCALE.md` (step 3) | needs population |
+| Four claim + seven artifact fields; `retrieval-depth`'s ceiling rule | `PROVENANCE_FIELDS.md` (step 4) | needs population |
+| The `signature` field and cross-file S1 | `PROVENANCE_FIELDS.md` §10 | needs population — and §10.5 measured it 3-for-3 false on a clean tree |
+| **S1** implemented but unwired | `analysis/scripts/s1_crossfile.py` | runnable; reads fields only 12 claims carry |
+| **S2–S5** | §5 | not built; all read fields |
+| **M2–M4** | §5 | not built; all read fields. M1 and M5 are the exceptions and ARE built, as C1/C2 and `verify.sh` — the two that read the tree instead |
+| PreCompact / Stop / PreToolUse hooks | §6 | each hosts a field-reading check |
+| `TERMS.md` | §11 | downstream of all five; never written |
+| The 12 populated claims | `docs/claims.json` | frozen pilot artifact; retained as evidence, not extended |
+
+### THE HONEST REASON FOR THE DIFFERENCE
+
+**The line is sharp and it is not about effort.** Everything in use reads **the
+tree** — files, index rows, harness output, git blame. Everything unused reads
+**per-claim fields**. Nothing in the specification runs today, and nothing was
+abandoned for being hard; the field-reading half was stopped because the
+evidence came in against it:
+
+1. **The failures this design was derived from mostly do not need fields.**
+   Rule 11 records eight instances; §12's coverage note establishes that
+   instances 1–7 are form-1 header staleness and instance 8 is caught by C3, and
+   that C1/C2 cover form 2 (orphaning) completely. **Form 3 — the one form that
+   requires fields — has exactly one recorded instance**, the `1,131` case. The
+   specification's field layer was built to catch the rarest of the three forms.
+
+2. **Fixing it did not rescue it.** §10 removed S1's cross-file blindness and
+   the amended check fires on that one instance — and returns three false
+   positives on a clean tree, every one tracing to the signature rather than the
+   comparison. A check needing a reader anyway does not justify populating ~390
+   claims to feed it.
+
+3. **The corpus defeats the matcher structurally.** A project that documents its
+   own failures in the tree where it stores its claims fills that tree with
+   banners, worked examples and post-mortems that no grep can distinguish from
+   restatements. Measured: C12 went from 30 occurrences to 32 while §10 was
+   being written about that very effect.
+
+4. **The expensive failures were never mechanisable.** §5 puts J3 (does the
+   estimand match the claim) and J4 (is the comparator right) in the judgment
+   class, and this project's own history says those two killed the most claims.
+   The checks that can be automated are not the checks that have cost the most —
+   §5 said so before any of this was built, and it was right.
+
+**So the end state is not a half-finished system.** It is a **reader's
+specification plus four tree-reading checks** — and that combination is what the
+record supports. The five steps' value is the vocabulary and the partition, in
+the hands of a person; §12's mechanical layer is what runs without one. Anyone
+picking this up should read §5 and run `reconcile.sh`, and should treat steps
+2–4 as a well-argued design whose population was priced, piloted, and declined.

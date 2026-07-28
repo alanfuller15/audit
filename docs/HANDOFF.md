@@ -152,7 +152,17 @@ commit that creates it.**
                               1 of rule 11's 8 instances directly plus the whole
                               orphaning form; forms 1 and 3 remain
                               semi-mechanical and unbuilt.
-                              [self-tested] DESIGN ONLY, nothing implemented.
+                              §13 IS THE ONE TO READ FIRST if you are new: what
+                              of steps 1-5 is in use, what is specified and will
+                              NOT run, and why. The population thread is STOPPED
+                              (§7 item 9), so steps 2-4 are a reader's spec, not
+                              pending work.
+                              [self-tested]. The DESIGN half (§§1-11) is design
+                              only; §12's mechanical layer IS implemented and
+                              running. The header formerly read "DESIGN ONLY,
+                              nothing implemented", which contradicted the same
+                              entry's own §12 line — form-1 staleness inside the
+                              index itself, corrected 2026-07-28.
                               §1 runs the collapse test FIRST and finds two of
                               rule 11's three forms ARE verification without a
                               cadence; only reachability is genuinely new. §5
