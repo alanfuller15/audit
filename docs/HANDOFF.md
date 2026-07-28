@@ -144,6 +144,16 @@ commit that creates it.**
                               §4.5.1 carries the harm-vs-exposure principle.
   docs/SCOPE_shipped_consensus_defect.md
                               §9a holds the pre/post history-rewrite SHA map.
+  docs/PROVENANCE_FIELDS.md   Provenance fields (step 4 of 5, semantic layering).
+                              [self-tested] DESIGN ONLY. Four claim-level and
+                              seven artifact-level fields, each justified against
+                              a failure it would have caught, with machine- vs
+                              hand-written stated. Defines RETRIEVAL-DEPTH
+                              operationally (primary/rendering/secondary/snippet)
+                              with a machine-set ceiling so over-claiming is
+                              structurally impossible. §5 reports a DEFECT IN
+                              STEP 3. §6 maps to W3C PROV and says where we
+                              exceed it. §8 what the fields cannot record.
   docs/EVIDENCE_SCALE.md      The graded scale (step 3 of 5, semantic layering).
                               [self-tested] DESIGN ONLY. Four levels on the
                               INFERENCE (not the evidence), defaults by grounds
