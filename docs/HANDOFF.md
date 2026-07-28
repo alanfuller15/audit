@@ -144,6 +144,14 @@ commit that creates it.**
                               §4.5.1 carries the harm-vs-exposure principle.
   docs/SCOPE_shipped_consensus_defect.md
                               §9a holds the pre/post history-rewrite SHA map.
+  docs/CLAIM_STRUCTURE.md     Claim structure (step 2 of 5, semantic layering).
+                              [self-tested] DESIGN ONLY — nine parts, each
+                              justified by a case that fails without it, plus
+                              six worked representations and an explicit list of
+                              what the structure CANNOT represent (§6). Its §0
+                              records that two of the four source IDs given were
+                              wrong papers. No scale and no tier assignments —
+                              that is step 3.
   docs/TERMS_INVENTORY.md     Concept inventory (step 1 of 5, semantic
                               layering). [self-tested] — one reading of the
                               corpus, not a measurement. Lists where one term
