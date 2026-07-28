@@ -334,3 +334,134 @@ leaving the sequence to read as though something now runs. **Nothing in steps
 1–5 would have caught anything on its own.** What they provide is the vocabulary
 and the partition that make the cheap checks buildable — and §8's case 5 argues
 that the cheap checks are where the recurring losses actually are.
+
+---
+
+## 12. BUILT — the mechanical layer, calibrated against history
+
+`.claude/reconcile.sh`, invoked as `verify.sh` is. Exit 0 clean, 1 with
+findings, 2 inconclusive. **Same contract as verify.sh: it never reports clean
+over a check it did not run** — `RAN` is compared against `EXPECTED_CHECKS`, and
+any check that cannot execute exits 2.
+
+### Scope, and what is deliberately absent
+Only checks whose inputs are **the tree itself**. Every field-reading check in
+§5 is **not built**, because no claim in this repository has those fields
+populated and a check that reads nothing would report clean — worse than absent:
+
+| not built | why |
+|---|---|
+| S1 `grounds-checked-at < restated-at` | no claim carries either field; also SEMI-mechanical, needs a reader |
+| M2 retrieval-depth ceiling | no artifact ref carries `retrieval-depth` |
+| M3 integrity / liveness | no artifact ref carries `integrity` |
+| M4 malformed claim | no claim carries `grounds.kind` |
+
+### The four checks
+| | check | fires when | false-positive mode |
+|---|---|---|---|
+| **C1** | tree-orphan | a `.md` under `docs/`/`analysis/` has zero inbound references anywhere | a deliberately unreferenced document; none exist today |
+| **C2** | index completeness, both directions | §5.1 and `git ls-files` disagree | `HANDOFF.md` cannot index itself — the only exclusion |
+| **C3** | harness count asserted vs run | prose asserts a check count the harness does not produce | see below — two modes, both real |
+| **C4** | index rows resolve | a §5.1 row names a path that does not exist | none known |
+
+### C3 cried wolf and had to be narrowed twice — recorded because the brief warned about exactly this
+The first draft matched `[0-9]+ checks?` and produced **30 findings, all but
+zero of them false.** Two false-positive modes I had not stated in advance:
+
+1. **"checks" is heavily overloaded here.** `cppcheck --errorlist` has 342
+   checks; the CWE coverage cascade counts 31/149/116/46/20; OASIS validation is
+   46. None is our harness. *Fixed by anchoring the match on "harness" or "test
+   suite".*
+2. **Append-only records carry correct history.** `VALIDATION.md` logs harness
+   growth as it happened — "harness 67 → 84 checks", "Harness at 31 checks" —
+   and every entry is right for its date. Session handoffs are dated snapshots
+   for the same reason. *Fixed by excluding those two document roles.* The
+   exclusion is by role, is short and stable, and every other document is
+   covered by default — so a new document is covered without editing the script.
+
+3. **A quoted example is not an assertion** — found when this check fired on
+   **§12 of this very document**, the first time it ran after §12 was written.
+   The calibration section quotes `"harness 67 -> 84 checks"` while explaining
+   FP-2. It asserts nothing about the harness; it cites a string. *Fixed by
+   skipping a number that sits inside quotation marks or backticks.*
+
+**My pre-stated FP analysis was incomplete, twice.** I named the dated-snapshot
+mode and missed the overloading, which was larger; then documented both and
+immediately tripped a third by writing about them. The check found its own
+documentation. That is a small piece of evidence it is live rather than
+decorative — and a reminder that stating FP modes in advance is not the same as
+having found them.
+
+### Calibration against history — replayed, not assumed
+| check | replayed at | fired? |
+|---|---|---|
+| **C1** | `423a2b50` (pre-index) | **YES** — 3 orphans: `HANDOFF_VALIDATION.md`, `SESSION_HANDOFF_2026-07-26.md`, **`WHERE_IT_STANDS.md`** |
+| **C2** | `e33d8b7` (the index's own commit) | **YES** — 7 present-but-unindexed, matching the third sweep's recorded "listed 12 of 18" |
+| **C2** | `423a2b50` | **YES** — no §5.1 existed at all; 17 documents unreachable from the entry point |
+| **C3** | `423a2b50` | **YES** — `WHERE_IT_STANDS.md` asserted 67 against an actual 112. **This is rule 11 instance 8.** |
+| **C4** | all history | **NEVER FIRED** — no dangling index row has ever existed |
+| **C3** | re-injection after the FP-3 fix | **YES** — still fires on `WHERE_IT_STANDS.md` at 67 vs 112, so narrowing did not blunt it |
+
+### The honest coverage number
+**Rule 11 records eight instances. The mechanical layer catches ONE of them
+directly** — instance 8, via C3. **Instances 1–7 are all form-1 header
+staleness**, which §5 classifies SEMI-mechanical (S2: grep the tree for what a
+header says is absent, then read to decide). S2 is not built and cannot be, in
+the sense that its output is a candidate list requiring judgment.
+
+What the layer does cover completely is **the orphaning form**: C1 and C2
+between them catch every recorded instance of a document unreachable from the
+tree or from the entry point, including all six the third sweep found.
+
+So: **1 of 8 named instances, plus the whole of form 2, plus the enabling
+condition of instance 8** (WHERE_IT_STANDS was orphaned, which is why its stale
+claims survived). Stated plainly because "we built the mechanical checks" would
+otherwise read as broader coverage than this is.
+
+### C4 has no historical evidence — justified, not dropped
+C4 has never fired. It is retained because **it guards a mechanism this change
+introduces**: once C2 requires an index, a typo in an index row produces a
+document that *looks* indexed and is not — and C2 would pass. C4 is the guard on
+C2's own failure mode, costs four lines, and cannot false-positive.
+
+**Demonstrated by injection** rather than by history: renaming one index row to
+`RECONCILIATION_TYPO.md` produced 4 findings across C1, C2 and C4, including
+C4's first-ever fire.
+
+### Result on the current tree — and why that proves nothing
+```
+reconcile: clean (4/4 mechanical checks; semi-mechanical and judgment classes NOT covered)
+```
+**A clean result on a corpus reconciled three times in the last two days is the
+expected outcome and is not evidence the checks work.** Two things are:
+
+1. **Historical replay** — each of C1, C2, C3 fires at the commit where the
+   recorded failure existed. Done above.
+2. **Injection** — introduce the defect deliberately and confirm the check
+   fires. Done for C1, C2, C4.
+
+Every check has at least one form of evidence. **C4 has injection only**; C1, C2
+and C3 have both.
+
+### Wiring — SessionStart, and the objection answered rather than traded against
+`.claude/settings.json` runs `bash .claude/reconcile.sh --quiet || true` on
+**SessionStart**.
+
+The prior was SessionStart on the grounds that §8 case 5 established cadence,
+not detection, as the gap — two sweeps by sessions that had just written rule 11
+still missed six items, and every one of those six is C1/C2 territory. That
+argument holds and I am not arguing against it.
+
+The stated cost was context: SessionStart output enters every session.
+**Measured: 0.68s, and 17 lines when clean.** Rather than trade cadence against
+noise, `--quiet` collapses the clean case to **one line** and prints full detail
+only when there is something to say. The objection is removed instead of
+balanced.
+
+`|| true` makes the hook advisory — a finding informs the session and does not
+block it. The script keeps its non-zero exit for manual and CI use.
+
+**Not placed at Stop**, though §6 proposed it: Stop's value was catching form 3
+(you corrected a claim, did you re-derive?), and form 3's check is S1, which
+reads fields that do not exist. When claims carry fields, Stop becomes the right
+home for S1 and this decision should be revisited.

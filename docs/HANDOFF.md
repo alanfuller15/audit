@@ -145,6 +145,13 @@ commit that creates it.**
   docs/SCOPE_shipped_consensus_defect.md
                               §9a holds the pre/post history-rewrite SHA map.
   docs/RECONCILIATION.md      Reconciliation as a trust function (step 5 of 5).
+                              §12 records the BUILT mechanical layer:
+                              .claude/reconcile.sh, 4 checks, calibrated by
+                              historical replay and injection, wired to
+                              SessionStart via .claude/settings.json. Catches
+                              1 of rule 11's 8 instances directly plus the whole
+                              orphaning form; forms 1 and 3 remain
+                              semi-mechanical and unbuilt.
                               [self-tested] DESIGN ONLY, nothing implemented.
                               §1 runs the collapse test FIRST and finds two of
                               rule 11's three forms ARE verification without a

@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/reconcile.sh --quiet || true",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
