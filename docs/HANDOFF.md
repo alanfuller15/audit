@@ -210,6 +210,16 @@ commit that creates it.**
                               and what the project does constantly without a
                               name. NAMES conflicts; resolves none. Its §5 files
                               drift noticed and deliberately not fixed.
+  docs/SESSION_HANDOFF_2026-07-28.md
+                              MOST RECENT session residue. Reasoning that shaped
+                              steps 1-5 and the population pilot and never became
+                              a formal entry: why the D2 pick resolved against
+                              the field and why C07 kills the alternative; why
+                              151s/12 must not be extrapolated; the two FP modes
+                              pre-statement failed to anticipate; five corpus
+                              observations noticed and not acted on. §1 names the
+                              next action (fix S1's cross-file blindness) and
+                              records that it was deliberately NOT started.
   docs/SESSION_HANDOFF_2026-07-26b.md
                               MOST RECENT session residue — read after §0 and
                               this index. Its §2 says run a reconciliation
