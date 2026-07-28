@@ -144,6 +144,16 @@ commit that creates it.**
                               §4.5.1 carries the harm-vs-exposure principle.
   docs/SCOPE_shipped_consensus_defect.md
                               §9a holds the pre/post history-rewrite SHA map.
+  docs/EVIDENCE_SCALE.md      The graded scale (step 3 of 5, semantic layering).
+                              [self-tested] DESIGN ONLY. Four levels on the
+                              INFERENCE (not the evidence), defaults by grounds
+                              kind, six downgrade and three upgrade domains all
+                              derived from this project's own documented
+                              failures, floor/ceiling rules, canonical reporting
+                              sentences, and a separate two-level recommendation
+                              strength using RFC 2119 keywords. §6 says what
+                              becomes of each of the six old tiers; §7 of the
+                              five orphan tokens; §10 what it cannot express.
   docs/CLAIM_STRUCTURE.md     Claim structure (step 2 of 5, semantic layering).
                               [self-tested] DESIGN ONLY — nine parts, each
                               justified by a case that fails without it, plus
