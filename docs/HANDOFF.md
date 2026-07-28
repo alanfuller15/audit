@@ -144,6 +144,18 @@ commit that creates it.**
                               §4.5.1 carries the harm-vs-exposure principle.
   docs/SCOPE_shipped_consensus_defect.md
                               §9a holds the pre/post history-rewrite SHA map.
+  docs/RECONCILIATION.md      Reconciliation as a trust function (step 5 of 5).
+                              [self-tested] DESIGN ONLY, nothing implemented.
+                              §1 runs the collapse test FIRST and finds two of
+                              rule 11's three forms ARE verification without a
+                              cadence; only reachability is genuinely new. §5
+                              partitions detection into mechanical /
+                              semi-mechanical / judgment on a strict criterion,
+                              and DEMOTES the brief's own mechanical example. §7
+                              answers whether a sweep is itself claim-producing
+                              (yes, and the regress terminates only at the
+                              mechanical layer). §11 states what steps 1-5
+                              constitute and that enforcement is ZERO.
   docs/PROVENANCE_FIELDS.md   Provenance fields (step 4 of 5, semantic layering).
                               [self-tested] DESIGN ONLY. Four claim-level and
                               seven artifact-level fields, each justified against
