@@ -16,6 +16,23 @@ trusting any "it works" claim.
   non-Claude input. NOT reachable in-sandbox. A desktop step you or a trusted
   third party runs. Command given per artifact below.
 
+> **[DEFINITION SUPERSEDED 2026-07-28 — the wording above predates the six-tier
+> scale.]** This section records the THREE-tier framing as of v6.0 (2026-07-08).
+> The current commit vocabulary is **HANDOFF §5's six tiers**, and there
+> `[externally-verified]` is narrower than the line above:
+> - `[externally-grounded]` — *"non-Claude engine/data anchors it (design principle)"*
+> - `[externally-verified]` — *"external judge on real data confirms the IMPLEMENTATION"*
+>
+> "Confirmed by a non-Claude engine/judge against non-Claude input" is verbatim
+> the **`[externally-grounded]`** test. Read as a definition of
+> `[externally-verified]` it collapses the two tiers into one and licenses the
+> stronger label on the weaker evidence — the exact direction every recorded
+> failure in this project has run. **Where the two disagree, HANDOFF §5 governs.**
+> Same correction applied to `docs/AUDIT.md` and `docs/GENESIS_TEMPLATE.md`;
+> filed five consecutive times (steps 1–5) before being acted on. The
+> `[externally-verified]` tier *assertions* elsewhere in this file are NOT
+> re-audited by this note — see the scoped item in HANDOFF.
+
 ## Tier map (as of v6.0, 2026-07-08)
 
 | Component | Tier reached | How | To reach `[externally-verified]` |
@@ -31,6 +48,16 @@ trusting any "it works" claim.
 | LLM triage layer behaves per protocol | `[self-tested]` at best | The protocol is `[fetched]`-grounded (CoT/E&V/ZeroFalse); actual per-run behavior is non-deterministic (COBOL-study) and unaudited | Human review of real triage runs; not fully closable |
 
 ## The exact desktop commands to reach `[externally-verified]`
+
+> **[SCOPE CORRECTION 2026-07-28.]** Under HANDOFF §5 (above), these commands do
+> not all reach the same tier. Commands 1–3 put a **non-Claude engine** on the
+> FORMAT-conformance claim — that is `[externally-grounded]` at least, and
+> whether it reaches `[externally-verified]` depends on whether `out.sarif` came
+> from a real scan or a fixture, which the command does not say. **Command 4 is
+> the one aimed at the gap this file's own "Honest bottom line" names** — the
+> dedup/ranking LOGIC, which no engine judges and which needs real scanner output.
+> Running 1–3 and recording "`[externally-verified]`" against the ranking claim
+> would be a tier move the evidence does not support.
 
 **1. Full JSON-schema validation (mechanical, whole schema):**
 ```
@@ -3100,6 +3127,29 @@ The README leads with 0.755. No replacement claim is ready, and none should be
 manufactured. Decision pending (see HANDOFF 0g).
 
 ## The function-level precision result SURVIVES size matching (2026-07-26)
+
+> **[SIGNIFICANCE LANGUAGE WITHDRAWN 2026-07-28 — READ BEFORE QUOTING THE BLOCK
+> BELOW. The RATIO stands; the P-VALUE and "highly significant" do not.]**
+> The line `P(size-matched control >= multi) = 0.0000   SURVIVES` and the
+> sentence "The residual 1.51x is real and **highly significant**" were both
+> withdrawn by the 0j work later the same day — see **"0j RESULT (2026-07-26)"**
+> below in this file, §"!! THE p<0.0001 IS NOT SUPPORTABLE !!" and §"WHAT THE
+> README MAY AND MAY NOT SAY".
+> **Why:** that statistic holds the multi group's own 81/5,269 FIXED and
+> resamples only the controls, so it ignores sampling variability in the
+> numerator population and is anti-conservative by orders of magnitude. The
+> honest figure is **p ~ 0.03–0.08 unclustered (p ~ 0.001 clustered on
+> project)**, with a project-bootstrap 95% CI of **[0.99x, 2.58x]** — the effect
+> is marginal, not overwhelming.
+> **What SURVIVES, unchanged:** the 1.51x size-matched point estimate itself
+> (1.43x–1.53x across every stratification, direction consistent in 9/9
+> projects). The README's "~1.5x, size-matched" is correct and is not affected.
+> **Why this pointer exists here rather than only at 0j:** the rule this file
+> derived for itself at §"THE CENTRAL OPEN QUESTION" — *when an entry here is
+> overturned, the OVERTURNED entry gets the forward pointer, not only the new
+> one, which the reader has by definition not found yet.* The withdrawal sits
+> ~300 lines below under a heading sharing no vocabulary with this one, and this
+> block is quotable in isolation.
 
 Checked before the 2.7x figure was allowed into the README — it would have been
 incoherent to ship an uncontrolled number immediately after retiring three

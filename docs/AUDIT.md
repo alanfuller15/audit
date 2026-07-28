@@ -105,6 +105,10 @@ by the GENESIS charter at all times.
 - **Do not report generated/fixed code as "verified" on the strength of a sandbox
   run** (charter III.7). A sandbox PASS is `[self-tested]` only — Claude grading
   Claude. Validating output against a FETCHED published standard is
-  `[standard-checked]`. Confirmation by a non-Claude engine/judge is
-  `[externally-verified]` and is a desktop step, never reachable in-session. Tag
+  `[standard-checked]`. A non-Claude engine or dataset anchoring the design is
+  `[externally-grounded]`. `[externally-verified]` is STRICTLY STRONGER and
+  requires **an external judge, on real data, confirming the IMPLEMENTATION**
+  (HANDOFF §5) — a desktop step, never reachable in-session. A non-Claude engine
+  alone does NOT reach it; that is the `[externally-grounded]` test, and
+  conflating the two licenses the strongest label on the weaker evidence. Tag
   honestly; see VALIDATION.md for the tier map and the exact commands.

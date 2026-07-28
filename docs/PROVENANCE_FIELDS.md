@@ -110,6 +110,7 @@ grounds-checked-at  <  restated-at     →  D4 staleness fires
 ```
 Both sides machine-written. No session has to remember.
 
+
 ---
 
 ## 3. FIELDS ON AN ARTIFACT REF
@@ -379,10 +380,28 @@ with a primary would have been predictable rather than discovered.
 
 ## 9. DRIFT NOTICED, NOT FIXED
 
-- **(a)** Carried unfixed through steps 2, 3 and now 4:
+- **(a)** ~~Carried unfixed through steps 2, 3 and now 4:
   `VALIDATION.md:3110` still reads "P(size-matched control >= multi) = 0.0000
-  SURVIVES" and "highly significant", language the 0j work withdrew.
-- **(b)** Carried unfixed through steps 1–4: `docs/AUDIT.md` and
+  SURVIVES" and "highly significant", language the 0j work withdrew.~~
+  **CLOSED 2026-07-28** — forward-pointer banner added at the overturned entry,
+  per the rule VALIDATION.md derived for itself at §"THE CENTRAL OPEN QUESTION".
+  The residue's note that the section was "banner-marked further up" was wrong:
+  it had no banner, and the withdrawal sat ~300 lines below under a heading
+  sharing no vocabulary with it — the same shape as the failure that rule exists
+  to prevent.
+- **(b)** ~~Carried unfixed through steps 1–4: `docs/AUDIT.md` and
   `docs/GENESIS_TEMPLATE.md` use `[externally-verified]` in senses that may
-  predate the current definition. **Four steps is long enough that this should
-  either be audited or explicitly accepted as legacy.**
+  predate the current definition.~~
+  **CLOSED 2026-07-28** — audited. The drift is specific: all three sites (and
+  `VALIDATION.md:15`, which none of the five filings named) define
+  `[externally-verified]` as *"a non-Claude engine/judge against non-Claude
+  input"*, which is verbatim HANDOFF §5's test for **`[externally-grounded]`**.
+  The two tiers collapse into one, licensing the stronger label on the weaker
+  evidence. Conformed to HANDOFF §5 in `AUDIT.md` and by note in `VALIDATION.md`;
+  `GENESIS_TEMPLATE.md` III.7 is ratified charter text and was annotated, not
+  amended. **Scoped out, deliberately, and not a sixth filing because it is a
+  different item:** the four sites where the tier is *asserted*
+  (`VALIDATION.md:436/447/489/568`) were not re-audited. 436/447/489 sit inside
+  the 2026-07-26 SUPERSEDED banner; **568 does not**, and restates the retired
+  tier without a marker. That is the one live residue of this item.
+
