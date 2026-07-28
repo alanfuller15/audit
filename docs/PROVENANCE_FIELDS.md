@@ -542,7 +542,26 @@ predicted modes rather than new ones:
 |---|---|---|---|
 | C12 `source-rule-url` | **30, then 31, then 32 — see below** | the signature is a FIELD NAME discussed across 9 documents (`SPEC_rule_provenance_measurement.md` alone: 12) | **FP-A** |
 | C09 `0f REGISTRY ARM` | 5 | the signature is a SECTION HEADING, so every cross-reference to the section is an occurrence | **FP-A** |
-| C06 `ZERO cross-tool merges` | 5 | newest hit is `EVIDENCE_SCALE.md:357`, which *quotes* the claim as a worked example in step 3 | **FP-B** |
+| C06 `ZERO cross-tool merges` | 5 | newest hit is `EVIDENCE_SCALE.md:357`, which *quotes* the claim as a worked example in step 3 | **FP-B** — *and this one is arguable, see below* |
+
+**C06 IS A JUDGMENT CALL AND THE ROW ABOVE SHOULD NOT BE READ AS MECHANICAL.**
+C12 and C09 are not close: their signatures are a field name and a section
+heading, matching documents that merely discuss them. C06 is different. I
+classified `EVIDENCE_SCALE.md:357` a quotation-not-assertion because it is
+presented as a worked example. **The opposite reading is defensible** — a step-3
+document quoting the claim *is* a propagation of it into a fourth document,
+which is precisely what form 3 describes. Under that reading the result is
+**2 FP / 1 TP**, not 3 FP.
+
+**Why this is recorded at the measurement rather than left in a handoff note:**
+the 3-for-3 figure is quoted in HANDOFF §7 item 9 and RECONCILIATION §13 as
+evidence for stopping the population thread, and **at 2 TP / 1 FP that
+recommendation would have gone the other way.** Anyone re-deriving the number
+from this section is entitled to know which of the three depends on a reading.
+
+**The ambiguity is not a weakness in the evidence — it is an instance of it.**
+Whether a worked example restates a claim is exactly the boundary FP-C says a
+grep cannot draw. C06 being arguable *is* the finding.
 
 **FP-C fired while this section was being written, three times, and that is the
 most useful result here.** C12's occurrence count went **30 → 31 → 32** over the

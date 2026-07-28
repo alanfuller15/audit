@@ -1656,7 +1656,24 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
 
    (b) **The checks population would unblock do not work well enough to
    justify it.** S1 is 3-for-3 false on a clean tree with every failure
-   tracing to the signature (PROVENANCE_FIELDS §10.5). C03-class claims —
+   tracing to the signature (PROVENANCE_FIELDS §10.5).
+
+       **THE 3-FOR-3 CONTAINS ONE JUDGMENT CALL, and the decision should be
+       read knowing it.** C12 and C09 are not close — a field name and a
+       section heading. **C06 fired on EVIDENCE_SCALE.md quoting the claim as
+       a worked example, classified FP-B.** The opposite reading is
+       defensible: a step-3 document quoting the claim IS a propagation into
+       a fourth document, which is exactly what form 3 describes. Under that
+       reading it is **2 FP / 1 TP**.
+       The stop survives either reading — it rests equally on FP-C being
+       structural and on J3/J4 having always been judgment. **But at
+       2 TP / 1 FP the recommendation would have gone the other way.** The
+       decision was closer to its evidence than a clean 3-for-3 makes it look.
+       **And the ambiguity is itself the finding:** whether a worked example
+       restates a claim is precisely the boundary (c) says a grep cannot
+       draw. C06 is not a blemish on the evidence — it is an instance of it.
+
+   C03-class claims —
    those whose evidence was never retained — are unassessable by construction,
    and they are the class MOST likely to be stale. §5's own partition puts J3
    (does the estimand match the claim) and J4 (is the comparator right) in the

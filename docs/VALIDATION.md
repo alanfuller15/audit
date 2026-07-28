@@ -592,7 +592,13 @@ emits `CWE-415` or a check name. They never match even without fingerprints.
 ### Consequence — the validated headline signal is inert in the shipped product
 
 `n_tools` (diversity-aware consensus) is this tool's headline signal, the one
-carried to `[externally-verified]` at file level (ROC-AUC 0.755). **In the
+carried to `[externally-verified]` at file level (ROC-AUC 0.755)
+— **[TIER RETIRED 2026-07-26; MARKER ADDED 2026-07-28. Do not read this clause
+as a current tier.** The `[externally-verified]` tier on ROC-AUC 0.755 was
+retired by the SUPERSEDED banner above the "UPDATE (2026-07-11)" section
+earlier in this file. That banner does not cover THIS section, so the phrase
+survived here unmarked. The sentence's POINT — that the headline signal is
+inert in the shipped pair — stands and does not depend on the tier.]** **In the
 shipped two-scanner action it can never exceed 1.** The Lipp validation ran on
 a RECONSTRUCTED SARIF envelope — already flagged in this file as the honest
 bound of that result — and that envelope evidently carried no fingerprints and

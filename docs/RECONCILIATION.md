@@ -529,6 +529,21 @@ evidence came in against it:
    comparison. A check needing a reader anyway does not justify populating ~390
    claims to feed it.
 
+   **The 3-for-3 figure contains one judgment call, stated here rather than
+   left in a handoff note.** C12 and C09 are not close — a field name and a
+   section heading. **C06 fired on `EVIDENCE_SCALE.md` quoting the claim as a
+   worked example, and was classified FP-B.** The opposite reading is
+   defensible: a step-3 document quoting the claim *is* a propagation into a
+   fourth document, which is what form 3 describes. Under that reading it is
+   **2 FP / 1 TP**. The stop survives either reading — it rests equally on
+   point 3 below and on point 4 — but **at 2 TP / 1 FP the recommendation would
+   have gone the other way.** The decision was closer to its evidence than a
+   clean 3-for-3 makes it look.
+   **And the ambiguity sharpens rather than weakens the case:** whether a
+   worked example restates a claim is exactly the boundary point 3 says a grep
+   cannot draw. C06's classification being arguable is an instance of the
+   finding that closed the thread, not a flaw in the evidence for it.
+
 3. **The corpus defeats the matcher structurally.** A project that documents its
    own failures in the tree where it stores its claims fills that tree with
    banners, worked examples and post-mortems that no grep can distinguish from
