@@ -144,6 +144,13 @@ commit that creates it.**
                               §4.5.1 carries the harm-vs-exposure principle.
   docs/SCOPE_shipped_consensus_defect.md
                               §9a holds the pre/post history-rewrite SHA map.
+  docs/TERMS_INVENTORY.md     Concept inventory (step 1 of 5, semantic
+                              layering). [self-tested] — one reading of the
+                              corpus, not a measurement. Lists where one term
+                              carries two concepts, where two terms share one,
+                              and what the project does constantly without a
+                              name. NAMES conflicts; resolves none. Its §5 files
+                              drift noticed and deliberately not fixed.
   docs/SESSION_HANDOFF_2026-07-26b.md
                               MOST RECENT session residue — read after §0 and
                               this index. Its §2 says run a reconciliation
