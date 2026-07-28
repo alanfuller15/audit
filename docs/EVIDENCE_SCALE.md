@@ -168,7 +168,7 @@ duplicate it.
 | domain | trigger | max |
 |---|---|---|
 | **D1 estimand–claim gap** *(= GRADE indirectness)* | the quantity measured is not the quantity claimed | −2 |
-| **D2 comparator adequacy** | no comparator, or one a trivial baseline would also beat | −2 |
+| **D2 comparator adequacy** | the claim is COMPARATIVE and its comparator does not support the comparison asserted (incl. a trivial baseline also beating it). See §9a for the sharpened definition and why this is a certainty judgment, not a relevance one. | −2 |
 | **D3 instrument validity** | the measuring procedure cannot support the inference | −2 |
 | **D4 staleness** | `grounds-checked-at` predates the claim's last correction | −1 |
 | **D5 unverified provenance** | a cited source was not opened, or an artifact is attested but absent | −1 |
@@ -446,18 +446,123 @@ asymmetry, and the corpus demonstrates it.
 
 ---
 
+## 9a. SETTLED — D2 AND §10.1 ARE NOT THE SAME PROBLEM
+
+Resolved 2026-07-27 on a direct question. The framing offered was that §10.1
+(certainty ranks trivia above usefulness) and D2 (a relevance judgment inside a
+certainty scale) are one problem with three candidate fixes. **The corpus
+falsifies half of that: they are two problems, and only one of them is real.**
+
+### D2 is not a relevance judgment. The corpus treated weak-comparator claims as INVALID.
+
+The test is what the project actually *did* when a comparator failed. HANDOFF's
+retirement of the file-level ranking row, verbatim:
+
+> "Every one of those figures has been **withdrawn**:
+>  * 0.755 is NOT effort-aware, and ManualDown … scores 0.845 on the same data.
+>  * The effort-aware 'win' was measured against ManualDown, which is the
+>    NON-effort-aware baseline. **Against ManualUp it is not significant.**
+>  * The remaining IFA/PMI advantage **does not survive a SIZE-MATCHED control**."
+
+Two of the three bullets are certainty statements outright — *not significant*,
+*does not survive a control*. And the disposition applied to all three was
+`WITHDRAWN`, the status meaning **epistemically invalid**, not "retained as
+true but uninformative".
+
+The reason is that **the claims were comparative in their own statement.** The
+README said 0.755 *"beats a coin flip and the best single tool"*. A comparative
+claim with the wrong comparator is not an uninformative true claim — it is an
+**unwarranted** one. D2 is therefore a genuine certainty domain and stays where
+it is.
+
+**Sharpened definition, replacing §4's:**
+> **D2 comparator adequacy.** Fires when the claim is COMPARATIVE and the
+> comparator named does not support the comparison asserted — including when a
+> trivial baseline also beats it. Does *not* fire on a claim stated as a bare
+> measurement with no comparison asserted.
+
+### The residue is a claim-statement defect, and option (c) is the fix
+
+The apparent relevance-smuggling appears only when a claim states a
+*measurement* and is read as a *comparison*: "AUC = 0.755" is true; "the tool
+ranks usefully" is what a reader takes away. That is not a scale defect.
+
+**Adopted, as option (c):** *a claim must be stated at the level its warrant
+reaches.* If the warrant supports a measurement, the claim states the
+measurement. If it supports a comparison, COMPARATOR is named **inside the
+claim**, not only in its metadata. Step 2 already made COMPARATOR mandatory;
+this says where it must be visible.
+
+This is the mechanism option (c) was asked to supply, and it does carry what D2
+appeared to be carrying — because once the claim is stated at warrant level, a
+weak comparator produces a *weak claim*, not a strong claim about nothing.
+
+### §10.1 is a real limitation, and option (a) is correct for it
+
+**Option (c) does not fix §10.1 and nothing in it claims to.** Case 2A
+("`fp:` cannot equal `rk:`") is still ESTABLISHED and still trivial, however it
+is stated. Restating cannot make an uncertain useful claim outrank a certain
+trivial one, because the axis is certainty and that is what it measures.
+
+**Option (a) — accept and document — for three corpus reasons:**
+
+1. **GRADE has the identical limitation and does not fix it either.** Fetched
+   this session: magnitude of effect enters *strength of recommendation*, not
+   certainty of evidence, and the handbook's own examples include recommendations
+   "strong despite low certainty" and "weak … in the face of high confidence in
+   effect estimates". GRADE has **no importance axis for evidence**. For
+   descriptive claims that generate no recommendation, neither does it. This is a
+   property of the whole family of approaches, not a defect introduced here.
+
+2. **Option (b)'s second axis would be the most staleness-prone field in the
+   system, in a project whose dominant failure is staleness.** And the corpus
+   proves informativeness *does* decay: 0.755 was informative until ManualDown
+   scored 0.845 on the same data — nothing about the claim changed, only the
+   best known alternative. A stored informativeness rating goes stale the moment
+   someone measures a better baseline, and **nothing would trigger re-rating**.
+   Rule 11 has three forms and eight instances; adding a field with no
+   invalidation trigger is adding a ninth.
+
+3. **Importance is already readable without a rating.** COMPARATOR says what the
+   claim beat; BOUND says where it stops applying. A reader wanting to know
+   whether a claim matters reads those two fields. That is worse than a number
+   for sorting and better than a number for being right, and this project has
+   retired five numbers that were easy to sort by.
+
+### The decision
+- **D2 stays in the certainty scale**, with the sharpened comparative-claim
+  definition above.
+- **Option (c) adopted** as a claim-statement rule, which is what D2's residue
+  actually needed.
+- **Option (a) accepted for §10.1**, explicitly and with GRADE's precedent.
+- **Option (b) rejected** on the staleness argument, which is a corpus argument
+  rather than an aesthetic one.
+
+**What this costs, stated plainly:** a reader who sorts by level still gets the
+trivia first. That is now a documented property rather than an unexamined one,
+and §10.1 stands unamended below.
+
+---
+
 ## 10. WHAT THE SCALE CANNOT EXPRESS
 
 1. **Importance.** `ESTABLISHED` outranks `SUPPORTED` while case 2A (trivial,
    certain) outranks case 1 (uncertain, the project's most useful finding). The
    scale is orthogonal to value and will mislead anyone who reads it as a
-   ranking of worth.
-2. **The comparator strain.** D2 downgrades for a weak comparator, but a claim
-   with a weak comparator is not *uncertain* — it may be certainly true and
-   uninformative. D2 therefore encodes *relevance* in a *certainty* scale. **This
-   is the weakest join in the design**, and I have left it rather than adding a
-   second axis, because the corpus's own history is that a claim beating only a
-   trivial baseline was treated as a finding and should not have been.
+   ranking of worth. **SETTLED 2026-07-27 as accepted-and-documented, not fixed
+   — see §9a.** GRADE carries the same limitation and routes magnitude to
+   recommendation strength instead; a second axis was rejected because
+   informativeness decays whenever a better baseline is measured and nothing
+   would trigger re-rating.
+2. ~~**The comparator strain.**~~ **RESOLVED 2026-07-27 — see §9a.** The
+   original entry called D2 the weakest join, on the reading that a
+   weak-comparator claim is certainly-true-but-uninformative. The corpus
+   disagrees: such claims were `WITHDRAWN` as invalid, because they were stated
+   comparatively and the comparison was unwarranted. D2 is a certainty judgment.
+   Retained struck through because the reasoning that moved it is part of the
+   record.
+   **What remains** is a claim-statement requirement, not a scale defect: a claim
+   must be stated at the level its warrant reaches.
 3. **Aggregate claims** whose grounds are other claims — inherited unfixed from
    step 2 §6. The convergent result still has no representation, and now also no
    rule for combining the levels of its components.

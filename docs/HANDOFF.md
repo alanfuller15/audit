@@ -1689,6 +1689,24 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
         contract-based design).
      5. arXiv:2003.05388 for assured safety arguments — WRONG PAPER
         (Ramakrishna et al., automating assurance case generation).
+     6. "GRADE: publication bias may be downgraded at MOST ONE LEVEL" — the
+        GRADE Handbook's own Table 5.2 shows "1 or 2 levels". Self-reported by
+        the inventor 2026-07-27: the figure was taken from a Cochrane group's
+        SUPPLEMENTARY AUTHOR ADVICE and repeated without going to the handbook.
+
+   >>> INSTANCE 6 IS A DIFFERENT MECHANISM FROM 1-5 AND WIDENS THE RULE.
+   >>> The first five were WRONG LOCATORS for real findings — the ID came from
+   >>> an adjacent search result. The sixth is a CORRECT LOCATOR to a SECONDARY
+   >>> SOURCE: a real Cochrane page really does say what was quoted, and it
+   >>> disagrees with the primary handbook. No ID was wrong; the SOURCE TIER was.
+   >>> So rule 8a is not only about identifiers. A citation can be perfectly
+   >>> resolvable, perfectly quoted, and still be a secondary reading of a
+   >>> primary that says something else. **Fetching the cited page is not
+   >>> enough when the cited page is itself citing.** Ask what the page is
+   >>> summarising, and go there when the claim is load-bearing.
+   >>> This is the same shape as step 1's `[snippet]` token, which step 3
+   >>> accepted as `retrieval-depth: primary | rendering | snippet` — instance 6
+   >>> is a `rendering` that was read as `primary`.
 
    THE MECHANISM, in the inventor's own words: **IDs are supplied from
    search-result adjacency without opening them.** The finding being described
