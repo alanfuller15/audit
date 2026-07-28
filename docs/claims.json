@@ -7,7 +7,8 @@
     "DECISION_1_storage": "The spec never says WHERE populated fields live. Chosen: a SIDECAR keyed by claim id, not inline in VALIDATION.md. Reason: VALIDATION.md is append-only (established in the reconcile work), so editing historical entries to add fields would violate that; and machine-writable fields need a parseable format. JSON not YAML because no yaml module is installed. COST: the sidecar can drift from VALIDATION.md, which is a new instance of the failure this whole design targets, and nothing currently checks the link.",
     "DECISION_2_restated_at": "The spec says 'git log for the claim's location' without defining a claim's location. Chosen: NEWEST blame across the claim's line range. COST, and it is the known one: a typo fix on any line in the range advances restated-at and produces a false S1 candidate. This is exactly why RECONCILIATION.md §5 demoted S1 to SEMI-mechanical, and populating confirms the demotion was right. The alternative — blame of one designated line — was rejected because no session can identify that line reliably: a claim's assertion and its number are routinely on different lines, which is the 1,131 case itself.",
     "DECISION_3_range": "A claim's line range is set by hand at population time and stored. The spec does not define it. COST: hand-set and unverifiable; if VALIDATION.md is edited above the claim the stored range silently shifts. Line numbers are recorded WITH an anchor string so the range can be re-found.",
-    "DECISION_4_deductive_grounds": "For grounds.kind=DEDUCTION there is no re-derivation command, so grounds-checked-at cannot be machine-written. Chosen: it equals the blame of the cited source lines. COST: it then can never be older than the artifact, so D4/S1 can never fire for a deductive claim — a silent exemption for a whole grounds kind, already flagged in PROVENANCE_FIELDS.md §8.5."
+    "DECISION_4_deductive_grounds": "For grounds.kind=DEDUCTION there is no re-derivation command, so grounds-checked-at cannot be machine-written. Chosen: it equals the blame of the cited source lines. COST: it then can never be older than the artifact, so D4/S1 can never fire for a deductive claim — a silent exemption for a whole grounds kind, already flagged in PROVENANCE_FIELDS.md §8.5.",
+    "AMENDMENT_S1_crossfile": "PROVENANCE_FIELDS.md §10 amends DECISION_2. grounds-checked-at moves off the CLAIM onto an addressable GROUNDS record; restated-at now ranges over the claim's OCCURRENCES rather than one line range in one file. Check: analysis/scripts/s1_crossfile.py. WARNING FOR ANY SESSION POPULATING FURTHER: the `anchor` values stored below were chosen as LOCATORS (re-find this claim in this file) and FAIL the signature test (match every restatement corpus-wide and nothing else). C12's matches 31 lines across 9 documents. Do not reuse an anchor as a signature — every false positive measured in §10.5 traces to exactly that."
   },
 
   "C01_1.5x": {
@@ -43,7 +44,7 @@
     "defeater": null,
     "level": "ESTABLISHED",
     "adjustments": [],
-    "time": {"asserted_at": "2026-07-26", "restated_at": "2026-07-26T01:57:16-08:00", "grounds_checked_at": "2026-07-26T01:57:16-08:00 (DECISION_4)", "asserted_by": "3c03a3b9"}
+    "time": {"asserted_at": "2026-07-26", "restated_at": "2026-07-26T01:57:16-08:00", "grounds_checked_at": "2026-07-26T01:57:16-08:00", "_grounds_checked_at_note": "DECISION_4 — deductive grounds, no re-derivation command; this is the blame of the cited source lines. The note used to be glued onto the timestamp itself, which made the field unreadable to any machine check. See PROVENANCE_FIELDS.md §10.6.", "asserted_by": "3c03a3b9"}
   },
 
   "C03_p0001_withdrawn": {

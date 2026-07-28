@@ -88,6 +88,16 @@ steps 2 and 3 took apart.
 | `restated-at` | when the claim TEXT last changed | **machine** (git log for the claim's location) | auto | **the form-3 check** — if wrong, a correction that never re-derived its numbers goes undetected |
 | `grounds-checked-at` | when the grounds were last re-derived | **machine**, written by the re-derivation command | auto | **form-3 false negative** — stale grounds look current |
 
+> **[AMENDED BY §10, 2026-07-28 — both rows above.]** "The claim's location" is
+> one line range in one file, and `grounds-checked-at` was a field on the CLAIM.
+> Two timestamps derived from one file move together, so this pair is blind to
+> form 3's recorded instance, where a claim was corrected in three documents
+> while its grounds sat un-re-derived in a fourth. §10 moves
+> `grounds-checked-at` onto an addressable GROUNDS record and ranges
+> `restated-at` over the claim's **occurrences**, not one location. **Measured,
+> not argued:** the amended check fires on the `1,131` case at the pre-fix
+> commit where the rule above is silent.
+
 `asserted-at` and `grounds-checked-at` are inherited from step 2 unchanged, as
 instructed. **`restated-at` is the extension step 2's TIME needed and did not
 have.**
@@ -110,6 +120,11 @@ grounds-checked-at  <  restated-at     →  D4 staleness fires
 ```
 Both sides machine-written. No session has to remember.
 
+> **[SUPERSEDED BY §10.]** It is still one comparison, but not between these two
+> values. Both sides are now aggregates — `min` over the claim's grounds against
+> `max` over the claim's occurrences — because the single-location form cannot
+> see a divergence that lives between two files, which is the only form 3
+> instance this project has actually recorded.
 
 ---
 
@@ -405,3 +420,169 @@ with a primary would have been predictable rather than discovered.
   the 2026-07-26 SUPERSEDED banner; **568 does not**, and restates the retired
   tier without a marker. That is the one live residue of this item.
 
+---
+
+## 10. S1's CROSS-FILE BLINDNESS — THE DEFECT, THE FIX, AND WHAT IT COSTS
+
+**This section amends §2 and §3.** It exists because the population pilot ran S1
+against the case S1 was designed for and S1 was silent (POPULATION_PILOT.md §4).
+
+### 10.1 The defect, stated exactly
+
+§2 specified the form-3 check as one comparison:
+
+```
+grounds-checked-at  <  restated-at
+```
+
+Both values are derived from **the same file**, because `restated-at` is
+"git log for the claim's location" and a location is one line range in one
+document. **Two timestamps computed from one file move together.**
+
+Form 3's recorded instance does not have that shape. Commit `80d1817` — "Correct
+a false claim that reached the README, at its source and everywhere it spread" —
+touched `README.md`, `docs/HANDOFF.md` and `docs/NEGATIVE_RESULT.md`, and **did
+not touch `docs/VALIDATION.md` at all**, where the grounds lived. So at the
+record owning the grounds, nothing was textually restated, `restated-at` never
+advanced, and S1 was silent at precisely the place the number needed re-deriving.
+
+**The claim is one thing; the record of it is many. §2 modelled the record.**
+
+### 10.2 The change
+
+Three amendments. The first is the one the handoff identified; the second is
+what makes it operable; the third is what the run forced.
+
+**(1) GROUNDS become addressable.** `grounds-checked-at` moves off the CLAIM
+(§2) and onto the GROUNDS, which gains a `grounds-id`. A claim references
+grounds by id. One grounds record can serve several claims in several files, and
+re-deriving it updates one timestamp that every referencing claim sees. Under
+§2, N copies of a claim carried N independent `grounds-checked-at` values for
+one derivation — which is the sidecar-drift failure (D1) inside a single field.
+
+**(2) CLAIM gains `occurrences`, and `restated-at` ranges over all of them.**
+
+```
+occurrences  = every tracked line matching the claim's SIGNATURE
+restated-at  = max( blame(occurrence) for occurrence in occurrences )
+
+S1 fires when:   min(grounds-checked-at over the claim's grounds)
+                   <  max(restated-at over the claim's occurrences)
+```
+
+**(3) SIGNATURE is a new field, and it is NOT the pilot's `anchor`.** The pilot
+reused `locator.anchor` to find occurrences. That was wrong and the run proved
+it: an anchor's job is to re-find one claim in one file after edits shift line
+numbers; a signature's job is to match every restatement corpus-wide and nothing
+else. `anchor` is chosen for local findability, `signature` for corpus-wide
+distinctiveness. **Operational test, applied at population time, in the same
+shape as §4's retrieval-depth ceiling:** grep the candidate signature across the
+tree and read the hits. If any hit is a line the session would not call a
+restatement of this claim, the signature is wrong and must be narrowed before
+the claim is stored. The occurrence count is reported at population time so the
+test cannot be skipped by not looking.
+
+### 10.3 Why not the alternatives
+
+- **Hand-listing occurrences.** Rejected. It inherits D3's unverifiability
+  multiplied by N, and it fails in one specific direction: a hand-listed set
+  misses exactly the copy nobody remembered making, which is the failure. The
+  `1,131` run below found a third occurrence in `SPEC_java_admission.md` that
+  the pilot — which had studied this case closely — did not know existed.
+- **Designating one line per claim.** Already rejected and still rejected; see
+  SESSION_HANDOFF_2026-07-28 §2. This amendment is what that section said the
+  problem actually needed.
+
+### 10.4 False-positive modes — STATED BEFORE THE RUN, then measured
+
+The mechanical layer's lesson (SESSION_HANDOFF_2026-07-28 §4) is that pre-stating
+FP modes catches the category visible from filenames and misses the ones that
+come from the *semantics of the matched string*. Stated in advance:
+
+| | predicted mode | predicted because |
+|---|---|---|
+| **FP-A** | **signature overloading** — the string means something else elsewhere | the `checks` case: 30 findings, essentially all false |
+| **FP-B** | **quotation, not assertion** — a document quoting the claim as a worked example counts as an occurrence and carries a fresh blame | RECONCILIATION §12's FP-3 |
+| **FP-C** | **self-inflicted by this project's own conventions** — a forward-pointer banner added by a reconciliation sweep is a new occurrence dated today | the banners at VALIDATION.md 434 / 2078 / 3789, and the one added today for §9(a) |
+| **FP-D** | **D2 amplified N-fold** — a typo fix at ANY occurrence advances `restated-at` | D2's known cost, times the occurrence count |
+
+### 10.5 What the run actually found
+
+`analysis/scripts/s1_crossfile.py`, over the 12 populated claims.
+
+**The motivating case, replayed at `e524c60d` (the commit before the fix):**
+
+```
+C07  1,131 denominator        FIRED     3 occurrences
+     docs/VALIDATION.md:908         2026-07-26T02:52:03  adf2a0d3   <- grounds live here
+     docs/HANDOFF.md:1211           2026-07-26T03:01:05  a82702eb
+     docs/SPEC_java_admission.md:160 2026-07-26T03:06:35 0821044d   <- restated-at
+     grounds-checked-at 02:52:03  <  restated-at 03:06:35  => FIRES
+     (old S1, same commit, same claim: SILENT)
+```
+
+**The amendment does what it was written to do, on the case that motivated it.**
+It also shows the propagation was wider than recorded: three files, not the two
+POPULATION_PILOT §4 identified.
+
+**On the current tree: `fired 3 · silent 7 · unassessable 1 · malformed 1`.**
+Adjudicated, **all three firings are false positives**, and they are the
+predicted modes rather than new ones:
+
+| claim | occ | why it fired | mode |
+|---|---|---|---|
+| C12 `source-rule-url` | **30, then 31, then 32 — see below** | the signature is a FIELD NAME discussed across 9 documents (`SPEC_rule_provenance_measurement.md` alone: 12) | **FP-A** |
+| C09 `0f REGISTRY ARM` | 5 | the signature is a SECTION HEADING, so every cross-reference to the section is an occurrence | **FP-A** |
+| C06 `ZERO cross-tool merges` | 5 | newest hit is `EVIDENCE_SCALE.md:357`, which *quotes* the claim as a worked example in step 3 | **FP-B** |
+
+**FP-C fired while this section was being written, three times, and that is the
+most useful result here.** C12's occurrence count went **30 → 31 → 32** over the
+course of writing this one section: 31 when §10.4 named `source-rule-url` as an
+example of an overloaded signature, 32 when the paragraph you are reading named
+it again. **The document predicting the false-positive mode created an instance
+of it, then created another by describing the first, in under an hour, without
+leaving the file.** No number is quoted for C12 above because the number is a
+function of how much this project writes about C12 — which is the finding. The
+general form:
+*any reconciliation convention that writes about a claim — a banner, a worked
+example, a post-mortem — is indistinguishable from a restatement of it under a
+grep.* This is not a bug in the check; it is a real property of a corpus that
+documents its own failures in the same tree it stores its claims in.
+
+**FP-D was not exercised** — recorded so the next session knows which modes are
+measured and which are still only predicted.
+
+**The honest reading: 1 true positive on the historical case, 3 false positives
+on the current one, and every false positive traces to the SIGNATURE, not to the
+timestamp comparison.** That is why (3) above is a field and not a footnote. It
+also settles a question §5 left open: this amendment **strengthens** the case for
+S1 being SEMI-mechanical. It raises recall on the failure that motivated the
+whole design and raises the false-positive rate at the same time. A check whose
+output is 3-for-3 false on a clean tree must never be allowed to act without a
+reader.
+
+### 10.6 A record defect the run exposed
+
+`claims.json` stored C02's `grounds-checked-at` as
+`"2026-07-26T01:57:16-08:00 (DECISION_4)"` — a timestamp with a provenance note
+glued onto it. No machine check can read it. The pilot reported **1**
+unassessable claim; the true figure is **1 unassessable + 1 malformed**, and
+those are different things: absent grounds is a fact about the claim, an
+unreadable field is a defect in the record. The check now reports them
+separately, because collapsing them would let a record defect hide inside an
+honest "we cannot know".
+
+### 10.7 What this does NOT fix
+
+1. **The deductive exemption (§8.5) is untouched.** D4/S1 still cannot fire for
+   `grounds.kind = DEDUCTION`. Occurrences do not help: the exemption is about
+   the grounds having no re-derivation, not about where they live.
+2. **C03 remains unassessable.** A claim whose evidence was never retained has
+   no `grounds-checked-at` to compare against, however many occurrences it has.
+   S1 is still silent on the class of claim most likely to be stale.
+3. **Occurrence discovery is only as good as the signature**, and choosing a
+   signature is J3/J4-adjacent reading, not machine work. This amendment
+   therefore **raises** per-claim population cost — a twelfth field, and one
+   with a corpus-wide grep and a read of its hits attached.
+4. **Nothing yet checks that a stored occurrence set is still current** — the
+   sidecar-drift gap (D1) now has a second surface.
