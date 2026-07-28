@@ -1,5 +1,6 @@
 {
   "_meta": {
+    "STATUS": "PILOT ARTIFACT — RETAINED, NOT LIVE, NOT TO BE EXTENDED. The population thread was STOPPED on 2026-07-28 (HANDOFF §7 item 9; RECONCILIATION.md §13). These twelve claims are the evidence that produced that decision, and they are kept for exactly that reason — the S1 finding, the four DECISIONs below, and the 2-of-11-fields-are-machine-derivable ratio are all read off this file. DO NOT populate a thirteenth claim. DO NOT treat this as a partial corpus awaiting completion; it is a completed pilot whose result was 'do not proceed'. DO NOT delete it either: deleting it would leave the decision in §13 with no artifact behind it.",
     "tier": "[self-tested]",
     "what": "Population PILOT — 12 claims from VALIDATION.md. Not the corpus. NOT '12 of ~202': that denominator was inferred from section headings and never counted. Counted 2026-07-28 against VALIDATION.md at e260631 — 61 dated records / ~190 result-bearing subsections / ~390 (interval ~300-470) independently validatable assertions. The spec does not fix the claim unit and these twelve span all three granularities, so no denominator is quotable without naming the rule that produced it. Method: POPULATION_PILOT.md header. Filed as HANDOFF §7 item 9.",
     "spec": ["docs/CLAIM_STRUCTURE.md", "docs/EVIDENCE_SCALE.md", "docs/PROVENANCE_FIELDS.md"],

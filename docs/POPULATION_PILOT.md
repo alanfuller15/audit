@@ -207,6 +207,34 @@ one comparison, and it answers a narrower question than advertised.
 
 ## 5. RECOMMENDATION ON THE REMAINING ~190
 
+> **[SUPERSEDED 2026-07-28 — READ BEFORE ACTING ON ANYTHING BELOW. The
+> population thread is STOPPED, not paused.]**
+> This section recommends a **sequence**: fix S1, then populate `status` alone
+> corpus-wide, then reconsider. **That sequence is no longer the plan.** The
+> inventor closed the thread (HANDOFF §7 item 9) on three grounds, all of which
+> post-date this section:
+> 1. **The claim unit is undefined and will not be fixed.** It went undefined
+>    through five design steps and this pilot because nothing needed it — the
+>    vocabulary works claim-by-claim, read by a person, and only bulk population
+>    ever required a boundary rule. That is evidence about what the spec is
+>    *for*, not an oversight to repair.
+> 2. **S1 was fixed and the fix did not earn the population.** PROVENANCE_FIELDS
+>    §10 removed the cross-file blindness §4 identified — and the amended check
+>    is **3-for-3 false on a clean tree**, every failure tracing to the
+>    signature. §5's step 1 is therefore DONE and did not unblock step 2.
+> 3. **The denominator was wrong.** "~190 remaining" assumed a count nobody had
+>    made; see the header. Step 2's "one field, corpus-wide" is ~390 units, not
+>    ~190.
+>
+> **What survives from this section, unchanged and now permanent rather than
+> interim:** *populate nothing further* — and the three-number reporting
+> contract at the end (`fired / silent / unassessable`, INCONCLUSIVE whenever
+> `unassessable > 0`), which `s1_crossfile.py` implements and which is good
+> practice independent of any population.
+>
+> Full statement of what is in use and what is specified-and-unused:
+> **RECONCILIATION.md §13.**
+
 **Populate nothing further for now.** Argued from the numbers, not from effort.
 
 ### The case against full population

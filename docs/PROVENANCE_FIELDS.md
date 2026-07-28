@@ -424,6 +424,15 @@ with a primary would have been predictable rather than discovered.
 
 ## 10. S1's CROSS-FILE BLINDNESS — THE DEFECT, THE FIX, AND WHAT IT COSTS
 
+> **[THE THREAD THIS FEEDS WAS STOPPED 2026-07-28 — read before implementing
+> anything here.]** This amendment is **correct and unpopulated, and will stay
+> that way**. The population thread closed (HANDOFF §7 item 9), partly *on the
+> evidence in §10.5*: the amended check fires on its motivating case and is
+> 3-for-3 false on a clean tree. **This section is not a to-do.** It is retained
+> because it is the measurement that closed the thread, and because §10.2's
+> `signature`-vs-`anchor` distinction is the transferable finding. See
+> RECONCILIATION.md §13 for what is in use and what is specified-and-unused.
+
 **This section amends §2 and §3.** It exists because the population pilot ran S1
 against the case S1 was designed for and S1 was silent (POPULATION_PILOT.md §4).
 

@@ -1612,9 +1612,47 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    [LETOR: note §6's rejection of hand-crafted per-warning weighting is evidence
    AGAINST this path, not neutral. Study that result before spending on it.]
 
-9. [OPEN — SPEC GAP, NOT A DEFECT. Surfaced by counting, 2026-07-28.
-   FILED DELIBERATELY UNFIXED: this decides whether the population thread
-   continues, so it is a call against the board, not an edit.]
+9. [CLOSED 2026-07-28 (inventor) — THE POPULATION THREAD IS STOPPED. The unit
+   is NOT fixed and will not be. Do not reopen this by fixing it; the decision
+   was to stop, and the gap is the evidence, not the task. Full statement of
+   what is in use and what is specified-and-unused: RECONCILIATION.md §13.]
+
+   DECISION AND ITS ARGUMENT, recorded because a later session will find a
+   specified-but-unpopulated field set and be tempted to finish it:
+
+   (a) **The gap is evidence about what the spec is for, not an oversight.**
+   The unit went undefined through five design steps AND a pilot because
+   nothing needed it. The vocabulary works claim-by-claim, in prose, read by a
+   person. Only BULK POPULATION requires a boundary rule — and the gap
+   surfaced at exactly the moment the thread turned from describing claims to
+   enumerating them. A spec that never needed a unit until you tried to count
+   is a spec for reading, not for a database.
+
+   (b) **The checks population would unblock do not work well enough to
+   justify it.** S1 is 3-for-3 false on a clean tree with every failure
+   tracing to the signature (PROVENANCE_FIELDS §10.5). C03-class claims —
+   those whose evidence was never retained — are unassessable by construction,
+   and they are the class MOST likely to be stale. §5's own partition puts J3
+   (does the estimand match the claim) and J4 (is the comparator right) in the
+   JUDGMENT class, and those are the two failure modes that killed the most
+   claims here. Populating ~390 units to feed a check that needs a reader
+   anyway inverts the cost.
+
+   (c) **FP-C is structural, not a tuning problem.** A corpus that documents
+   its own failures in the same tree where it stores its claims will always
+   contain banners, worked examples and post-mortems that a grep cannot
+   distinguish from restatements. C12 went from 30 occurrences to 32 while the
+   section describing that very effect was being written. No better signature
+   rule fixes this; it is a property of the corpus, not of the matcher.
+
+   WHAT SURVIVES, stated plainly so this does not read as a retreat:
+   `.claude/reconcile.sh`'s four mechanical checks need NO fields, cover the
+   orphaning form COMPLETELY, and were calibrated against real history by
+   replay and injection. **The specification's value is its vocabulary and its
+   partition, used by a reader** — not a populated corpus. That value is
+   already delivered and is not contingent on anything below.
+
+   THE ORIGINAL FILING, retained so the reasoning is auditable:
    THE CLAIM UNIT IS UNDEFINED.
 
    Counting VALIDATION.md produced three defensible answers, not one:
@@ -1651,6 +1689,8 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
    the unit is the next move, or the fact that the unit went undefined through
    five design steps AND a pilot is itself an argument for stopping the
    population thread entirely. Both readings are live. Left for the inventor.
+   [ANSWERED 2026-07-28: the SECOND reading. See the closure at the top of
+   this item — the two readings are no longer both live.]
 
    Records: POPULATION_PILOT.md header (the count, its method, and its sample);
    PROVENANCE_FIELDS.md §10 (which adds a twelfth field and so raises whatever
