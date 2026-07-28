@@ -225,21 +225,37 @@ commit that creates it.**
                               and what the project does constantly without a
                               name. NAMES conflicts; resolves none. Its §5 files
                               drift noticed and deliberately not fixed.
+  docs/SESSION_HANDOFF_2026-07-28b.md
+                              MOST RECENT session residue — the session that
+                              STOPPED the population thread. Read RECONCILIATION
+                              §13 first, then this. Its §2 records that the
+                              3-for-3 false-positive result the stop rests on
+                              contains ONE judgment call (C06) that a later
+                              session could reverse, making it 2-of-3; §3 how
+                              the claim count was actually sampled and why the
+                              interval is wide on purpose; §4 that FP-C was
+                              found by luck, not method; §5 the one open item
+                              left deliberately (VALIDATION.md:568); §6 the
+                              claims.json hand-formatting trap.
   docs/SESSION_HANDOFF_2026-07-28.md
-                              MOST RECENT session residue. Reasoning that shaped
+                              Prior session, same day. Reasoning that shaped
                               steps 1-5 and the population pilot and never became
                               a formal entry: why the D2 pick resolved against
                               the field and why C07 kills the alternative; why
                               151s/12 must not be extrapolated; the two FP modes
                               pre-statement failed to anticipate; five corpus
-                              observations noticed and not acted on. §1 names the
-                              next action (fix S1's cross-file blindness) and
-                              records that it was deliberately NOT started.
+                              observations noticed and not acted on. Its §1 named
+                              the next action (fix S1's cross-file blindness) —
+                              that is DONE (PROVENANCE_FIELDS §10), and its §5(a)
+                              and §5(b) are both CLOSED.
   docs/SESSION_HANDOFF_2026-07-26b.md
-                              MOST RECENT session residue — read after §0 and
-                              this index. Its §2 says run a reconciliation
-                              sweep FIRST; its §3 is the worked account of how
-                              a false claim reached the README.
+                              Prior session. Its §2 says run a reconciliation
+                              sweep FIRST — now automatic via SessionStart; its
+                              §3 is the worked account of how a false claim
+                              reached the README. (This entry and the one above
+                              both read "MOST RECENT session residue" until
+                              2026-07-28; two documents cannot both be. Corrected
+                              with this entry — form-1 staleness in the index.)
   docs/SESSION_HANDOFF_2026-07-26.md
                               Prior session. Its §1 (the 0j check) is DONE.
   docs/SPEC_java_admission.md, docs/SPEC_dedup_shipped_path.md,

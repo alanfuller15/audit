@@ -271,7 +271,9 @@ These are transferable and each cost real time.
 
 **Estimand mismatch can masquerade as a contradiction.** Two of our own analyses
 appeared to disagree flatly: a logistic model gave the tool-count coefficient
-p=0.582, while a matched test gave ~1.5x at p<0.0001. Neither was wrong. One
+p=0.582, while a matched test gave ~1.5x at p<0.0001 (**that p-value was itself
+later withdrawn — see the third learning below; the ~1.5x survived it and the
+estimand lesson here is unaffected**). Neither was wrong. One
 fitted `n_tools` as a **linear slope**; the other compared **two-or-more vs
 one**. Different quantities. Fitting the matching contrast with the same
 covariate gave OR 1.39 — agreeing. The linear slope averaged a real
