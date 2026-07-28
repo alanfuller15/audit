@@ -1,0 +1,225 @@
+{
+  "_meta": {
+    "tier": "[self-tested]",
+    "what": "Population PILOT — 12 of ~202 claims in VALIDATION.md. Not the corpus.",
+    "spec": ["docs/CLAIM_STRUCTURE.md", "docs/EVIDENCE_SCALE.md", "docs/PROVENANCE_FIELDS.md"],
+    "measurements_and_recommendation": "docs/POPULATION_PILOT.md",
+    "DECISION_1_storage": "The spec never says WHERE populated fields live. Chosen: a SIDECAR keyed by claim id, not inline in VALIDATION.md. Reason: VALIDATION.md is append-only (established in the reconcile work), so editing historical entries to add fields would violate that; and machine-writable fields need a parseable format. JSON not YAML because no yaml module is installed. COST: the sidecar can drift from VALIDATION.md, which is a new instance of the failure this whole design targets, and nothing currently checks the link.",
+    "DECISION_2_restated_at": "The spec says 'git log for the claim's location' without defining a claim's location. Chosen: NEWEST blame across the claim's line range. COST, and it is the known one: a typo fix on any line in the range advances restated-at and produces a false S1 candidate. This is exactly why RECONCILIATION.md §5 demoted S1 to SEMI-mechanical, and populating confirms the demotion was right. The alternative — blame of one designated line — was rejected because no session can identify that line reliably: a claim's assertion and its number are routinely on different lines, which is the 1,131 case itself.",
+    "DECISION_3_range": "A claim's line range is set by hand at population time and stored. The spec does not define it. COST: hand-set and unverifiable; if VALIDATION.md is edited above the claim the stored range silently shifts. Line numbers are recorded WITH an anchor string so the range can be re-found.",
+    "DECISION_4_deductive_grounds": "For grounds.kind=DEDUCTION there is no re-derivation command, so grounds-checked-at cannot be machine-written. Chosen: it equals the blame of the cited source lines. COST: it then can never be older than the artifact, so D4/S1 can never fire for a deductive claim — a silent exemption for a whole grounds kind, already flagged in PROVENANCE_FIELDS.md §8.5."
+  },
+
+  "C01_1.5x": {
+    "asserts": "Functions flagged by >=2 tools are ~1.5x more likely to contain a real CVE than SIZE-MATCHED single-tool functions (1.54% vs 1.02%).",
+    "kind": "DESCRIPTIVE", "status": "LIVE",
+    "locator": {"file": "docs/VALIDATION.md", "lines": "3104-3118", "anchor": "SIZE-MATCHED   multi 1.54%"},
+    "grounds": {"kind": "REPRODUCTION",
+      "artifact_refs": [
+        {"locator": "analysis/scripts/run_0j.py", "origin": "in-repo", "artifact_type": "source-code", "artifact_kind": "captured", "retrieval_depth": "primary", "coverage": "full", "integrity": "git-blob", "re_derivation": "AUDIT_CORPUS_ROOT=... python3 analysis/scripts/run_0j.py"},
+        {"locator": "DOI 10.5281/zenodo.6515687", "origin": "fetched", "artifact_type": "dataset", "artifact_kind": "captured", "retrieval_depth": "primary", "coverage": "full", "integrity": "sha256 manifest analysis/README.md §4"}
+      ]},
+    "warrant": "Size-matched multi- and single-tool functions differ only in tool count, so a rate difference is attributable to tool count.",
+    "estimand": "P(vuln | n_tools>1) / P(vuln | n_tools=1), BINARY contrast",
+    "comparator": "size-matched single-tool functions (not: all single-tool functions, which gives 2.67x)",
+    "bound": "nine projects; project-bootstrap 95% CI [0.99x, 2.58x]; threshold not a score",
+    "defeater": {"condition": "a size control coarser than the confound", "state": "TESTED and DISCHARGED (strata 10->200)"},
+    "level": "SUPPORTED",
+    "adjustments": [{"domain": "U1", "dir": "+1", "rationale": "survived strata refinement 10->200 which could have refuted it"},
+                    {"domain": "CEILING-2", "dir": "cap", "rationale": "empirical grounds cannot reach ESTABLISHED"}],
+    "time": {"asserted_at": "2026-07-26", "restated_at": "2026-07-26T15:07:18-08:00", "grounds_checked_at": "2026-07-26T15:55:16-08:00", "asserted_by": "c6e607e9"}
+  },
+
+  "C02_fp_rk": {
+    "asserts": "An `fp:`-prefixed key can never equal an `rk:`-prefixed key.",
+    "kind": "DESCRIPTIVE", "status": "LIVE",
+    "locator": {"file": "docs/VALIDATION.md", "lines": "553-560", "anchor": "An `fp:`-prefixed key can never"},
+    "grounds": {"kind": "DEDUCTION",
+      "artifact_refs": [{"locator": "src/audit.py::_result_key", "origin": "in-repo", "artifact_type": "source-code", "artifact_kind": "captured", "retrieval_depth": "primary", "coverage": "full", "integrity": "git-blob", "re_derivation": null}]},
+    "warrant": "Distinct literal prefixes cannot produce equal strings; a property of the key construction, not of any sample.",
+    "estimand": "string equality over the key space",
+    "comparator": null,
+    "bound": "holds for this key construction only",
+    "defeater": null,
+    "level": "ESTABLISHED",
+    "adjustments": [],
+    "time": {"asserted_at": "2026-07-26", "restated_at": "2026-07-26T01:57:16-08:00", "grounds_checked_at": "2026-07-26T01:57:16-08:00 (DECISION_4)", "asserted_by": "3c03a3b9"}
+  },
+
+  "C03_p0001_withdrawn": {
+    "asserts": "Multi-tool enrichment is significant at p<0.0001.",
+    "kind": "DESCRIPTIVE", "status": "WITHDRAWN",
+    "locator": {"file": "docs/VALIDATION.md", "lines": "3104-3118", "anchor": "P(size-matched control >= multi) = 0.0000"},
+    "grounds": {"kind": "REPRODUCTION",
+      "artifact_refs": [{"locator": "2,000-draw resampling (script not retained at the time)", "origin": "in-repo", "artifact_type": "tool-output", "artifact_kind": "captured", "retrieval_depth": "absent", "coverage": "excerpt", "integrity": null, "re_derivation": null}]},
+    "warrant": "Resampling the control distribution estimates the null.",
+    "estimand": "P(control >= observed), with the MULTI arm held FIXED",
+    "comparator": "size-matched single-tool draws",
+    "bound": null,
+    "defeater": {"condition": "the warrant assumes both arms vary", "state": "FIRED — the test held the multi arm fixed"},
+    "level": "UNRESOLVED",
+    "adjustments": [{"domain": "D3", "dir": "-2", "rationale": "the test did not test the comparison it reported"},
+                    {"domain": "CEILING-1", "dir": "cap", "rationale": "no retrievable artifact — the script was run inline and lost"}],
+    "succession": {"forward": "C01_1.5x", "record": "RETAINED IN PLACE, banner-marked"},
+    "time": {"asserted_at": "2026-07-26", "restated_at": "2026-07-26T15:07:18-08:00", "grounds_checked_at": null, "asserted_by": "c6e607e9"}
+  },
+
+  "C04_sarif_conformance": {
+    "asserts": "SARIF ingest output conforms to the OASIS 2.1.0 schema (46 constraint-checks, 0 violations).",
+    "kind": "DESCRIPTIVE", "status": "LIVE",
+    "locator": {"file": "docs/VALIDATION.md", "lines": "24", "anchor": "Validated against fetched OASIS schema"},
+    "grounds": {"kind": "REPRODUCTION",
+      "artifact_refs": [{"locator": "OASIS sarif-schema-2.1.0.json", "origin": "fetched", "artifact_type": "standard", "artifact_kind": "captured", "retrieval_depth": "primary", "coverage": "full", "integrity": null, "re_derivation": "validate ingest output against the fetched schema"}]},
+    "warrant": "Conformance to a published schema is decided by the schema itself.",
+    "estimand": "count of schema constraint violations",
+    "comparator": "the OASIS schema as normative reference",
+    "bound": "schema conformance is NOT semantic correctness — recorded at VALIDATION.md:227",
+    "defeater": null,
+    "level": "SUPPORTED",
+    "adjustments": [{"domain": "none", "dir": "0", "rationale": "external normative artifact, primary retrieval, no adverse domain"}],
+    "time": {"asserted_at": "2026-07-09", "restated_at": "2026-07-09T01:08:50-08:00", "grounds_checked_at": "2026-07-09T01:08:50-08:00", "asserted_by": "1692510e"}
+  },
+
+  "C05_close_item2": {
+    "asserts": "Do not build boundary extraction for function-level matching.",
+    "kind": "PROSCRIPTIVE", "status": "LIVE",
+    "locator": {"file": "docs/VALIDATION.md", "lines": "4086-4092", "anchor": "CLOSE ITEM 2"},
+    "grounds": {"kind": "REPRODUCTION",
+      "artifact_refs": [{"locator": "analysis/scripts/eval_function_level.py", "origin": "in-repo", "artifact_type": "source-code", "artifact_kind": "captured", "retrieval_depth": "primary", "coverage": "full", "integrity": "git-blob", "re_derivation": "AUDIT_CORPUS_ROOT=... python3 analysis/scripts/eval_function_level.py"}]},
+    "warrant": "A pre-registered rule said close if consensus fails a size-matched control regardless of merge gains; it failed on every limb.",
+    "estimand": "PofB@20%LOC, IFA, PMI@20 at function level",
+    "comparator": "ManualUp and size-matched random",
+    "bound": "Lipp C/CVE corpus; ground-truth boundaries, so no parser error is included",
+    "defeater": {"condition": "a boundary extractor whose errors are non-random", "state": "UNTESTED"},
+    "level": "NOT ASSIGNED — PROSCRIPTIVE claims carry STRENGTH, not certainty",
+    "strength": "STRONG",
+    "canonical": "MUST NOT build boundary extraction on the theory that function-level matching improves ranking.",
+    "adjustments": [{"domain": "U2", "dir": "+1", "rationale": "decision rule pre-registered in commit 2f0bd52 before computing", "applies_to": "the descriptive claims beneath it"}],
+    "time": {"asserted_at": "2026-07-26", "restated_at": "2026-07-26T18:59:17-08:00", "grounds_checked_at": "2026-07-26T18:59:17-08:00", "asserted_by": "68d85129"}
+  },
+
+  "C06_zlib_zero": {
+    "asserts": "The shipped flawfinder+cppcheck pair produces ZERO cross-tool merges on real zlib.",
+    "kind": "DESCRIPTIVE", "status": "LIVE",
+    "locator": {"file": "docs/VALIDATION.md", "lines": "700-760", "anchor": "ZERO cross-tool merges"},
+    "grounds": {"kind": "OBSERVATION",
+      "artifact_refs": [{"locator": "lib/zf.sarif + lib/zc.sarif (712 raw findings)", "origin": "captured", "artifact_type": "tool-output", "artifact_kind": "captured", "retrieval_depth": "primary", "coverage": "full", "integrity": "sha256 in analysis/README.md §4", "re_derivation": "AUDIT_CORPUS_ROOT=... python3 src/audit.py --ingest lib/zf.sarif lib/zc.sarif"}]},
+    "warrant": "Direct observation of the merge count on real scanner output.",
+    "estimand": "count of findings with n_tools>1",
+    "comparator": null,
+    "bound": "one library, one tool pair",
+    "defeater": null,
+    "level": "SUPPORTED",
+    "adjustments": [{"domain": "U3", "dir": "+1", "rationale": "re-derived AFTER the item-2 key fix, same result"}],
+    "confidence_arguments": [
+      {"version": 1, "mechanism": "fp:/rk: key collision", "level": "UNRESOLVED", "note": "REFUTED by item 2"},
+      {"version": 2, "mechanism": "anti-correlated CWE classes; 14 co-locations, 10 class-resolved both sides, 0 matches", "level": "SUPPORTED"}
+    ],
+    "time": {"asserted_at": "2026-07-26", "restated_at": "2026-07-26T02:00:00-08:00", "grounds_checked_at": "2026-07-26T02:00:00-08:00", "asserted_by": "3c03a3b9"}
+  },
+
+  "C07_1131_denominator": {
+    "asserts": "Adding a third tool did not rescue the default set: 2 merges in 1,131 findings (0.18%).",
+    "kind": "DESCRIPTIVE", "status": "SUPERSEDED",
+    "locator": {"file": "docs/VALIDATION.md", "lines": "905-918", "anchor": "2 merges in 1,131"},
+    "grounds": {"kind": "OBSERVATION",
+      "artifact_refs": [{"locator": "three-tool ingest, zlib", "origin": "captured", "artifact_type": "tool-output", "artifact_kind": "captured", "retrieval_depth": "primary", "coverage": "full", "integrity": null, "re_derivation": "python3 src/audit.py --ingest zf.sarif zc.sarif zs.sarif"}]},
+    "warrant": "The merge count over the three-tool raw total gives the rate.",
+    "estimand": "merges / raw findings",
+    "comparator": "the two-tool result",
+    "bound": null,
+    "defeater": {"condition": "the denominator is not the three-tool total", "state": "FIRED — 1,131 = 543+588 omits semgrep's 33; correct raw is 1,164, dedup 1,135"},
+    "level": "UNRESOLVED",
+    "adjustments": [{"domain": "D1", "dir": "-2", "rationale": "the quantity measured (two-tool raw) is not the quantity claimed (three-tool rate)"}],
+    "succession": {"forward": "corrected in place at 962efc33; rate unaffected at 0.18%", "record": "RETAINED, correction block appended"},
+    "time": {"asserted_at": "2026-07-26T02:52:03-08:00", "restated_at": "2026-07-26T21:41:08-08:00", "grounds_checked_at": "2026-07-26T21:41:08-08:00", "asserted_by": "adf2a0d3", "_s1_note": "see POPULATION_PILOT.md §4 — S1 is SILENT here and FIRES on the copy in HANDOFF.md"}
+  },
+
+  "C08_granularity_overturn": {
+    "asserts": "Cross-methodology agreement IS observable; §6.2's conclusion is overturned. Line 1,169 -> function 7,514 pairs (6.4x).",
+    "kind": "DESCRIPTIVE", "status": "LIVE",
+    "locator": {"file": "docs/VALIDATION.md", "lines": "2640-2700", "anchor": "GRANULARITY IS THE LEVER"},
+    "grounds": {"kind": "REPRODUCTION",
+      "artifact_refs": [{"locator": "Lipp functions.json + sca_results.json", "origin": "fetched", "artifact_type": "dataset", "artifact_kind": "captured", "retrieval_depth": "primary", "coverage": "full", "integrity": "sha256 manifest"}]},
+    "warrant": "The same findings matched at a different unit yield different agreement counts; the tools are held constant.",
+    "estimand": "count of cross-methodology tool PAIRS co-occurring in a unit",
+    "comparator": "the same pairs at line level",
+    "bound": "co-occurrence ignores CWE class; item 2 later showed 92.2% of recovered co-locations are class-DISAGREEMENTS",
+    "defeater": null,
+    "level": "SUPPORTED",
+    "adjustments": [{"domain": "U3", "dir": "+1", "rationale": "independently re-derived by eval_function_level.py at 3.5x on a units basis"}],
+    "time": {"asserted_at": "2026-07-26", "restated_at": "2026-07-26T14:38:21-08:00", "grounds_checked_at": "2026-07-26T18:59:17-08:00", "asserted_by": "752de5fb"}
+  },
+
+  "C09_registry_arm": {
+    "asserts": "In one registry, 23.4% of rules declare derivation from another tool; multi-signal union 28.2%; Chapman N-hat 95 [83,117] for FindSecBugs.",
+    "kind": "DESCRIPTIVE", "status": "LIVE",
+    "locator": {"file": "docs/VALIDATION.md", "lines": "3788-3860", "anchor": "0f REGISTRY ARM"},
+    "grounds": {"kind": "REPRODUCTION",
+      "artifact_refs": [
+        {"locator": "analysis/scripts/rule_provenance_registry_addendum.py", "origin": "in-repo", "artifact_type": "source-code", "artifact_kind": "captured", "retrieval_depth": "primary", "coverage": "full", "integrity": "git-blob", "re_derivation": "python3 analysis/scripts/rule_provenance_registry_addendum.py"},
+        {"locator": "semgrep.dev registry packs (LIVE FETCH, unversioned)", "origin": "fetched", "artifact_type": "tool-output", "artifact_kind": "captured", "retrieval_depth": "primary", "coverage": "full", "integrity": null, "note": "NOT archivable — Semgrep Rules License forbids redistribution; preserved by SWHID swh:1:snp:77a9383d0aaedd71c159124b2589dfec314f6aeb"},
+        {"locator": "analysis/data/findsecbugs_1.14.0_extract.json", "origin": "in-repo", "artifact_type": "dataset", "artifact_kind": "captured", "retrieval_depth": "primary", "coverage": "full", "integrity": "sha256 fa17f239a3d4ade9"}
+      ]},
+    "warrant": "Declared provenance is a positive marker; a multi-signal union bounds the derived population below.",
+    "estimand": "fraction of registry rules carrying a detectable derivation marker",
+    "comparator": "the single strongest signal (declaration alone)",
+    "bound": "ONE registry, one upstream reference set; all figures are LOWER BOUNDS; a low number is uninformative, not clearance",
+    "defeater": {"condition": "the registry changes under the live fetch", "state": "ACTIVE — already observed drifting (A01:2025 tag)"},
+    "level": "INDICATED",
+    "adjustments": [{"domain": "U2", "dir": "+1", "rationale": "pre-registered in commit 2e00ba2 before computing"},
+                    {"domain": "D3", "dir": "-1", "rationale": "population is a live unversioned fetch; the run is not reproducible to the same bytes"}],
+    "time": {"asserted_at": "2026-07-26", "restated_at": "2026-07-26T17:55:53-08:00", "grounds_checked_at": "2026-07-26T18:10:00-08:00", "asserted_by": "ed5c74b4"}
+  },
+
+  "C10_item2_closed": {
+    "asserts": "Function-level matching moves merged findings only 3,009 -> 3,155 (+4.9%); ranking unchanged at PofB@20 0.185.",
+    "kind": "DESCRIPTIVE", "status": "LIVE",
+    "locator": {"file": "docs/VALIDATION.md", "lines": "4018-4092", "anchor": "ITEM 2 EVALUATED AND CLOSED"},
+    "grounds": {"kind": "REPRODUCTION",
+      "artifact_refs": [{"locator": "analysis/scripts/eval_function_level.py", "origin": "in-repo", "artifact_type": "source-code", "artifact_kind": "captured", "retrieval_depth": "primary", "coverage": "full", "integrity": "git-blob", "re_derivation": "AUDIT_CORPUS_ROOT=... python3 analysis/scripts/eval_function_level.py"}]},
+    "warrant": "Routing the same findings through the real merge machinery at two granularities isolates the granularity effect.",
+    "estimand": "merged findings (n_tools>1) at line vs function canonicalisation",
+    "comparator": "line-level matching, and ManualUp / size-matched random for the ranking limb",
+    "bound": "round-trip identity on Lipp rows; favourable classes — merge count is an UPPER bound vs real scanners",
+    "defeater": null,
+    "level": "SUPPORTED",
+    "adjustments": [{"domain": "U2", "dir": "+1", "rationale": "pre-registered in 2f0bd52 before computing"}],
+    "time": {"asserted_at": "2026-07-26", "restated_at": "2026-07-26T18:59:17-08:00", "grounds_checked_at": "2026-07-26T18:59:17-08:00", "asserted_by": "68d85129"}
+  },
+
+  "C11_owasp_merges": {
+    "asserts": "SpotBugs+FindSecBugs x semgrep on OWASP Benchmark yields 1,427 cross-tool merged findings, 0 false merges audited.",
+    "kind": "DESCRIPTIVE", "status": "LIVE",
+    "locator": {"file": "docs/VALIDATION.md", "lines": "1900-1930", "anchor": "1,156 merges"},
+    "grounds": {"kind": "OBSERVATION",
+      "artifact_refs": [{"locator": "owasp/sb.sarif + owasp/sg_java2.sarif", "origin": "captured", "artifact_type": "tool-output", "artifact_kind": "RECONSTRUCTED", "retrieval_depth": "primary", "coverage": "full", "integrity": "sha256 in analysis/README.md §4", "note": "sg_java2 is DERIVED — URIs hand-rewritten to package-relative to work around item 0c"}]},
+    "warrant": "A merge audit over a labelled corpus decides whether merges are same-bug.",
+    "estimand": "count of findings with n_tools>1, and false-merge rate among them",
+    "comparator": "the answer key's planted category",
+    "bound": "SYNTHETIC corpus, one bug per file from categories both tools cover — the condition LEAST like real code and MOST favourable to consensus; paths hand-aligned",
+    "defeater": null,
+    "level": "INDICATED",
+    "adjustments": [{"domain": "D1", "dir": "-1", "rationale": "synthetic corpus: what was measured is agreement on planted bugs, not agreement on real code"}],
+    "time": {"asserted_at": "2026-07-26", "restated_at": "2026-07-26T10:56:00-08:00", "grounds_checked_at": "2026-07-26T18:59:17-08:00", "asserted_by": "unresolved-multi-commit"}
+  },
+
+  "C12_sarif_drops_provenance": {
+    "asserts": "SARIF drops rule provenance: `source-rule-url` appears 0 times in semgrep's SARIF and is present in its native JSON.",
+    "kind": "DESCRIPTIVE", "status": "LIVE",
+    "locator": {"file": "docs/VALIDATION.md", "lines": "2550-2560", "anchor": "source-rule-url"},
+    "grounds": {"kind": "OBSERVATION",
+      "artifact_refs": [
+        {"locator": "owasp/sg_java2.sarif", "origin": "captured", "artifact_type": "tool-output", "artifact_kind": "captured", "retrieval_depth": "primary", "coverage": "full", "integrity": "sha256 8ed52de8c771c2c2"},
+        {"locator": "owasp/sg_native.json", "origin": "captured", "artifact_type": "tool-output", "artifact_kind": "captured", "retrieval_depth": "primary", "coverage": "full", "integrity": "sha256 0075af477ffbd387"}
+      ]},
+    "warrant": "A field present in one serialisation and absent in the other, over the same run, is dropped by the converter.",
+    "estimand": "occurrence count of the field in each format",
+    "comparator": "the native JSON of the same scan",
+    "bound": "one tool, one version; SARIF Appendix D permits the omission, so this is conforming behaviour",
+    "defeater": null,
+    "level": "SUPPORTED",
+    "adjustments": [{"domain": "D6", "dir": "0", "rationale": "D6 does NOT fire: the absence WAS checked against native output, which is the control D6 exists to require"}],
+    "time": {"asserted_at": "2026-07-26", "restated_at": "2026-07-26T14:29:00-08:00", "grounds_checked_at": "2026-07-26T14:29:00-08:00", "asserted_by": "unresolved-multi-commit"}
+  }
+}

@@ -191,6 +191,18 @@ commit that creates it.**
                               records that two of the four source IDs given were
                               wrong papers. No scale and no tier assignments —
                               that is step 3.
+  docs/POPULATION_PILOT.md    Field-population PILOT — 12 of ~200 claims, with
+                              measurements and a recommendation. [self-tested].
+                              §2 records four ambiguities the spec did not
+                              determine, each marked a DECISION with its cost.
+                              §4 is the finding: S1 CANNOT see the recorded
+                              form-3 instance, because that failure spans files
+                              and S1 compares two timestamps on one record.
+                              §5 recommends populating NOTHING further until S1
+                              is fixed, and populating `status` alone next.
+  docs/claims.json            The 12 populated claims. Sidecar, not inline —
+                              VALIDATION.md is append-only. See PILOT §2 D1 for
+                              the cost of that choice.
   docs/TERMS_INVENTORY.md     Concept inventory (step 1 of 5, semantic
                               layering). [self-tested] — one reading of the
                               corpus, not a measurement. Lists where one term
