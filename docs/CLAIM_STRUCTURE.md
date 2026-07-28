@@ -38,7 +38,7 @@ that is weaker ground than the rest of this document.
 
 ## 1. THE STRUCTURE
 
-Nine parts. Each is justified in §2 by a case that fails without it.
+Ten parts. Each is justified in §2 by a case that fails without it.
 
 ```
 CLAIM ─────────────┬── asserts ────────────────── what is being said
@@ -59,7 +59,11 @@ CLAIM ─────────────┬── asserts ─────�
    │
    ├── DEFEATER ───── a stated condition under which the claim would fail
    │
-   └── SUCCESSION ─── forward/back pointers when status ≠ LIVE
+   ├── SUCCESSION ─── forward/back pointers when status ≠ LIVE
+   │
+   └── TIME ───────── asserted-at          when the claim was made
+                      grounds-checked-at   when the grounds were last re-derived
+                      (machine-written by the re-derivation command, not by hand)
 ```
 
 Plus one structure that is **not** part of a claim:
@@ -147,6 +151,56 @@ the mechanism was refuted, and the conclusion survived on a different one. That
 is only expressible if the condition-of-failure is recorded separately from the
 grounds. Note Toulmin's rebuttal "is itself an argument" — so a defeater may
 carry its own claim structure, recursively.
+
+**TIME (asserted-at, grounds-checked-at)** — **PROMOTED from §6 on the second
+pass. The argument is from the corpus and it is stronger than I first judged.**
+
+Rule 11 now has **three forms and eight instances** (verified in HANDOFF, not
+recalled). Every form is a statement about time:
+
+| form | what decayed | the temporal question it needed |
+|---|---|---|
+| staleness — wrong text | text written at T1, world moved by T2 | when was this last checked against the tree? |
+| orphaning — missing text | document created at T1, index never updated | when was reachability last verified? |
+| **correction that never re-derives** | **claim corrected at T2, numbers derived at T1** | **do the grounds predate the claim's last correction?** |
+
+**The third form settles the design question.** Its own description: *"TEXT THAT
+IS NOW CORRECT CARRYING NUMBERS THAT WERE NEVER RE-DERIVED"*, and it is recorded
+as harder to catch than the other two because *"the sweep reports success
+honestly"* — nothing in the record is false. The morning's pass corrected the
+co-location claim genuinely everywhere and carried `1,131` and `1,164 findings
+(0.18%)` through untouched; both were wrong.
+
+That failure is exactly **a divergence between two timestamps that nothing
+recorded**. The claim's time advanced; the grounds' time did not. So:
+
+- **asserted-at alone cannot represent it** — the claim was correctly updated.
+- **grounds-checked-at alone cannot represent it** — the grounds were never
+  wrong at the time they were derived.
+- **Both are required, and the diagnostic is the ORDERING between them:**
+  *grounds-checked-at older than the claim's last correction* is the signature
+  of form three, and it is machine-checkable.
+
+**Is grounds-checked-at derivable from ARTIFACT REF's re-derivation command
+rather than stored? NO — and the distinction matters.** The command records
+*how* to re-derive, not *when* it last happened. Deriving it on demand means
+running the command, which is the very act that form three shows nobody performs
+— a value available only to whoever thinks to look is no control at all. What
+makes it a control is that the **stored** value visibly ages next to a claim
+that has moved.
+
+**The cost, stated because promoting this creates a new failure surface:** a
+timestamp is itself a record that can go stale, so a hand-maintained one would
+make the structure subject to its own dominant failure mode. The design answer
+is that **`grounds-checked-at` is written by the re-derivation command when it
+runs**, never by hand. `asserted-at` is hand-set once and never updated, so it
+cannot decay. This ties TIME to ARTIFACT REF and keeps the only mutable
+timestamp machine-owned.
+
+**I considered leaving it in §6 and concluded that would be wrong.** A structure
+for *this* project that cannot express when a claim's grounds were last checked
+cannot represent the failure mode it hits most — three named forms, eight
+instances, and the most recent one found by the next sweep on the same day.
 
 **SUCCESSION** — required by **case 4**. VALIDATION.md's own convention is that
 "the OVERTURNED entry gets the forward pointer", so the pointer lives on the
@@ -273,6 +327,9 @@ DEFEATER           if the size control were coarser than the confound, the
                    effect would be residual confounding. TESTED: strata refined
                    10->200, effect stable. Defeater discharged, retained.
 SUCCESSION         supersedes the p<0.0001 variant (status WITHDRAWN)
+TIME      asserted-at         2026-07-26 (0j)
+          grounds-checked-at  2026-07-26, machine-written by run_0j.py
+                              — equal, so no form-three divergence
 ```
 
 ### Case 2 — the fp:/rk: collision
@@ -344,6 +401,11 @@ GROUNDS   kind     OBSERVATION (712 raw findings, 0 merges) — UNCHANGED
 CONFIDENCE ARGUMENT v1   mechanism: fp:/rk: key collision   -> REFUTED by item 2
 CONFIDENCE ARGUMENT v2   mechanism: anti-correlated CWE classes; 14 exact
                          co-locations, 10 class-resolved both sides, 0 matches
+TIME      asserted-at         earlier than the item-2 fix
+          grounds-checked-at  re-derived AFTER the fix (712 findings, 0 merges)
+                              — the grounds were re-checked, which is why the
+                              claim could survive its mechanism being refuted.
+                              Had they not been, this would be form three.
 ```
 **The claim never changed status. Its confidence argument was replaced.** This
 is the case that made C3 non-optional: in a single structure, a claim whose
@@ -399,10 +461,15 @@ Stated explicitly, as required.
 4. **Claims about the project's own process.** Rules 8a, 10, 11 are claims — with
    grounds (base rates, worked instances) and warrants. They are not claims about
    the world the tool measures, and this structure has no place for them.
-5. **Time.** No part records when a claim was made or in what order. Case 5's
-   two confidence arguments are ordered v1/v2 by convention only. Since the
-   project's characteristic failure is a record decaying relative to the world,
-   the absence of a temporal field is a real gap and I am not sure it should be.
+5. ~~**Time.**~~ **PROMOTED OUT OF THIS LIST into the structure — see §2,
+   TIME.** The original entry said the absence of a temporal field "is a real
+   gap and I am not sure it should be". It should not be: rule 11's third form
+   is a divergence between when a claim was corrected and when its grounds were
+   last derived, which no other part can express. Retained here, struck through,
+   because the reasoning that moved it is part of the record.
+   **What remains a genuine limitation:** ORDER between confidence arguments.
+   Case 5's v1/v2 are sequenced by convention, and two timestamps on a claim do
+   not order the arguments *about* that claim.
 6. **Partial or graded status.** A claim is LIVE or one of three retired states.
    "Substantially discharged, one element remains by choice" — item 1's actual
    status — has no representation.

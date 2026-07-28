@@ -1662,6 +1662,57 @@ the shipped product. Full scoping: docs/SCOPE_shipped_consensus_defect.md.
      - Report the search denominator (rule 5) for citation checks too: what was
        checked, what came back, and what did not resolve.
 
+   ### STANDING NOTE — THE SUPPLY PATTERN IS SPECIFIC, AND SO IS THE FIX
+   Added 2026-07-27, on the inventor's own instruction, after the fifth failed
+   attribution from the same source in this project. Recorded as a PATTERN with
+   a stated remedy, not as a tally.
+
+   THE FIVE, verified against the record rather than recalled:
+     1. GrammaTech, converter information loss — host does not resolve; the
+        reachable page says nothing about it. UNVERIFIED.
+     2. arXiv:2602.07842 "§D.4" on dispersion checks before Spearman — an
+        LLM-calibration paper whose Appendix D has only D.1. SECTION DOES NOT
+        EXIST.
+     3. "arXiv:2302" for TreeVul — the ID does not resolve. The paper is real
+        (Pan/Bao/Xia/Lo/Li, ICSE'23); the identifier was not.
+     4. arXiv:2402.12804 for ISO/IEC 15026 — WRONG PAPER (McGeorge & Glomsrud,
+        contract-based design).
+     5. arXiv:2003.05388 for assured safety arguments — WRONG PAPER
+        (Ramakrishna et al., automating assurance case generation).
+
+   THE MECHANISM, in the inventor's own words: **IDs are supplied from
+   search-result adjacency without opening them.** The finding being described
+   is usually real and correctly attributed to an author and venue; it is the
+   IDENTIFIER that is picked up from a neighbouring result. That is why the
+   failures cluster in IDs and not in claims — cases 3, 4 and 5 all named a real
+   result whose locator pointed elsewhere.
+
+   >>> THE OPERATIONAL FIX, WHICH THE INVENTOR HAS UNDERTAKEN TO FOLLOW:
+   >>> **supply the finding plus author and venue, and let the session locate
+   >>> the source.** Do not supply a bare arXiv ID.
+   >>>
+   >>> THE REASON IT IS THE RIGHT FIX, and it generalises past this project:
+   >>> **an unfetched ID is worth LESS than a description, because it LOOKS
+   >>> CHECKABLE AND IS NOT.** A description invites retrieval and cannot be
+   >>> mistaken for verification. An ID invites a citation — it is the shape of
+   >>> a verified thing, so it lowers the felt need to open it, in exactly the
+   >>> population most likely to skip that step. It is a false positive for
+   >>> rigour.
+   >>>
+   >>> CLAUDE'S SIDE OF THE SAME FIX: an ID in an instruction is an ASSERTION
+   >>> (rule 8a's whole point). Fetch it, and when it is wrong, report the wrong
+   >>> paper's actual identity rather than silently substituting the right
+   >>> source — the substitution hides the pattern that produced the error.
+
+   CARRY FORWARD TO STEP 3 — DO NOT LOSE THIS: docs/CLAIM_STRUCTURE.md §3's
+   constraint C3 (the confidence-argument split, Hawkins/Kelly/Habli/Calinescu
+   SSS 2011) rests on a definition **corroborated across two retrievals but
+   never read at the publisher's bytes** — the York PDF defeated text extraction
+   and the Springer chapter is auth-walled. Step 3 builds on C3. If a primary
+   reading later shows the split is defined differently, C3 must be revisited;
+   the two project-internal reasons for adopting it would still stand alone, but
+   the borrowed structure would not.
+
    INSTANCES (2026-07-26) — EXAMPLES OF THE HAZARD, NOT ITS JUSTIFICATION:
      - A GrammaTech attribution about converters losing information: the blog
        host no longer resolves and the reachable GrammaTech page says nothing
